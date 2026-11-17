@@ -1,5 +1,7 @@
 use alpha_ovca::{
-    append_event_to_stream, init_intake_event, verify_conditioned_stream, ConditioningBrief,
+    append_event_to_stream, evaluate_followup, init_intake_event, revalidate_mandate,
+    verify_conditioned_stream, AdmissionPolicy, AuthorizationMandate, ConditioningBrief,
+    FollowUpEvent,
 };
 use ovca_types::WorkflowEvent;
 use std::env;
@@ -16,7 +18,11 @@ USAGE:
   alpha-ovca init-workflow --brief <brief.json> --workflow-id <id> --event-id <id> --occurred-at <utc-z> --out <stream.json>
   alpha-ovca verify-stream <stream.json> [--brief <brief.json>]
   alpha-ovca append-event --stream <stream.json> --event <event.json> [--brief <brief.json>]
-  alpha-ovca status <stream.json> [--brief <brief.json>]"
+  alpha-ovca status <stream.json> [--brief <brief.json>]
+  alpha-ovca policy-version <policy.json>
+  alpha-ovca validate-mandate <mandate.json> [--brief <brief.json>] [--policy <policy.json>]
+  alpha-ovca revalidate-mandate --mandate <mandate.json> --policy <policy.json>
+  alpha-ovca check-followup --mandate <mandate.json> --followup <followup.json> --policy <policy.json>"
     );
 }
 
@@ -147,6 +153,97 @@ fn run() -> Result<(), String> {
             println!(
                 "{}",
                 serde_json::to_string_pretty(&report).map_err(|e| e.to_string())?
+            );
+            Ok(())
+        }
+        "policy-version" => {
+            let path = args
+                .get(2)
+                .ok_or_else(|| "usage: alpha-ovca policy-version <policy.json>".to_string())?;
+            let policy: AdmissionPolicy = read_json(path)?;
+            let version = policy
+                .canonical_policy_version()
+                .map_err(|e| e.to_string())?;
+            let enabled_rules: Vec<String> = policy
+                .proactive_rules
+                .iter()
+                .filter(|r| r.enabled)
+                .map(|r| r.rule_id.clone())
+                .collect();
+            let out = serde_json::json!({
+                "valid": true,
+                "policy_schema_version": policy.policy_schema_version,
+                "accept_mode": policy.accept_mode,
+                "policy_version": version,
+                "enabled_rules": enabled_rules,
+            });
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&out).map_err(|e| e.to_string())?
+            );
+            Ok(())
+        }
+        "validate-mandate" => {
+            let mandate_path = args.get(2).ok_or_else(|| {
+                "usage: alpha-ovca validate-mandate <mandate.json> [--brief <brief.json>] [--policy <policy.json>]"
+                    .to_string()
+            })?;
+            let brief_path = optional_flag_value(&args[3..], "--brief")?;
+            let policy_path = optional_flag_value(&args[3..], "--policy")?;
+
+            let mandate: AuthorizationMandate = read_json(mandate_path)?;
+            mandate.validate().map_err(|e| e.to_string())?;
+            if let Some(ref p) = brief_path {
+                let brief: ConditioningBrief = read_json(p)?;
+                brief.validate().map_err(|e| e.to_string())?;
+                mandate.bind_to_brief(&brief).map_err(|e| e.to_string())?;
+            }
+            let revalidation = match policy_path {
+                Some(ref p) => {
+                    let policy: AdmissionPolicy = read_json(p)?;
+                    Some(revalidate_mandate(&mandate, &policy).map_err(|e| e.to_string())?)
+                }
+                None => None,
+            };
+            let out = serde_json::json!({
+                "valid": true,
+                "mandate_id": mandate.mandate_id,
+                "strength": mandate.strength,
+                "status": mandate.status,
+                "policy_version": mandate.policy_version,
+                "brief_bound": brief_path.is_some(),
+                "revalidation": revalidation,
+            });
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&out).map_err(|e| e.to_string())?
+            );
+            Ok(())
+        }
+        "revalidate-mandate" => {
+            let mandate_path = flag_value(&args[2..], "--mandate")?;
+            let policy_path = flag_value(&args[2..], "--policy")?;
+            let mandate: AuthorizationMandate = read_json(&mandate_path)?;
+            let policy: AdmissionPolicy = read_json(&policy_path)?;
+            let report = revalidate_mandate(&mandate, &policy).map_err(|e| e.to_string())?;
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&report).map_err(|e| e.to_string())?
+            );
+            Ok(())
+        }
+        "check-followup" => {
+            let mandate_path = flag_value(&args[2..], "--mandate")?;
+            let followup_path = flag_value(&args[2..], "--followup")?;
+            let policy_path = flag_value(&args[2..], "--policy")?;
+            let mandate: AuthorizationMandate = read_json(&mandate_path)?;
+            let followup: FollowUpEvent = read_json(&followup_path)?;
+            let policy: AdmissionPolicy = read_json(&policy_path)?;
+            let decision =
+                evaluate_followup(&mandate, &followup, &policy).map_err(|e| e.to_string())?;
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&decision).map_err(|e| e.to_string())?
             );
             Ok(())
         }

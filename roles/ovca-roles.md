@@ -45,8 +45,9 @@ OVCA v1.0 Workflow Stream (enforced by ovca-workflow::WorkflowReducer)
 - Ensures every declared repair cycle leaves room for `OwnerEscalated` + `CoordinatorFinalized`.
 - Enforced identically by `ovca_types::ExecutionBudget::validate` and `alpha-ovca`.
 
-## GitHub PR Control Plane Mapping
+## GitHub PR Control Plane & Proactive Admission Mapping
 
 - **Pull Request Ledger + `AGENT_ACK`**: All PRs carry [workflows/templates/agent_ack.template.md](../workflows/templates/agent_ack.template.md) (`UNKNOWN` disclosed honestly when model build ID or host nodes are unexposed) alongside `workflows/runs/<workflow_id>/`.
 - **Pre-Merge Semantic Audit (`scripts/pr_audit.py`)**: Prevents `MERGEABLE` false confidence across concurrent PRs (catching direct file overlaps, sibling namespace collisions, contract ripples, and stale stacked base SHAs).
 - **Separate Reviewer Bot Quorum**: Configured via [ovca-reviewer-bot.yml](../.github/workflows/ovca-reviewer-bot.yml) and [docs/bot-account-setup.md](../docs/bot-account-setup.md) so `PR Author != Reviewer Approver` once the separate GitHub App (`OVCA_REVIEWER_APP_ID`) is installed.
+- **Mandate & Observe Mode Gate (`Context ≠ Authority`)**: Governed by [admission_policy.json](../config/governance/admission_policy.json), `alpha-ovca` (`policy-version`, `validate-mandate`, `revalidate-mandate`, `check-followup`), `scripts/admission_gate.py`, and read-only [admission-observe.yml](../.github/workflows/admission-observe.yml). Bots and CI never hold `explicit` authority or stop an Owner Mandate; out-of-scope or context-only follow-ups emit structured `handback` rather than silently expanding `writable_scope`, and `accept_mode: "observe"` records `would_accept` hits without repo mutations.

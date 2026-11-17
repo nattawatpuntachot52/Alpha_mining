@@ -1,0 +1,79 @@
+{
+  "contract_version": "1.0",
+  "brief_id": "brief-mandate-observe-001",
+  "title": "Context != Authority (Mandate, Policy Version, Revalidation, Handback) and Proactive Observe Mode Gate",
+  "public_summary": "Adopt DeepSeek superagent Mechanisms 1+2 into Alpha_mining: immutable AuthorizationMandate with policy versioning, revalidation, and out-of-scope handback, plus off|observe|auto proactive admission gating",
+  "domain": "infrastructure",
+  "target_evidence_status": "reproducible",
+  "inputs": [
+    "Owner approvals A1-A3 (merge PR #1 first & branch feat/mandate-observe-admission; Core + read-only admission-observe.yml workflow; 3 default observe rules: ci-default-branch-failure, parallel-pr-semantic-conflict, quant-manifest-drift-check)",
+    "Reference design specifications from deepseek-ai/dsh-superagent-prototype (docs/001-domain.md, docs/002-authorization.md, prompts/admission.md)",
+    "Pinned OVCA v1.0 crates (ovca-types, ovca-workflow @ 5b0726c)"
+  ],
+  "outputs": [
+    "config/governance/admission_policy.json (canonical SHA-256 versioned policy starting in accept_mode=observe with 3 seeded rules)",
+    "rust/crates/alpha-ovca/ extensions (AuthorizationMandate, TriggerStrength, FollowUpDecision/HandbackRecord, MandateRevalidation, AdmissionPolicy canonical policy-version CLI without changing ovca-reference v1.0 wire contracts)",
+    "python/alpha_mining/control_plane/admission.py + scripts/admission_gate.py + workflows/admission_ledger/ + ovca_bridge integration",
+    ".github/workflows/admission-observe.yml (read-only observe-mode GitHub Actions evaluator)",
+    "Updated governance/architecture/role docs (AGENTS.md, CLAUDE.md, roles/ovca-roles.md, docs/architecture.md, README.md, skills/conditioner-ovca/SKILL.md) + Rust/Python tests"
+  ],
+  "variables": [
+    "accept_mode (off | observe | auto; initial value: observe)",
+    "policy_version (deterministic canonical sha256 digest across Rust and Python)",
+    "mandate_strength (explicit | inferred; bots and default-branch CI restricted to inferred)"
+  ],
+  "constraints": [
+    "Keep ovca-reference v1.0 wire contracts (ovca-types, ovca-workflow) untouched and Cargo --locked builds offline-clean with zero new external dependencies",
+    "Maintain backward compatibility with existing ConditioningBrief JSON fixtures via #[serde(default)]",
+    "Keep AGENTS.md and CLAUDE.md 1:1 byte-identical (cmp -s)",
+    "Enforce Context != Authority: follow-ups and context-only threads cannot expand writable_scope; bots/CI cannot hold explicit strength or stop mandates; out-of-scope work emits handback",
+    "In observe mode, positive proactive assessments must log would_accept=true and must never mint a mutation Mandate or mutate git/repo files"
+  ],
+  "assumptions": [
+    "Proactive sources in this phase cover GitHub repository events/CLI metadata and local OVCA streams",
+    "Live GitHub Actions execution of admission-observe.yml after push/PR will confirm Ubuntu runner compatibility alongside ci.yml"
+  ],
+  "unknowns": [],
+  "block_on_unresolved_unknowns": true,
+  "acceptance_criteria": [
+    "Rust and Python compute byte-identical canonical sha256 policy_version hashes for admission_policy.json",
+    "All Rust fmt/check/test/clippy and Python unittest checks pass in the current slice, enforcing bot/CI, context-only, handback, revalidation, observe vs auto, and unavailable invariants",
+    "cmp -s AGENTS.md CLAUDE.md, PyYAML parse, relative link check, admission-observe read-only dry-run fixture test, alpha-ovca validate-brief/verify-stream, and scripts/pr_audit.py --fail-on-critical pass"
+  ],
+  "governance": {
+    "solver_actor": "antigravity-katherine-impl",
+    "verifier_actor": "local-cargo-unittest-ci-verifier",
+    "reviewer_actor": "research-subagent-adversarial-reviewer",
+    "auditor_actor": "post-fix-independent-verifier-auditor"
+  },
+  "authority": {
+    "contract_version": "1.0",
+    "authority_id": "auth-mandate-observe-001",
+    "granted_by": "owner",
+    "objective": "Implement Mechanisms 1 (Context != Authority) and 2 (Observe Mode Admission) cleanly across Rust, Python, Policy config, Workflows, and Docs",
+    "scope": [
+      "AGENTS.md",
+      "CLAUDE.md",
+      "README.md",
+      "docs/",
+      "roles/",
+      "skills/conditioner-ovca/",
+      "config/",
+      ".github/",
+      "rust/crates/alpha-ovca/",
+      "python/alpha_mining/",
+      "python/tests/",
+      "scripts/",
+      "workflows/"
+    ],
+    "constraints": [
+      "Follow Katherine Front Door Doctrines, Strict Plan Order, No Implicit Pass, and Owner Commit/PR Gate"
+    ]
+  },
+  "budget": {
+    "contract_version": "1.0",
+    "max_repair_attempts": 1,
+    "max_events": 14
+  },
+  "created_at": "2026-11-17T11:19:00Z"
+}

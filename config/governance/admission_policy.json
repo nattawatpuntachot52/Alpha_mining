@@ -1,0 +1,100 @@
+{
+  "policy_schema_version": "1.0",
+  "accept_mode": "observe",
+  "allowed_actors": [
+    "nattawatpuntachot52"
+  ],
+  "bot_allowlist": [
+    "alpha-mining-ovca-reviewer[bot]",
+    "dependabot[bot]",
+    "github-actions[bot]",
+    "ovca-reviewer[bot]"
+  ],
+  "automated_reviewers_non_bot": [],
+  "admission_table": {
+    "github_comment": {
+      "listed_addressed": "explicit",
+      "listed_unaddressed": "inferred",
+      "receive_all": true,
+      "unlisted_addressed": "ignore",
+      "unlisted_unaddressed": "ignore"
+    },
+    "github_default_branch_ci": {
+      "listed_addressed": "ignore",
+      "listed_unaddressed": "ignore",
+      "receive_all": true,
+      "unlisted_addressed": "ignore",
+      "unlisted_unaddressed": "inferred"
+    },
+    "github_issue": {
+      "listed_addressed": "explicit",
+      "listed_unaddressed": "inferred",
+      "receive_all": true,
+      "unlisted_addressed": "ignore",
+      "unlisted_unaddressed": "ignore"
+    },
+    "github_pr": {
+      "listed_addressed": "explicit",
+      "listed_unaddressed": "inferred",
+      "receive_all": true,
+      "unlisted_addressed": "ignore",
+      "unlisted_unaddressed": "ignore"
+    },
+    "owner_cli": {
+      "listed_addressed": "explicit",
+      "listed_unaddressed": "ignore",
+      "receive_all": false,
+      "unlisted_addressed": "ignore",
+      "unlisted_unaddressed": "ignore"
+    }
+  },
+  "proactive_rules": [
+    {
+      "rule_id": "ci-default-branch-failure",
+      "enabled": true,
+      "title": "Default branch CI failure triage",
+      "description": "Proactively analyze default branch (main) required CI check failures (`rust`, `python`) when CI fails on main.",
+      "receiving_scopes": [
+        "github_default_branch_ci"
+      ],
+      "writable_scope": [
+        "rust/",
+        "python/",
+        "scripts/",
+        ".github/workflows/ci.yml",
+        "workflows/runs/"
+      ],
+      "silent_ack": false
+    },
+    {
+      "rule_id": "parallel-pr-semantic-conflict",
+      "enabled": true,
+      "title": "Parallel PR semantic conflict & stale stack alert",
+      "description": "Assess open PR collisions (direct file overlap, sibling naming collision, contract divergence, stale stacked base) detected by pr_audit.",
+      "receiving_scopes": [
+        "github_pr",
+        "github_comment"
+      ],
+      "writable_scope": [
+        "workflows/runs/",
+        "python/alpha_mining/control_plane/"
+      ],
+      "silent_ack": false
+    },
+    {
+      "rule_id": "quant-manifest-drift-check",
+      "enabled": true,
+      "title": "Quant Vault manifest or checksum drift alert",
+      "description": "Assess SHA-256 manifest schema invalidation or local cache mismatch detected under workflows/vault_manifests/.",
+      "receiving_scopes": [
+        "github_pr",
+        "github_default_branch_ci"
+      ],
+      "writable_scope": [
+        "workflows/vault_manifests/",
+        "python/alpha_mining/storage/"
+      ],
+      "silent_ack": false
+    }
+  ]
+}

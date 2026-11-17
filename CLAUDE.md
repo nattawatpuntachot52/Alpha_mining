@@ -85,6 +85,8 @@
 - **`AGENT_ACK` & Durable GitHub Ledger**: ทุก PR และ formal handover/audit ต้องแนบ `AGENT_ACK` ตาม [workflows/templates/agent_ack.template.md](workflows/templates/agent_ack.template.md) โดยระบุ `actual_model_id_version: UNKNOWN (not exposed by runtime)` และ node ที่ไม่ได้เชื่อมเป็น `UNKNOWN / NOT_CONNECTED` อย่างตรงไปตรงมา พร้อมบันทึกลง PR/Issue และ `workflows/runs/<workflow_id>/`
 - **PR Semantic Audit Gate (ไม่เชื่อแค่ `MERGEABLE`)**: เมื่อมีหลาย PR/branch เปิดพร้อมกัน ห้ามถือว่าสถานะ `MERGEABLE` ของ GitHub คือพร้อม merge; ให้รัน `python3 scripts/pr_audit.py --fail-on-critical` เพื่อตรวจ file/sibling namespace collision, contract/schema ripple และ stale stacked base ก่อน merge เสมอ
 - **Drive Vault + Actions Cache State Hygiene**: ห้าม commit ไฟล์ข้อมูลขนาดใหญ่ (`*.parquet`, `*.tar.zst`, `data/raw/`, `.vault_cache/`) เข้า Git; ให้แพ็กผ่าน `python3 scripts/vault_sync.py`, เก็บเฉพาะ SHA-256 manifest ใน `workflows/vault_manifests/`, และเก็บ payload ใน GitHub Actions Cache + Google Drive `Alpha_mining_Vault`
+- **`Context ≠ Authority` (`Mandate`, Policy Version & Handback)**: การมี context หรือ follow-up บน thread/PR ไม่เท่ากับสิทธิ์สั่งแก้ไข; ทุก action ต้องอ้างอิง immutable `AuthorizationMandate` (`explicit | inferred`, canonical SHA-256 `policy_version`, `writable_scope` ไม่เกิน `ConditioningBrief.authority.scope`), Bot/CI ห้ามถือ `explicit` หรือสั่ง `stop`, และงานที่เกิน scope/context-only ต้องคืน `handback` ผ่าน `alpha-ovca check-followup` / `revalidate-mandate`
+- **Proactive Admission & Observe Mode (`off | observe | auto`)**: กติกา proactive ใน [config/governance/admission_policy.json](config/governance/admission_policy.json) เริ่มที่ `accept_mode: "observe"` (ประเมิน 3 rules: `ci-default-branch-failure`, `parallel-pr-semantic-conflict`, `quant-manifest-drift-check` และบันทึก `would_accept` ลง ledger/artifact โดยห้ามแก้ไข repo หรือออก Mandate จนกว่าจะ calibrate แล้ว); ต้องแยกสถานะ `unavailable` ออกจาก `ignore` เสมอ
 
 ---
 
@@ -121,5 +123,6 @@ cargo check --manifest-path rust/Cargo.toml --all-targets --locked
 cargo test --manifest-path rust/Cargo.toml --all-targets --locked
 cargo clippy --manifest-path rust/Cargo.toml --all-targets --locked -- -D warnings
 python3 scripts/github_ruleset.py validate-configs
+python3 scripts/admission_gate.py validate-policy --verify-rust-parity
 python3 -m unittest discover -s python/tests -v
 ```

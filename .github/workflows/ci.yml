@@ -61,5 +61,9 @@ jobs:
             ${{ runner.os }}-cargo-
       - name: Validate GitHub Ruleset configuration invariants
         run: python3 scripts/github_ruleset.py validate-configs
+      - name: Build current branch alpha-ovca binary cleanly
+        run: cargo build --manifest-path rust/Cargo.toml --bin alpha-ovca --locked
+      - name: Validate AdmissionPolicy and Rust/Python policy_version parity
+        run: python3 scripts/admission_gate.py validate-policy --verify-rust-parity
       - name: Run Python control-plane, storage vault, and domain tests
         run: python3 -m unittest discover -s python/tests -v

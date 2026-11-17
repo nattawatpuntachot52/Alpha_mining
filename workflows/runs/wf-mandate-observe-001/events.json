@@ -1,0 +1,404 @@
+[
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-mandate-observe-001",
+    "event_id": "ev-mo-0",
+    "sequence": 0,
+    "occurred_at": "2026-11-17T11:19:30Z",
+    "type": "intake_accepted",
+    "data": {
+      "request_ref": "brief-mandate-observe-001",
+      "public_summary": "Adopt DeepSeek superagent Mechanisms 1+2 into Alpha_mining: immutable AuthorizationMandate with policy versioning, revalidation, and out-of-scope handback, plus off|observe|auto proactive admission gating",
+      "authority": {
+        "contract_version": "1.0",
+        "authority_id": "auth-mandate-observe-001",
+        "granted_by": "owner",
+        "objective": "Implement Mechanisms 1 (Context != Authority) and 2 (Observe Mode Admission) cleanly across Rust, Python, Policy config, Workflows, and Docs",
+        "scope": [
+          "AGENTS.md",
+          "CLAUDE.md",
+          "README.md",
+          "docs/",
+          "roles/",
+          "skills/conditioner-ovca/",
+          "config/",
+          ".github/",
+          "rust/crates/alpha-ovca/",
+          "python/alpha_mining/",
+          "python/tests/",
+          "scripts/",
+          "workflows/"
+        ],
+        "constraints": [
+          "Follow Katherine Front Door Doctrines, Strict Plan Order, No Implicit Pass, and Owner Commit/PR Gate"
+        ]
+      },
+      "budget": {
+        "contract_version": "1.0",
+        "max_repair_attempts": 1,
+        "max_events": 14
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-mandate-observe-001",
+    "event_id": "ev-mo-1",
+    "sequence": 1,
+    "previous_event_id": "ev-mo-0",
+    "occurred_at": "2026-11-17T11:29:53Z",
+    "type": "coordinator_dispatched",
+    "data": {
+      "invocation": {
+        "contract_version": "1.0",
+        "invocation_id": "inv-mo-1",
+        "requested_by": "coordinator",
+        "role": "engineer",
+        "objective": "Implement Mechanisms 1 (Context != Authority Mandate, policy_version, revalidate_mandate, evaluate_followup/handback) and 2 (Observe Mode Admission off|observe|auto + read-only admission-observe.yml + governance docs)",
+        "authority_ref": "auth-mandate-observe-001",
+        "input_refs": [
+          "brief-mandate-observe-001"
+        ],
+        "attempt": 1,
+        "requested_at": "2026-11-17T11:29:53Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-mandate-observe-001",
+    "event_id": "ev-mo-2",
+    "sequence": 2,
+    "previous_event_id": "ev-mo-1",
+    "occurred_at": "2026-11-17T11:30:03Z",
+    "type": "engineer_returned",
+    "data": {
+      "result": {
+        "contract_version": "1.0",
+        "result_id": "res-mo-1",
+        "invocation_ref": "inv-mo-1",
+        "role": "engineer",
+        "status": "succeeded",
+        "summary": "Implemented Rust admission module + CLI subcommands, Python AdmissionPolicy/Observe gate + admission_gate.py CLI, admission_policy.json (observe mode), read-only admission-observe.yml, ci.yml parity gate, governance docs, and synced conditioner-ovca skill",
+        "evidence": [
+          {
+            "contract_version": "1.0",
+            "evidence_id": "evd-mo-impl-1",
+            "kind": "implementation",
+            "summary": "Added rust/crates/alpha-ovca/src/admission.rs, config/governance/admission_policy.json, python/alpha_mining/control_plane/admission.py, scripts/admission_gate.py, .github/workflows/admission-observe.yml, tests, and docs on branch feat/mandate-observe-admission",
+            "source": "antigravity-katherine-impl",
+            "collected_at": "2026-11-17T11:30:03Z"
+          }
+        ],
+        "completed_at": "2026-11-17T11:30:03Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-mandate-observe-001",
+    "event_id": "ev-mo-3",
+    "sequence": 3,
+    "previous_event_id": "ev-mo-2",
+    "occurred_at": "2026-11-17T11:30:13Z",
+    "type": "verification_recorded",
+    "data": {
+      "outcome": {
+        "contract_version": "1.0",
+        "verification_id": "ver-mo-1",
+        "subject_result_ref": "res-mo-1",
+        "status": "passed",
+        "checks": [
+          {
+            "name": "rust-fmt-check-test-clippy",
+            "status": "passed",
+            "summary": "cargo fmt, check, test (13 integration + 3 CLI), and clippy -D warnings passed on Attempt 1"
+          },
+          {
+            "name": "python-parity-and-30-unittests",
+            "status": "passed",
+            "summary": "validate-policy --verify-rust-parity (sha256:1c884716...) and 30/30 python unittests passed on Attempt 1 prior to adversarial review"
+          }
+        ],
+        "evidence": [
+          {
+            "contract_version": "1.0",
+            "evidence_id": "evd-mo-ver-1",
+            "kind": "verification",
+            "summary": "Attempt 1 Rust + Python verification suite passed cleanly prior to Independent Adversarial Audit",
+            "source": "local-cargo-unittest-ci-verifier",
+            "collected_at": "2026-11-17T11:30:13Z"
+          }
+        ],
+        "completed_at": "2026-11-17T11:30:13Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-mandate-observe-001",
+    "event_id": "ev-mo-4",
+    "sequence": 4,
+    "previous_event_id": "ev-mo-3",
+    "occurred_at": "2026-11-17T11:35:54Z",
+    "type": "reviewer_decided",
+    "data": {
+      "packet": {
+        "contract_version": "1.0",
+        "review_id": "rev-mo-1",
+        "engineer_result_ref": "res-mo-1",
+        "verification_ref": "ver-mo-1",
+        "decision": "repair",
+        "findings": [
+          {
+            "code": "ci-stale-binary-cache-and-locked-bridge",
+            "severity": "blocking",
+            "summary": "CI python job restored stale target/debug/alpha-ovca cache from main without rebuilding, and OvcaBridge.resolve_binary() lacked source mtime freshness check and --locked flag",
+            "evidence_refs": [
+              "evd-mo-impl-1"
+            ]
+          },
+          {
+            "code": "unlisted-ticket-followup-bypass",
+            "severity": "blocking",
+            "summary": "Python evaluate_gate unconditional elif has_ticket granted inferred to unlisted actors despite unlisted_*=ignore, and Rust evaluate_followup allowed unlisted actors to proceed/resume under accept_mode=auto",
+            "evidence_refs": [
+              "evd-mo-impl-1"
+            ]
+          },
+          {
+            "code": "revalidation-edge-parity-and-test-gaps",
+            "severity": "blocking",
+            "summary": "Rust revalidate_mandate omitted is_bot_login, rule surface/scope narrowing, C: drive-letter in normalized_segments, automated_reviewers_non_bot enforcement, CI precedence, completed status sorting, and CLI/followup test coverage",
+            "evidence_refs": [
+              "evd-mo-ver-1"
+            ]
+          }
+        ],
+        "evidence_refs": [
+          "evd-mo-impl-1",
+          "evd-mo-ver-1"
+        ],
+        "completed_at": "2026-11-17T11:35:54Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-mandate-observe-001",
+    "event_id": "ev-mo-5",
+    "sequence": 5,
+    "previous_event_id": "ev-mo-4",
+    "occurred_at": "2026-11-17T11:36:04Z",
+    "type": "auditor_counterchecked",
+    "data": {
+      "packet": {
+        "contract_version": "1.0",
+        "audit_id": "aud-mo-1",
+        "review_ref": "rev-mo-1",
+        "decision": "concur",
+        "findings": [],
+        "evidence_refs": [
+          "evd-mo-impl-1",
+          "evd-mo-ver-1"
+        ],
+        "completed_at": "2026-11-17T11:36:04Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-mandate-observe-001",
+    "event_id": "ev-mo-6",
+    "sequence": 6,
+    "previous_event_id": "ev-mo-5",
+    "occurred_at": "2026-11-17T11:36:14Z",
+    "type": "repair_directed",
+    "data": {
+      "directive": {
+        "contract_version": "1.0",
+        "directive_id": "dir-mo-1",
+        "source_review_ref": "rev-mo-1",
+        "source_audit_ref": "aud-mo-1",
+        "attempt": 1,
+        "instructions": [
+          "Add explicit cargo build --locked in ci.yml python job and freshness + --locked check in OvcaBridge.resolve_binary()",
+          "Remove unlisted has_ticket bypass in evaluate_gate and enforce admission_table + automated_reviewers_non_bot + AddressedKind checks in Rust evaluate_followup even when accept_mode=auto",
+          "Harden revalidate_mandate (is_bot_login, rule receiving_scopes & writable_scope intersection narrowing, preserve_order-immune canonical_policy_version), Rust/Python drive-letter & Unicode parity, CI sorting/status, summarize-ledger missing check, and comprehensive Rust/Python CLI tests"
+        ],
+        "evidence_refs": [
+          "evd-mo-impl-1",
+          "evd-mo-ver-1"
+        ],
+        "issued_at": "2026-11-17T11:36:14Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-mandate-observe-001",
+    "event_id": "ev-mo-7",
+    "sequence": 7,
+    "previous_event_id": "ev-mo-6",
+    "occurred_at": "2026-11-17T11:36:24Z",
+    "type": "coordinator_dispatched",
+    "data": {
+      "invocation": {
+        "contract_version": "1.0",
+        "invocation_id": "inv-mo-2",
+        "requested_by": "coordinator",
+        "role": "engineer",
+        "objective": "Resolve all 3 BLOCKING, 6 WARNING, and 4 actionable NOTE findings from Adversarial Code Audit",
+        "authority_ref": "auth-mandate-observe-001",
+        "input_refs": [
+          "dir-mo-1"
+        ],
+        "attempt": 2,
+        "requested_at": "2026-11-17T11:36:24Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-mandate-observe-001",
+    "event_id": "ev-mo-8",
+    "sequence": 8,
+    "previous_event_id": "ev-mo-7",
+    "occurred_at": "2026-11-17T11:52:42Z",
+    "type": "engineer_returned",
+    "data": {
+      "result": {
+        "contract_version": "1.0",
+        "result_id": "res-mo-2",
+        "invocation_ref": "inv-mo-2",
+        "role": "engineer",
+        "status": "succeeded",
+        "summary": "Resolved all Attempt 1 adversarial findings (3 BLOCKING, 6 WARNING, 4 NOTE), fixed summarize_ledger deferred observe filtering, polished 3 remaining Attempt 2 NOTEs, and expanded Rust/Python unit & CLI tests",
+        "evidence": [
+          {
+            "contract_version": "1.0",
+            "evidence_id": "evd-mo-impl-2",
+            "kind": "implementation",
+            "summary": "Hardened ci.yml binary build, OvcaBridge --locked + mtime freshness + FileNotFoundError guard, Python/Rust admission_table + CI-before-bot + non-bot reviewer + AddressedKind + revalidate_mandate scope/surface checks, CanonJson hashing, strict CLI JSON validation, and expanded 17 Rust + 34 Python tests",
+            "source": "antigravity-katherine-impl",
+            "collected_at": "2026-11-17T11:52:42Z"
+          }
+        ],
+        "completed_at": "2026-11-17T11:52:42Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-mandate-observe-001",
+    "event_id": "ev-mo-9",
+    "sequence": 9,
+    "previous_event_id": "ev-mo-8",
+    "occurred_at": "2026-11-17T11:52:44Z",
+    "type": "verification_recorded",
+    "data": {
+      "outcome": {
+        "contract_version": "1.0",
+        "verification_id": "ver-mo-2",
+        "subject_result_ref": "res-mo-2",
+        "status": "passed",
+        "checks": [
+          {
+            "name": "mirror-diff-yaml-links-pr-audit",
+            "status": "passed",
+            "summary": "cmp -s AGENTS.md CLAUDE.md, git diff --check, 4 workflow PyYAML parses, 19 markdown relative link checks, github_ruleset validate-configs & verify, and pr_audit.py --fail-on-critical passed"
+          },
+          {
+            "name": "rust-fmt-check-test-clippy-and-ovca-build",
+            "status": "passed",
+            "summary": "cargo fmt --check, cargo check --locked, cargo test --all-targets --locked (3 CLI + 14 integration = 17/17), cargo clippy -D warnings, and cargo build --bin alpha-ovca --locked passed"
+          },
+          {
+            "name": "python-parity-34-unittests-and-live-observe",
+            "status": "passed",
+            "summary": "validate-policy --verify-rust-parity (sha256:1c884716...), 34/34 python unittest cases (normal & stripped PATH), and read-only admission_gate.py observe-github passed"
+          }
+        ],
+        "evidence": [
+          {
+            "contract_version": "1.0",
+            "evidence_id": "evd-mo-ver-2",
+            "kind": "verification",
+            "summary": "Post-repair and post-polish verification suite passed on current branch feat/mandate-observe-admission (with live GitHub Actions runner execution of admission-observe.yml documented as deferred until push)",
+            "source": "local-cargo-unittest-ci-verifier",
+            "collected_at": "2026-11-17T11:52:44Z"
+          }
+        ],
+        "completed_at": "2026-11-17T11:52:44Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-mandate-observe-001",
+    "event_id": "ev-mo-10",
+    "sequence": 10,
+    "previous_event_id": "ev-mo-9",
+    "occurred_at": "2026-11-17T11:52:46Z",
+    "type": "reviewer_decided",
+    "data": {
+      "packet": {
+        "contract_version": "1.0",
+        "review_id": "rev-mo-2",
+        "engineer_result_ref": "res-mo-2",
+        "verification_ref": "ver-mo-2",
+        "decision": "pass",
+        "findings": [],
+        "evidence_refs": [
+          "evd-mo-impl-2",
+          "evd-mo-ver-2"
+        ],
+        "completed_at": "2026-11-17T11:52:46Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-mandate-observe-001",
+    "event_id": "ev-mo-11",
+    "sequence": 11,
+    "previous_event_id": "ev-mo-10",
+    "occurred_at": "2026-11-17T11:52:48Z",
+    "type": "auditor_counterchecked",
+    "data": {
+      "packet": {
+        "contract_version": "1.0",
+        "audit_id": "aud-mo-2",
+        "review_ref": "rev-mo-2",
+        "decision": "concur",
+        "findings": [],
+        "evidence_refs": [
+          "evd-mo-impl-2",
+          "evd-mo-ver-2"
+        ],
+        "completed_at": "2026-11-17T11:52:48Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-mandate-observe-001",
+    "event_id": "ev-mo-12",
+    "sequence": 12,
+    "previous_event_id": "ev-mo-11",
+    "occurred_at": "2026-11-17T11:52:50Z",
+    "type": "coordinator_finalized",
+    "data": {
+      "response": {
+        "contract_version": "1.0",
+        "response_id": "resp-mo-1",
+        "outcome": "passed",
+        "public_summary": "DeepSeek Super-Agent Mechanisms 1 (Context != Authority Mandate, policy_version, revalidation, handback) and 2 (off|observe|auto Admission Gate + read-only admission-observe.yml) passed adversarial re-audit and full post-polish verification",
+        "evidence_refs": [
+          "evd-mo-ver-2"
+        ],
+        "completed_at": "2026-11-17T11:52:50Z"
+      }
+    }
+  }
+]
