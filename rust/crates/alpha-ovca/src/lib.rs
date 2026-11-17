@@ -6,6 +6,10 @@
 //! epistemic claim tagging, Solver-vs-Verifier actor separation checks, and
 //! transactional stream management around `WorkflowReducer`.
 
+pub mod admission;
+
+pub use admission::*;
+
 use ovca_types::{
     Authority, ExecutionBudget, Validate, ValidationError, WorkflowEvent, WorkflowEventKind,
     CONTRACT_VERSION,
@@ -208,6 +212,8 @@ pub struct ConditioningBrief {
     pub quant_checks: Option<QuantGateSpec>,
     pub governance: RoleSeparation,
     pub authority: Authority,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mandate: Option<AuthorizationMandate>,
     pub budget: ExecutionBudget,
     pub created_at: String,
 }
@@ -274,6 +280,9 @@ impl ConditioningBrief {
 
         self.governance.validate()?;
         self.authority.validate()?;
+        if let Some(mandate) = &self.mandate {
+            mandate.bind_to_brief(self)?;
+        }
         self.budget.validate()?;
         require_timestamp("created_at", &self.created_at)?;
         Ok(())
@@ -305,6 +314,10 @@ pub enum AlphaOvcaError {
     Workflow(#[from] WorkflowError),
     #[error("brief/stream binding mismatch: {0}")]
     BriefMismatch(String),
+    #[error("admission policy error: {0}")]
+    PolicyValidation(String),
+    #[error("mandate authorization violation: {0}")]
+    MandateViolation(String),
 }
 
 pub fn init_intake_event(

@@ -1,7 +1,11 @@
 use alpha_ovca::{
-    append_event_to_stream, init_intake_event, verify_conditioned_stream, AlphaOvcaError,
-    BriefDomain, ClaimKind, ConditioningBrief, EpistemicClaim, EvidenceStatus,
-    FalsifiableHypothesis, ProofLevel, QuantGateSpec, RoleSeparation,
+    append_event_to_stream, evaluate_followup, init_intake_event, intersect_rule_scopes,
+    is_path_within_scope, revalidate_mandate, sha256_hex, verify_conditioned_stream, AcceptMode,
+    AddressedKind, AdmissionChoice, AdmissionPolicy, AdmissionTableRow, AlphaOvcaError,
+    AuthorizationMandate, BriefDomain, ClaimKind, ConditioningBrief, EpistemicClaim,
+    EvidenceStatus, FalsifiableHypothesis, FollowUpAction, FollowUpEvent, MandateStatus,
+    MandateStrength, ProactiveRule, ProofLevel, QuantGateSpec, ReceivingScope, RoleSeparation,
+    SubscriptionMode, TriggerSourceKind, UnaddressedChoice,
 };
 use ovca_types::{
     AuditDecision, AuditPacket, Authority, Decision, DecisionDisposition, Evidence, EvidenceKind,
@@ -10,6 +14,7 @@ use ovca_types::{
     VerificationOutcome, VerificationStatus, WorkflowEvent, WorkflowEventKind, WorkflowOutcome,
 };
 use ovca_workflow::WorkflowPhase;
+use std::collections::BTreeMap;
 
 fn sample_quant_brief() -> ConditioningBrief {
     ConditioningBrief {
@@ -64,6 +69,7 @@ fn sample_quant_brief() -> ConditioningBrief {
             scope: vec!["research/ofi_synthetic".into()],
             constraints: vec!["read-only research; no live execution".into()],
         },
+        mandate: None,
         budget: ExecutionBudget {
             contract_version: "1.0".into(),
             max_repair_attempts: 1,
@@ -566,4 +572,665 @@ fn repair_directive_requires_matching_attempt() {
     brief
         .validate()
         .expect("infra brief without quant fields is valid");
+}
+
+fn sample_policy(accept_mode: AcceptMode) -> AdmissionPolicy {
+    let mut table = BTreeMap::new();
+    table.insert(
+        ReceivingScope::GithubComment,
+        AdmissionTableRow {
+            receive_all: true,
+            listed_addressed: AdmissionChoice::Explicit,
+            listed_unaddressed: UnaddressedChoice::Inferred,
+            unlisted_addressed: AdmissionChoice::Ignore,
+            unlisted_unaddressed: UnaddressedChoice::Ignore,
+        },
+    );
+    table.insert(
+        ReceivingScope::GithubDefaultBranchCi,
+        AdmissionTableRow {
+            receive_all: true,
+            listed_addressed: AdmissionChoice::Ignore,
+            listed_unaddressed: UnaddressedChoice::Ignore,
+            unlisted_addressed: AdmissionChoice::Ignore,
+            unlisted_unaddressed: UnaddressedChoice::Inferred,
+        },
+    );
+    table.insert(
+        ReceivingScope::GithubIssue,
+        AdmissionTableRow {
+            receive_all: true,
+            listed_addressed: AdmissionChoice::Explicit,
+            listed_unaddressed: UnaddressedChoice::Inferred,
+            unlisted_addressed: AdmissionChoice::Ignore,
+            unlisted_unaddressed: UnaddressedChoice::Ignore,
+        },
+    );
+    table.insert(
+        ReceivingScope::GithubPr,
+        AdmissionTableRow {
+            receive_all: true,
+            listed_addressed: AdmissionChoice::Explicit,
+            listed_unaddressed: UnaddressedChoice::Inferred,
+            unlisted_addressed: AdmissionChoice::Ignore,
+            unlisted_unaddressed: UnaddressedChoice::Ignore,
+        },
+    );
+    table.insert(
+        ReceivingScope::OwnerCli,
+        AdmissionTableRow {
+            receive_all: false,
+            listed_addressed: AdmissionChoice::Explicit,
+            listed_unaddressed: UnaddressedChoice::Ignore,
+            unlisted_addressed: AdmissionChoice::Ignore,
+            unlisted_unaddressed: UnaddressedChoice::Ignore,
+        },
+    );
+
+    AdmissionPolicy {
+        policy_schema_version: "1.0".into(),
+        accept_mode,
+        allowed_actors: vec!["nattawatpuntachot52".into()],
+        bot_allowlist: vec!["dependabot[bot]".into(), "ovca-reviewer[bot]".into()],
+        automated_reviewers_non_bot: vec![],
+        admission_table: table,
+        proactive_rules: vec![
+            ProactiveRule {
+                rule_id: "ci-default-branch-failure".into(),
+                enabled: true,
+                title: "CI failure triage".into(),
+                description: "Inspect main CI failures".into(),
+                receiving_scopes: vec![ReceivingScope::GithubDefaultBranchCi],
+                writable_scope: vec!["research/ofi_synthetic/".into()],
+                silent_ack: false,
+            },
+            ProactiveRule {
+                rule_id: "issue-triage".into(),
+                enabled: true,
+                title: "Issue triage".into(),
+                description: "Triage allowlisted bot issue notices".into(),
+                receiving_scopes: vec![ReceivingScope::GithubIssue, ReceivingScope::GithubPr],
+                writable_scope: vec!["research/ofi_synthetic/".into()],
+                silent_ack: false,
+            },
+        ],
+    }
+}
+
+#[test]
+fn sha256_matches_nist_standard_vectors() {
+    assert_eq!(
+        sha256_hex(b""),
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    );
+    assert_eq!(
+        sha256_hex(b"abc"),
+        "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+    );
+    assert_eq!(
+        sha256_hex(b"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"),
+        "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1"
+    );
+}
+
+#[test]
+fn canonical_policy_version_normalizes_case_and_ordering_and_enforces_table_rules() {
+    let policy_a = sample_policy(AcceptMode::Observe);
+    let mut policy_b = sample_policy(AcceptMode::Observe);
+    policy_b.allowed_actors = vec![" NattawatPuntachot52 ".into()];
+    policy_b.bot_allowlist = vec!["OVCA-REVIEWER[BOT]".into(), "dependabot[bot]".into()];
+    policy_b.proactive_rules.reverse();
+
+    assert_eq!(
+        policy_a.canonical_policy_version().unwrap(),
+        policy_b.canonical_policy_version().unwrap()
+    );
+
+    // Changing accept_mode from observe -> auto MUST rotate canonical policy_version
+    let policy_auto = sample_policy(AcceptMode::Auto);
+    assert_ne!(
+        policy_a.canonical_policy_version().unwrap(),
+        policy_auto.canonical_policy_version().unwrap()
+    );
+
+    // Receive-all invariant: unaddressed != ignore when receive_all == false must be rejected
+    let mut bad_receive_all = sample_policy(AcceptMode::Observe);
+    bad_receive_all
+        .admission_table
+        .get_mut(&ReceivingScope::GithubComment)
+        .unwrap()
+        .receive_all = false;
+    assert!(matches!(
+        bad_receive_all.validate(),
+        Err(AlphaOvcaError::PolicyValidation(_))
+    ));
+
+    // Bots cannot appear in allowed_actors
+    let mut bot_in_allowed = sample_policy(AcceptMode::Observe);
+    bot_in_allowed.allowed_actors.push("dependabot[bot]".into());
+    assert!(matches!(
+        bot_in_allowed.validate(),
+        Err(AlphaOvcaError::PolicyValidation(_))
+    ));
+}
+
+#[test]
+fn mandate_enforces_bot_ci_restrictions_and_brief_scope_binding() {
+    let policy = sample_policy(AcceptMode::Auto);
+    let pver = policy.canonical_policy_version().unwrap();
+
+    // Bot holding Explicit strength MUST be rejected
+    let bot_explicit = AuthorizationMandate {
+        contract_version: "1.0".into(),
+        mandate_id: "mnd-bot-bad".into(),
+        authority_id: "auth-ofi-001".into(),
+        origin_thread_id: "pr:1".into(),
+        source_kind: TriggerSourceKind::Bot,
+        receiving_scope: ReceivingScope::GithubPr,
+        requester_actor: "dependabot[bot]".into(),
+        requester_is_bot: true,
+        strength: MandateStrength::Explicit,
+        policy_version: pver.clone(),
+        matched_rules: vec![],
+        writable_scope: vec!["research/ofi_synthetic".into()],
+        status: MandateStatus::Active,
+    };
+    assert!(matches!(
+        bot_explicit.validate(),
+        Err(AlphaOvcaError::MandateViolation(_))
+    ));
+
+    // Inferred mandate without matched_rules MUST be rejected
+    let inferred_empty_rules = AuthorizationMandate {
+        contract_version: "1.0".into(),
+        mandate_id: "mnd-ci-empty".into(),
+        authority_id: "auth-ofi-001".into(),
+        origin_thread_id: "ci:main".into(),
+        source_kind: TriggerSourceKind::GithubDefaultBranchCi,
+        receiving_scope: ReceivingScope::GithubDefaultBranchCi,
+        requester_actor: "github-ci".into(),
+        requester_is_bot: false,
+        strength: MandateStrength::Inferred,
+        policy_version: pver.clone(),
+        matched_rules: vec![],
+        writable_scope: vec!["research/ofi_synthetic".into()],
+        status: MandateStatus::Active,
+    };
+    assert!(matches!(
+        inferred_empty_rules.validate(),
+        Err(AlphaOvcaError::MandateViolation(_))
+    ));
+
+    // Asymmetric CI pairing MUST fail validation
+    let asymmetric_ci = AuthorizationMandate {
+        contract_version: "1.0".into(),
+        mandate_id: "mnd-ci-asym".into(),
+        authority_id: "auth-ofi-001".into(),
+        origin_thread_id: "pr:1".into(),
+        source_kind: TriggerSourceKind::GithubDefaultBranchCi,
+        receiving_scope: ReceivingScope::GithubPr,
+        requester_actor: "github-ci".into(),
+        requester_is_bot: false,
+        strength: MandateStrength::Inferred,
+        policy_version: pver.clone(),
+        matched_rules: vec!["issue-triage".into()],
+        writable_scope: vec!["research/ofi_synthetic".into()],
+        status: MandateStatus::Active,
+    };
+    assert!(matches!(
+        asymmetric_ci.validate(),
+        Err(AlphaOvcaError::MandateViolation(_))
+    ));
+
+    // Mandate writable_scope exceeding ConditioningBrief.authority.scope MUST fail validation
+    let mut brief = sample_quant_brief();
+    brief.mandate = Some(AuthorizationMandate {
+        contract_version: "1.0".into(),
+        mandate_id: "mnd-wide".into(),
+        authority_id: "auth-ofi-001".into(),
+        origin_thread_id: "cli:1".into(),
+        source_kind: TriggerSourceKind::OwnerCli,
+        receiving_scope: ReceivingScope::OwnerCli,
+        requester_actor: "nattawatpuntachot52".into(),
+        requester_is_bot: false,
+        strength: MandateStrength::Explicit,
+        policy_version: pver.clone(),
+        matched_rules: vec![],
+        writable_scope: vec!["execution/".into()],
+        status: MandateStatus::Active,
+    });
+    assert!(matches!(
+        brief.validate(),
+        Err(AlphaOvcaError::MandateViolation(_))
+    ));
+
+    // Valid subset binds cleanly
+    brief.mandate.as_mut().unwrap().writable_scope = vec!["research/ofi_synthetic/study.py".into()];
+    brief
+        .validate()
+        .expect("mandate within authority scope must validate");
+}
+
+#[test]
+fn path_containment_blocks_prefix_traps_drive_prefixes_and_traversal() {
+    let scope = vec!["python/alpha".into(), "AGENTS.md".into()];
+    assert!(is_path_within_scope("python/alpha/module.py", &scope));
+    assert!(is_path_within_scope("AGENTS.md", &scope));
+    assert!(!is_path_within_scope("python/alpha_evil/pwn.py", &scope));
+    assert!(!is_path_within_scope("AGENTS.md.bak", &scope));
+    assert!(!is_path_within_scope("python/alpha/../secret/.env", &scope));
+    assert!(!is_path_within_scope("/etc/passwd", &scope));
+    assert!(!is_path_within_scope("python\\alpha\\file.py", &scope));
+    assert!(!is_path_within_scope("C:python/alpha/file.py", &scope));
+    assert!(!is_path_within_scope("é:python/alpha/file.py", &scope));
+
+    // ProactiveRule writable_scope must also reject drive-letter prefixes
+    let mut bad_drive_policy = sample_policy(AcceptMode::Observe);
+    bad_drive_policy.proactive_rules[0].writable_scope = vec!["C:research/ofi_synthetic/".into()];
+    assert!(matches!(
+        bad_drive_policy.validate(),
+        Err(AlphaOvcaError::PolicyValidation(_))
+    ));
+}
+
+#[test]
+fn context_vs_authority_handback_and_policy_revalidation_invariants() {
+    let mut auto_policy = sample_policy(AcceptMode::Auto);
+    let pver_auto = auto_policy.canonical_policy_version().unwrap();
+
+    let mut inferred_mandate = AuthorizationMandate {
+        contract_version: "1.0".into(),
+        mandate_id: "mnd-issue-001".into(),
+        authority_id: "auth-ofi-001".into(),
+        origin_thread_id: "issue:10".into(),
+        source_kind: TriggerSourceKind::Bot,
+        receiving_scope: ReceivingScope::GithubIssue,
+        requester_actor: "dependabot[bot]".into(),
+        requester_is_bot: true,
+        strength: MandateStrength::Inferred,
+        policy_version: pver_auto,
+        matched_rules: vec!["issue-triage".into()],
+        writable_scope: vec!["research/ofi_synthetic/".into()],
+        status: MandateStatus::Ended,
+    };
+
+    // 1. Bot/CI cannot wake an ended mandate or trigger stop
+    let bot_wakeup = FollowUpEvent {
+        trigger_id: "trg-1".into(),
+        thread_id: "issue:10".into(),
+        subscription_mode: SubscriptionMode::OwnedWork,
+        actor: "dependabot[bot]".into(),
+        actor_is_bot: true,
+        is_ci: false,
+        addressed: AddressedKind::Mention,
+        requested_scope_paths: vec![],
+        requests_stop: true,
+        requests_scope_expansion: false,
+    };
+    let d_bot = evaluate_followup(&inferred_mandate, &bot_wakeup, &auto_policy).unwrap();
+    assert_eq!(d_bot.action, FollowUpAction::ContextOnlyDeliver);
+    assert!(!d_bot.grant_authority);
+    assert!(!d_bot.allow_resume);
+
+    // 2. Context-only subscription (or secondary thread) never grants authority to a human either
+    let context_thread = FollowUpEvent {
+        trigger_id: "trg-2".into(),
+        thread_id: "pr:99".into(),
+        subscription_mode: SubscriptionMode::ContextOnly,
+        actor: "nattawatpuntachot52".into(),
+        actor_is_bot: false,
+        is_ci: false,
+        addressed: AddressedKind::None,
+        requested_scope_paths: vec!["research/ofi_synthetic/test.py".into()],
+        requests_stop: false,
+        requests_scope_expansion: false,
+    };
+    let d_ctx = evaluate_followup(&inferred_mandate, &context_thread, &auto_policy).unwrap();
+    assert_eq!(d_ctx.action, FollowUpAction::ContextOnlyDeliver);
+    assert!(!d_ctx.grant_authority);
+
+    // 3. Authorized human in-scope follow-up cleanly resumes Ended unstopped mandate
+    let in_scope_resume = FollowUpEvent {
+        trigger_id: "trg-resume".into(),
+        thread_id: "issue:10".into(),
+        subscription_mode: SubscriptionMode::OwnedWork,
+        actor: "nattawatpuntachot52".into(),
+        actor_is_bot: false,
+        is_ci: false,
+        addressed: AddressedKind::Mention,
+        requested_scope_paths: vec!["research/ofi_synthetic/test.py".into()],
+        requests_stop: false,
+        requests_scope_expansion: false,
+    };
+    let d_resume = evaluate_followup(&inferred_mandate, &in_scope_resume, &auto_policy).unwrap();
+    assert_eq!(d_resume.action, FollowUpAction::ProceedInScope);
+    assert!(d_resume.grant_authority);
+    assert!(d_resume.allow_resume);
+
+    // 4. Owner stop request emits StopRequested cleanly
+    let owner_stop = FollowUpEvent {
+        trigger_id: "trg-stop".into(),
+        thread_id: "issue:10".into(),
+        subscription_mode: SubscriptionMode::OwnedWork,
+        actor: "nattawatpuntachot52".into(),
+        actor_is_bot: false,
+        is_ci: false,
+        addressed: AddressedKind::Direct,
+        requested_scope_paths: vec![],
+        requests_stop: true,
+        requests_scope_expansion: false,
+    };
+    let d_stop = evaluate_followup(&inferred_mandate, &owner_stop, &auto_policy).unwrap();
+    assert_eq!(d_stop.action, FollowUpAction::StopRequested);
+    assert!(!d_stop.grant_authority);
+    assert!(!d_stop.allow_resume);
+
+    // 5. Out-of-scope human follow-up emits HandbackRequired while keeping mandate scope intact
+    let out_of_scope = FollowUpEvent {
+        trigger_id: "trg-3".into(),
+        thread_id: "issue:10".into(),
+        subscription_mode: SubscriptionMode::OwnedWork,
+        actor: "nattawatpuntachot52".into(),
+        actor_is_bot: false,
+        is_ci: false,
+        addressed: AddressedKind::None,
+        requested_scope_paths: vec!["AGENTS.md".into()],
+        requests_stop: false,
+        requests_scope_expansion: false,
+    };
+    let d_hb = evaluate_followup(&inferred_mandate, &out_of_scope, &auto_policy).unwrap();
+    assert_eq!(d_hb.action, FollowUpAction::HandbackRequired);
+    assert!(!d_hb.grant_authority);
+    assert_eq!(d_hb.out_of_scope_paths, vec!["AGENTS.md"]);
+    assert!(d_hb.handback.as_ref().unwrap().preserve_subscription);
+
+    // 6. Switching accept_mode from auto -> observe revokes inferred mandate on revalidation
+    let observe_policy = sample_policy(AcceptMode::Observe);
+    let rev_mode = revalidate_mandate(&inferred_mandate, &observe_policy).unwrap();
+    assert!(!rev_mode.valid_to_resume);
+    assert_eq!(rev_mode.resulting_status, MandateStatus::Revoked);
+    assert!(rev_mode.policy_changed);
+
+    // 7. Removing bot from bot_allowlist revokes bot mandate even in auto mode
+    auto_policy.bot_allowlist = vec!["ovca-reviewer[bot]".into()];
+    let rev_bot = revalidate_mandate(&inferred_mandate, &auto_policy).unwrap();
+    assert!(!rev_bot.valid_to_resume);
+    assert_eq!(rev_bot.resulting_status, MandateStatus::Revoked);
+
+    // 8. StoppedByPerson mandate ignores all future follow-ups permanently
+    inferred_mandate.status = MandateStatus::StoppedByPerson;
+    let d_stopped = evaluate_followup(&inferred_mandate, &out_of_scope, &auto_policy).unwrap();
+    assert_eq!(d_stopped.action, FollowUpAction::IgnoreStoppedOrRevoked);
+    assert!(!d_stopped.allow_resume);
+}
+
+#[test]
+fn attempt2_adversarial_edge_cases_and_revalidation_gates() {
+    let mut auto_policy = sample_policy(AcceptMode::Auto);
+    auto_policy
+        .bot_allowlist
+        .push("github-actions[bot]".to_string());
+    let pver_auto = auto_policy.canonical_policy_version().unwrap();
+
+    // 1. Unlisted human stranger in Auto mode MUST NOT proceed/resume/stop when unlisted_* = Ignore
+    let ended_pr_mandate = AuthorizationMandate {
+        contract_version: "1.0".into(),
+        mandate_id: "mnd-pr-owner".into(),
+        authority_id: "auth-ofi-001".into(),
+        origin_thread_id: "pr:15".into(),
+        source_kind: TriggerSourceKind::GithubPr,
+        receiving_scope: ReceivingScope::GithubPr,
+        requester_actor: "nattawatpuntachot52".into(),
+        requester_is_bot: false,
+        strength: MandateStrength::Explicit,
+        policy_version: pver_auto.clone(),
+        matched_rules: vec![],
+        writable_scope: vec!["research/ofi_synthetic/".into()],
+        status: MandateStatus::Ended,
+    };
+    let stranger_followup = FollowUpEvent {
+        trigger_id: "trg-stranger".into(),
+        thread_id: "pr:15".into(),
+        subscription_mode: SubscriptionMode::OwnedWork,
+        actor: "random-outsider".into(),
+        actor_is_bot: false,
+        is_ci: false,
+        addressed: AddressedKind::Mention,
+        requested_scope_paths: vec!["research/ofi_synthetic/a.py".into()],
+        requests_stop: true,
+        requests_scope_expansion: false,
+    };
+    let d_stranger =
+        evaluate_followup(&ended_pr_mandate, &stranger_followup, &auto_policy).unwrap();
+    assert_eq!(d_stranger.action, FollowUpAction::ContextOnlyDeliver);
+    assert!(!d_stranger.grant_authority);
+    assert!(!d_stranger.allow_resume);
+
+    // 2. Backwards-compatible FollowUpEvent JSON omitting `addressed` defaults to None
+    let legacy_followup: FollowUpEvent = serde_json::from_str(
+        r#"{
+            "trigger_id": "trg-legacy",
+            "thread_id": "pr:15",
+            "subscription_mode": "owned_work",
+            "actor": "nattawatpuntachot52",
+            "actor_is_bot": false,
+            "is_ci": false
+        }"#,
+    )
+    .expect("legacy FollowUpEvent JSON without addressed must deserialize");
+    assert_eq!(legacy_followup.addressed, AddressedKind::None);
+    let d_legacy = evaluate_followup(&ended_pr_mandate, &legacy_followup, &auto_policy).unwrap();
+    assert_eq!(d_legacy.action, FollowUpAction::ProceedInScope);
+    assert!(d_legacy.allow_resume);
+
+    // 3. requests_scope_expansion=true with empty paths still triggers HandbackRequired; is_ci=true blocks
+    let expand_empty = FollowUpEvent {
+        trigger_id: "trg-expand".into(),
+        thread_id: "pr:15".into(),
+        subscription_mode: SubscriptionMode::OwnedWork,
+        actor: "nattawatpuntachot52".into(),
+        actor_is_bot: false,
+        is_ci: false,
+        addressed: AddressedKind::Direct,
+        requested_scope_paths: vec![],
+        requests_stop: false,
+        requests_scope_expansion: true,
+    };
+    let d_exp = evaluate_followup(&ended_pr_mandate, &expand_empty, &auto_policy).unwrap();
+    assert_eq!(d_exp.action, FollowUpAction::HandbackRequired);
+    assert!(d_exp.out_of_scope_paths.is_empty());
+
+    let spoof_ci = FollowUpEvent {
+        is_ci: true,
+        ..legacy_followup.clone()
+    };
+    let d_ci = evaluate_followup(&ended_pr_mandate, &spoof_ci, &auto_policy).unwrap();
+    assert_eq!(d_ci.action, FollowUpAction::ContextOnlyDeliver);
+    assert!(!d_ci.allow_resume);
+
+    // 4. CI mandate Owner allowed vs Unlisted blocked, and CI admission_table checked BEFORE bot allowlist
+    let ci_mandate = AuthorizationMandate {
+        contract_version: "1.0".into(),
+        mandate_id: "mnd-ci-main".into(),
+        authority_id: "auth-ofi-001".into(),
+        origin_thread_id: "branch:main".into(),
+        source_kind: TriggerSourceKind::GithubDefaultBranchCi,
+        receiving_scope: ReceivingScope::GithubDefaultBranchCi,
+        requester_actor: "github-actions[bot]".into(),
+        requester_is_bot: true,
+        strength: MandateStrength::Inferred,
+        policy_version: pver_auto.clone(),
+        matched_rules: vec!["ci-default-branch-failure".into()],
+        writable_scope: vec!["research/ofi_synthetic/".into()],
+        status: MandateStatus::Ended,
+    };
+    let owner_on_ci = FollowUpEvent {
+        thread_id: "branch:main".into(),
+        requested_scope_paths: vec!["research/ofi_synthetic/fix.py".into()],
+        ..legacy_followup.clone()
+    };
+    let d_owner_ci = evaluate_followup(&ci_mandate, &owner_on_ci, &auto_policy).unwrap();
+    assert_eq!(d_owner_ci.action, FollowUpAction::ProceedInScope);
+    assert!(d_owner_ci.allow_resume);
+
+    let stranger_on_ci = FollowUpEvent {
+        thread_id: "branch:main".into(),
+        ..stranger_followup
+    };
+    let d_stranger_ci = evaluate_followup(&ci_mandate, &stranger_on_ci, &auto_policy).unwrap();
+    assert_eq!(d_stranger_ci.action, FollowUpAction::ContextOnlyDeliver);
+    assert!(!d_stranger_ci.allow_resume);
+
+    let mut ci_ignored = auto_policy.clone();
+    ci_ignored
+        .admission_table
+        .get_mut(&ReceivingScope::GithubDefaultBranchCi)
+        .unwrap()
+        .unlisted_unaddressed = UnaddressedChoice::Ignore;
+    let rev_ci_ignored = revalidate_mandate(&ci_mandate, &ci_ignored).unwrap();
+    assert!(!rev_ci_ignored.valid_to_resume);
+    assert_eq!(rev_ci_ignored.resulting_status, MandateStatus::Revoked);
+
+    // 5. is_bot_login enforcement in revalidate_mandate even when requester_is_bot == false
+    let disguised_bot = AuthorizationMandate {
+        contract_version: "1.0".into(),
+        mandate_id: "mnd-bot-disguise".into(),
+        authority_id: "auth-ofi-001".into(),
+        origin_thread_id: "pr:22".into(),
+        source_kind: TriggerSourceKind::GithubPr,
+        receiving_scope: ReceivingScope::GithubPr,
+        requester_actor: "rogue[bot]".into(),
+        requester_is_bot: false,
+        strength: MandateStrength::Inferred,
+        policy_version: pver_auto.clone(),
+        matched_rules: vec!["issue-triage".into()],
+        writable_scope: vec!["research/ofi_synthetic/".into()],
+        status: MandateStatus::Active,
+    };
+    assert!(
+        !revalidate_mandate(&disguised_bot, &auto_policy)
+            .unwrap()
+            .valid_to_resume
+    );
+
+    // 6. Rule surface narrowing & intersected writable_scope narrowing revoke inferred mandates
+    let mut narrowed_surface = auto_policy.clone();
+    narrowed_surface.proactive_rules[0].receiving_scopes = vec![ReceivingScope::GithubPr];
+    assert!(
+        !revalidate_mandate(&ci_mandate, &narrowed_surface)
+            .unwrap()
+            .valid_to_resume
+    );
+
+    let mut narrowed_path = auto_policy.clone();
+    narrowed_path.proactive_rules[0].writable_scope = vec!["research/ofi_synthetic/sub/".into()];
+    assert!(
+        !revalidate_mandate(&ci_mandate, &narrowed_path)
+            .unwrap()
+            .valid_to_resume
+    );
+    assert_eq!(
+        intersect_rule_scopes(&[
+            &auto_policy.proactive_rules[0],
+            &narrowed_path.proactive_rules[0]
+        ]),
+        vec!["research/ofi_synthetic/sub/"]
+    );
+
+    // 7. automated_reviewers_non_bot validation, revalidation, and follow-up containment
+    let mut bad_overlap = auto_policy.clone();
+    bad_overlap.automated_reviewers_non_bot = vec!["nattawatpuntachot52".into()];
+    assert!(matches!(
+        bad_overlap.validate(),
+        Err(AlphaOvcaError::PolicyValidation(_))
+    ));
+
+    let mut rev_policy = auto_policy.clone();
+    rev_policy.automated_reviewers_non_bot = vec!["CodexReviewer".into()];
+    let pver_rev = rev_policy.canonical_policy_version().unwrap();
+
+    let auto_rev_inferred = AuthorizationMandate {
+        contract_version: "1.0".into(),
+        mandate_id: "mnd-autorev-inf".into(),
+        authority_id: "auth-ofi-001".into(),
+        origin_thread_id: "pr:30".into(),
+        source_kind: TriggerSourceKind::GithubPr,
+        receiving_scope: ReceivingScope::GithubPr,
+        requester_actor: "codexreviewer".into(),
+        requester_is_bot: false,
+        strength: MandateStrength::Inferred,
+        policy_version: pver_rev.clone(),
+        matched_rules: vec!["issue-triage".into()],
+        writable_scope: vec!["research/ofi_synthetic/".into()],
+        status: MandateStatus::Active,
+    };
+    assert!(
+        revalidate_mandate(&auto_rev_inferred, &rev_policy)
+            .unwrap()
+            .valid_to_resume
+    );
+    // Removed from automated_reviewers_non_bot -> revoked on revalidation
+    assert!(
+        !revalidate_mandate(&auto_rev_inferred, &auto_policy)
+            .unwrap()
+            .valid_to_resume
+    );
+
+    // Explicit automated reviewer mandate rejected during revalidation
+    let auto_rev_explicit = AuthorizationMandate {
+        strength: MandateStrength::Explicit,
+        matched_rules: vec![],
+        policy_version: pver_rev,
+        ..auto_rev_inferred
+    };
+    assert!(
+        !revalidate_mandate(&auto_rev_explicit, &rev_policy)
+            .unwrap()
+            .valid_to_resume
+    );
+
+    // Automated reviewer follow-up treated as untrusted context
+    let rev_followup = FollowUpEvent {
+        actor: "CodexReviewer".into(),
+        ..owner_on_ci
+    };
+    let d_rev_fu = evaluate_followup(&ci_mandate, &rev_followup, &rev_policy).unwrap();
+    assert_eq!(d_rev_fu.action, FollowUpAction::ContextOnlyDeliver);
+    assert!(!d_rev_fu.grant_authority);
+    assert!(!d_rev_fu.allow_resume);
+
+    // Inverted table: listed actor loses explicit validity if listed_addressed != explicit
+    let mut inverted_pol = auto_policy.clone();
+    if let Some(row) = inverted_pol
+        .admission_table
+        .get_mut(&ReceivingScope::GithubPr)
+    {
+        row.listed_addressed = AdmissionChoice::Ignore;
+        row.unlisted_addressed = AdmissionChoice::Explicit;
+    }
+    let owner_pr_mandate = AuthorizationMandate {
+        contract_version: "1.0".into(),
+        mandate_id: "mnd-owner-pr".into(),
+        authority_id: "auth-owner-pr".into(),
+        origin_thread_id: "pr:77".into(),
+        source_kind: TriggerSourceKind::GithubPr,
+        receiving_scope: ReceivingScope::GithubPr,
+        requester_actor: "nattawatpuntachot52".into(),
+        requester_is_bot: false,
+        strength: MandateStrength::Explicit,
+        policy_version: pver_auto.clone(),
+        matched_rules: vec![],
+        writable_scope: vec!["python/alpha_mining/".into()],
+        status: MandateStatus::Active,
+    };
+    assert!(
+        revalidate_mandate(&owner_pr_mandate, &auto_policy)
+            .unwrap()
+            .valid_to_resume
+    );
+    assert!(
+        !revalidate_mandate(&owner_pr_mandate, &inverted_pol)
+            .unwrap()
+            .valid_to_resume
+    );
 }

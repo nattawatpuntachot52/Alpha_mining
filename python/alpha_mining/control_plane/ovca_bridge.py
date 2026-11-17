@@ -86,8 +86,24 @@ class OvcaBridge:
         self.manifest_path = self.repo_root / "rust" / "Cargo.toml"
         self._explicit_binary = Path(binary_path) if binary_path else None
 
+    def _latest_rust_input_mtime(self) -> float:
+        latest = 0.0
+        for path in (
+            self.manifest_path,
+            self.repo_root / "rust" / "Cargo.lock",
+        ):
+            if path.is_file():
+                latest = max(latest, path.stat().st_mtime)
+        crates_dir = self.repo_root / "rust" / "crates"
+        if crates_dir.is_dir():
+            for pattern in ("*.rs", "Cargo.toml"):
+                for p in crates_dir.rglob(pattern):
+                    if p.is_file():
+                        latest = max(latest, p.stat().st_mtime)
+        return latest
+
     def resolve_binary(self) -> Path:
-        """Locate or build the `alpha-ovca` binary deterministically."""
+        """Locate an up-to-date `alpha-ovca` binary or build deterministically with `--locked`."""
         if self._explicit_binary is not None:
             if not self._explicit_binary.is_file():
                 raise OvcaBridgeError(
@@ -95,40 +111,51 @@ class OvcaBridge:
                 )
             return self._explicit_binary
 
-        for candidate in (
-            self.repo_root / "rust" / "target" / "release" / "alpha-ovca",
-            self.repo_root / "rust" / "target" / "debug" / "alpha-ovca",
-        ):
-            if candidate.is_file():
-                return candidate
+        if self.manifest_path.is_file():
+            latest_input_mtime = self._latest_rust_input_mtime()
+            for candidate in (
+                self.repo_root / "rust" / "target" / "release" / "alpha-ovca",
+                self.repo_root / "rust" / "target" / "debug" / "alpha-ovca",
+            ):
+                if candidate.is_file() and candidate.stat().st_mtime >= latest_input_mtime:
+                    return candidate
+
+            try:
+                build_proc = subprocess.run(
+                    [
+                        "cargo",
+                        "build",
+                        "--manifest-path",
+                        str(self.manifest_path),
+                        "--bin",
+                        "alpha-ovca",
+                        "--locked",
+                    ],
+                    cwd=str(self.repo_root),
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+            except FileNotFoundError as exc:
+                raise OvcaBridgeError(
+                    "cargo executable not found on PATH while building alpha-ovca"
+                ) from exc
+            if build_proc.returncode != 0:
+                raise OvcaBridgeError(
+                    f"failed to build alpha-ovca: {build_proc.stderr.strip()}"
+                )
+
+            built = self.repo_root / "rust" / "target" / "debug" / "alpha-ovca"
+            if not built.is_file():
+                raise OvcaBridgeError(f"built binary missing at expected path: {built}")
+            return built
 
         which_bin = shutil.which("alpha-ovca")
         if which_bin:
             return Path(which_bin)
-
-        build_proc = subprocess.run(
-            [
-                "cargo",
-                "build",
-                "--manifest-path",
-                str(self.manifest_path),
-                "--bin",
-                "alpha-ovca",
-            ],
-            cwd=str(self.repo_root),
-            capture_output=True,
-            text=True,
-            check=False,
+        raise OvcaBridgeError(
+            f"alpha-ovca binary not found and Cargo manifest missing: {self.manifest_path}"
         )
-        if build_proc.returncode != 0:
-            raise OvcaBridgeError(
-                f"failed to build alpha-ovca: {build_proc.stderr.strip()}"
-            )
-
-        built = self.repo_root / "rust" / "target" / "debug" / "alpha-ovca"
-        if not built.is_file():
-            raise OvcaBridgeError(f"built binary missing at expected path: {built}")
-        return built
 
     def _run(self, args: list[str]) -> dict[str, Any]:
         binary = self.resolve_binary()
@@ -206,3 +233,53 @@ class OvcaBridge:
         if brief_path is not None:
             args.extend(["--brief", str(brief_path)])
         return self._run(args)
+
+    def policy_version(self, policy_path: Path | str) -> dict[str, Any]:
+        return self._run(["policy-version", str(policy_path)])
+
+    def validate_mandate(
+        self,
+        mandate_path: Path | str,
+        *,
+        brief_path: Path | str | None = None,
+        policy_path: Path | str | None = None,
+    ) -> dict[str, Any]:
+        args = ["validate-mandate", str(mandate_path)]
+        if brief_path is not None:
+            args.extend(["--brief", str(brief_path)])
+        if policy_path is not None:
+            args.extend(["--policy", str(policy_path)])
+        return self._run(args)
+
+    def revalidate_mandate(
+        self,
+        mandate_path: Path | str,
+        policy_path: Path | str,
+    ) -> dict[str, Any]:
+        return self._run(
+            [
+                "revalidate-mandate",
+                "--mandate",
+                str(mandate_path),
+                "--policy",
+                str(policy_path),
+            ]
+        )
+
+    def check_followup(
+        self,
+        mandate_path: Path | str,
+        followup_path: Path | str,
+        policy_path: Path | str,
+    ) -> dict[str, Any]:
+        return self._run(
+            [
+                "check-followup",
+                "--mandate",
+                str(mandate_path),
+                "--followup",
+                str(followup_path),
+                "--policy",
+                str(policy_path),
+            ]
+        )

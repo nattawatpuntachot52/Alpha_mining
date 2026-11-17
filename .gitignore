@@ -17,6 +17,7 @@ build/
 # Quant Data Vault Hot Cache & Binary Payloads (tracked via manifests only)
 .vault_cache/
 .vault_staging/
+.observe_out/
 data/raw/
 data/cache/
 *.parquet
