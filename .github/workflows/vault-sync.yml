@@ -71,15 +71,26 @@ jobs:
           RCLONE_CONFIG_GDRIVE_DATA: ${{ secrets.RCLONE_CONFIG_GDRIVE }}
         run: |
           set -euo pipefail
-          if [[ -z "${RCLONE_CONFIG_GDRIVE_DATA:-}" ]]; then
+          RCLONE_CONFIG_TRIMMED="${RCLONE_CONFIG_GDRIVE_DATA:-}"
+          if [[ -z "${RCLONE_CONFIG_TRIMMED//[[:space:]]/}" ]]; then
             echo "Hot cache miss and RCLONE_CONFIG_GDRIVE secret is not set; skipping remote Drive download."
             echo "Run locally via 'python3 scripts/vault_sync.py pull-drive --manifest $MANIFEST_PATH' or configure RCLONE_CONFIG_GDRIVE."
             exit 0
           fi
+          if ! command -v rclone >/dev/null 2>&1; then
+            echo "Installing rclone CLI (not pre-installed on ubuntu-latest)..."
+            sudo apt-get update -qq
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends rclone
+          fi
+          rclone --version
           RCLONE_TMP=$(mktemp)
           trap 'rm -f "$RCLONE_TMP"' EXIT
           chmod 600 "$RCLONE_TMP"
-          printf '%s\n' "$RCLONE_CONFIG_GDRIVE_DATA" > "$RCLONE_TMP"
+          printf '%s\n' "$RCLONE_CONFIG_GDRIVE_DATA" | tr -d '\r' > "$RCLONE_TMP"
+          if ! grep -Eq '^[[:space:]]*\[gdrive\][[:space:]]*$' "$RCLONE_TMP"; then
+            echo "RCLONE_CONFIG_GDRIVE secret is missing the required [gdrive] section header." >&2
+            exit 1
+          fi
           RCLONE_CONFIG="$RCLONE_TMP" python3 scripts/vault_sync.py pull-drive \
             --manifest "$MANIFEST_PATH" \
             --dest .vault_staging \

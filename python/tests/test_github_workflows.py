@@ -14,6 +14,13 @@ _SECRETS_REF_RE = re.compile(r"\bsecrets(?:\.[A-Za-z0-9_]+|\[\s*['\"][^'\"]+['\"
 _UPLOAD_USES_RE = re.compile(r"^(\s*)(?:-\s*)?uses\s*:\s*['\"]?actions/upload-artifact@")
 _GH_PR_CMD_RE = re.compile(r"\bgh\s+pr\s+(view|list)\b([^\n;|&)]*)")
 _GH_JSON_ARG_RE = re.compile(r"(?:^|\s)--json(?:=|\s+)([^\s'\"`|;&)]+|'[^']*'|\"[^\"]*\")")
+_RCLONE_BACKEND_RE = re.compile(r"(?:^|\s)--backend(?:=|\s+)['\"]?rclone['\"]?(?:\s|$|[;|&)])")
+_RCLONE_INSTALL_RE = re.compile(
+    r"(?:^|[;&|]\s*|&&\s*)(?!echo\b|printf\b)(?:sudo\s+)?"
+    r"(?:(?:[A-Z_][A-Z0-9_]*=\S+\s+)*(?:apt-get|apt|dnf|yum|apk|snap|brew)\s+[^\n;|&]*?\binstall\b[^\n;|&]*?\brclone\b"
+    r"|(?:curl|wget)\b[^\n;|&]*rclone\.org/install\.sh)"
+)
+_RCLONE_USES_RE = re.compile(r"(?:^|/)[^/\s]*rclone[^/\s]*@")
 
 VALID_GH_PR_JSON_FIELDS = frozenset(
     {
@@ -137,8 +144,133 @@ def _validate_gh_pr_json_invocations(name: str, lines: list[str]) -> list[str]:
     return errors
 
 
+def _validate_rclone_install_before_use(name: str, lines: list[str]) -> list[str]:
+    """Ensure Ubuntu jobs invoking `--backend rclone` install `rclone` before calling it."""
+    errors: list[str] = []
+    in_jobs = False
+    jobs_indent = -1
+    job_indent: int | None = None
+    block_indent: int | None = None
+    in_run_block = False
+    current_job: str | None = None
+    runs_on_ubuntu = False
+    rclone_installed = False
+
+    idx = 0
+    while idx < len(lines):
+        raw = lines[idx]
+        stripped = raw.strip()
+        if not stripped or stripped.startswith("#"):
+            idx += 1
+            continue
+
+        indent = len(raw) - len(raw.lstrip(" "))
+        if block_indent is not None:
+            if indent <= block_indent:
+                block_indent = None
+                in_run_block = False
+            else:
+                if current_job is not None and in_run_block:
+                    start_line = idx + 1
+                    combined = _strip_inline_comment(raw).rstrip()
+                    j = idx
+                    while combined.endswith("\\") and j + 1 < len(lines):
+                        combined = combined[:-1].rstrip() + " " + _strip_inline_comment(lines[j + 1]).strip()
+                        j += 1
+                    cmd_text = combined.strip()
+                    if not cmd_text.startswith(("echo ", "printf ")):
+                        install_match = _RCLONE_INSTALL_RE.search(cmd_text)
+                        backend_match = _RCLONE_BACKEND_RE.search(cmd_text)
+                        if backend_match and runs_on_ubuntu:
+                            installed_here_first = (
+                                install_match is not None and install_match.start() < backend_match.start()
+                            )
+                            if not (rclone_installed or installed_here_first):
+                                errors.append(
+                                    f"{name}:{start_line}: job '{current_job}' invokes `--backend rclone` "
+                                    "on ubuntu runner without installing `rclone` beforehand"
+                                )
+                        if install_match:
+                            rclone_installed = True
+                    idx = j + 1
+                    continue
+                idx += 1
+                continue
+
+        clean = _strip_inline_comment(raw).strip()
+        if not clean:
+            idx += 1
+            continue
+
+        if re.match(r"^jobs\s*:$", clean):
+            in_jobs = True
+            jobs_indent = indent
+            job_indent = None
+            current_job = None
+            runs_on_ubuntu = False
+            rclone_installed = False
+            idx += 1
+            continue
+
+        if in_jobs and indent <= jobs_indent:
+            in_jobs = False
+            current_job = None
+
+        if in_jobs:
+            job_match = re.match(r"^([A-Za-z0-9_-]+)\s*:(.*)$", clean)
+            if (
+                job_match
+                and not raw.lstrip().startswith("-")
+                and (job_indent is None or indent == job_indent)
+                and indent > jobs_indent
+            ):
+                job_indent = indent
+                current_job = job_match.group(1)
+                runs_on_ubuntu = False
+                rclone_installed = False
+                idx += 1
+                continue
+
+            if current_job is not None:
+                runs_on_match = re.match(r"^(?:-\s*)?runs-on\s*:\s*(.+)$", clean)
+                if runs_on_match and "ubuntu" in runs_on_match.group(1).lower():
+                    runs_on_ubuntu = True
+                uses_match = re.match(r"^(?:-\s*)?uses\s*:\s*([^\s#]+)", clean)
+                if uses_match and _RCLONE_USES_RE.search(uses_match.group(1).strip("'\"")):
+                    rclone_installed = True
+
+                run_key_match = re.match(r"^(?:-\s*)?run\s*:\s*(.*)$", clean)
+                key_offset = 2 if raw.lstrip().startswith("-") else 0
+                if run_key_match:
+                    rhs = run_key_match.group(1).strip()
+                    if rhs in {"|", "|-", "|+", ">", ">-", ">+"}:
+                        block_indent = indent + key_offset
+                        in_run_block = True
+                    else:
+                        install_match = _RCLONE_INSTALL_RE.search(rhs)
+                        backend_match = _RCLONE_BACKEND_RE.search(rhs)
+                        if backend_match and runs_on_ubuntu and not rhs.startswith(("echo ", "printf ")):
+                            installed_here_first = (
+                                install_match is not None and install_match.start() < backend_match.start()
+                            )
+                            if not (rclone_installed or installed_here_first):
+                                errors.append(
+                                    f"{name}:{idx + 1}: job '{current_job}' invokes `--backend rclone` "
+                                    "on ubuntu runner without installing `rclone` beforehand"
+                                )
+                        if install_match and not rhs.startswith(("echo ", "printf ")):
+                            rclone_installed = True
+                elif clean.endswith(("|", "|-", "|+", ">", ">-", ">+")):
+                    block_indent = indent + key_offset
+                    in_run_block = False
+
+        idx += 1
+
+    return errors
+
+
 def validate_workflow_text(name: str, text: str) -> list[str]:
-    """Check GitHub Actions workflow text for secrets-in-if, hidden artifact paths, and invalid gh pr --json fields."""
+    """Check GitHub Actions workflow text for secrets-in-if, hidden paths, gh pr --json, and rclone install."""
     errors: list[str] = []
     lines = text.splitlines()
     idx = 0
@@ -237,6 +369,9 @@ def validate_workflow_text(name: str, text: str) -> list[str]:
 
     # 3. Validate `gh pr view` / `gh pr list` `--json` fields against documented gh CLI fields.
     errors.extend(_validate_gh_pr_json_invocations(name, lines))
+
+    # 4. Require installing `rclone` before invoking `--backend rclone` on Ubuntu runners.
+    errors.extend(_validate_rclone_install_before_use(name, lines))
 
     return errors
 
@@ -367,6 +502,99 @@ jobs:
           python3 scripts/admission_gate.py observe --json-out .observe_out/report.json
 """
         self.assertEqual(validate_workflow_text("ok-pr-view.yml", ok_pr_view_and_json_out), [])
+
+    def test_vault_sync_ensures_rclone_installed_before_pull_drive(self) -> None:
+        text = (WORKFLOWS_DIR / "vault-sync.yml").read_text(encoding="utf-8")
+        secret_guard_pos = text.find("RCLONE_CONFIG_GDRIVE secret is not set")
+        install_guard_pos = text.find("if ! command -v rclone")
+        apt_install_pos = text.find("apt-get install -y -qq --no-install-recommends rclone")
+        gdrive_check_pos = text.find("[gdrive]")
+        pull_pos = text.find('RCLONE_CONFIG="$RCLONE_TMP" python3 scripts/vault_sync.py pull-drive')
+        self.assertGreater(secret_guard_pos, 0)
+        self.assertGreater(install_guard_pos, secret_guard_pos)
+        self.assertGreater(apt_install_pos, install_guard_pos)
+        self.assertGreater(gdrive_check_pos, apt_install_pos)
+        self.assertGreater(pull_pos, gdrive_check_pos)
+        self.assertIn("--backend rclone", text[pull_pos:])
+        self.assertIn("tr -d '\\r'", text)
+        self.assertNotIn("rclone --version | head", text)
+
+    def test_validator_rejects_rclone_backend_without_prior_install(self) -> None:
+        bad_no_install = """
+jobs:
+  vault:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          python3 scripts/vault_sync.py pull-drive \\
+            --manifest m.json \\
+            --dest .vault_staging \\
+            --backend rclone
+"""
+        errs = validate_workflow_text("bad-no-rclone.yml", bad_no_install)
+        self.assertEqual(len(errs), 1, errs)
+        self.assertIn("--backend rclone", errs[0])
+
+        bad_echo_only = """
+jobs:
+  vault:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "apt-get install -y rclone"
+          python3 scripts/vault_sync.py pull-drive --backend rclone
+"""
+        self.assertEqual(len(validate_workflow_text("bad-echo-rclone.yml", bad_echo_only)), 1)
+
+        bad_after_use = """
+jobs:
+  vault:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          python3 scripts/vault_sync.py pull-drive --backend rclone
+          sudo apt-get install -y rclone
+"""
+        self.assertEqual(len(validate_workflow_text("bad-order-rclone.yml", bad_after_use)), 1)
+
+        bad_other_job = """
+jobs:
+  prep:
+    runs-on: ubuntu-latest
+    steps:
+      - run: sudo apt-get install -y rclone
+  vault:
+    runs-on: ubuntu-latest
+    steps:
+      - run: python3 scripts/vault_sync.py pull-drive --backend rclone
+"""
+        job_errs = validate_workflow_text("bad-other-job.yml", bad_other_job)
+        self.assertEqual(len(job_errs), 1, job_errs)
+        self.assertIn("vault", job_errs[0])
+
+        ok_apt_before = """
+jobs:
+  vault:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          if ! command -v rclone >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends rclone
+          fi
+          python3 scripts/vault_sync.py pull-drive --backend rclone
+"""
+        self.assertEqual(validate_workflow_text("ok-apt-rclone.yml", ok_apt_before), [])
+
+        ok_action_before = """
+jobs:
+  vault:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: NiceLabs/setup-rclone@v1
+      - run: python3 scripts/vault_sync.py pull-drive --backend=rclone
+"""
+        self.assertEqual(validate_workflow_text("ok-action-rclone.yml", ok_action_before), [])
 
 
 if __name__ == "__main__":
