@@ -44,3 +44,9 @@ OVCA v1.0 Workflow Stream (enforced by ovca-workflow::WorkflowReducer)
 `ExecutionBudget.max_events >= 8 + (6 * max_repair_attempts)`
 - Ensures every declared repair cycle leaves room for `OwnerEscalated` + `CoordinatorFinalized`.
 - Enforced identically by `ovca_types::ExecutionBudget::validate` and `alpha-ovca`.
+
+## GitHub PR Control Plane Mapping
+
+- **Pull Request Ledger + `AGENT_ACK`**: All PRs carry [workflows/templates/agent_ack.template.md](../workflows/templates/agent_ack.template.md) (`UNKNOWN` disclosed honestly when model build ID or host nodes are unexposed) alongside `workflows/runs/<workflow_id>/`.
+- **Pre-Merge Semantic Audit (`scripts/pr_audit.py`)**: Prevents `MERGEABLE` false confidence across concurrent PRs (catching direct file overlaps, sibling namespace collisions, contract ripples, and stale stacked base SHAs).
+- **Separate Reviewer Bot Quorum**: Configured via [ovca-reviewer-bot.yml](../.github/workflows/ovca-reviewer-bot.yml) and [docs/bot-account-setup.md](../docs/bot-account-setup.md) so `PR Author != Reviewer Approver` once the separate GitHub App (`OVCA_REVIEWER_APP_ID`) is installed.
