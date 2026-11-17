@@ -12,6 +12,59 @@ WORKFLOWS_DIR = REPO_ROOT / ".github" / "workflows"
 _IF_KEY_RE = re.compile(r"^(\s*)(?:-\s*)?if\s*:(.*)$")
 _SECRETS_REF_RE = re.compile(r"\bsecrets(?:\.[A-Za-z0-9_]+|\[\s*['\"][^'\"]+['\"]\s*\])")
 _UPLOAD_USES_RE = re.compile(r"^(\s*)(?:-\s*)?uses\s*:\s*['\"]?actions/upload-artifact@")
+_GH_PR_CMD_RE = re.compile(r"\bgh\s+pr\s+(view|list)\b([^\n;|&)]*)")
+_GH_JSON_ARG_RE = re.compile(r"(?:^|\s)--json(?:=|\s+)([^\s'\"`|;&)]+|'[^']*'|\"[^\"]*\")")
+
+VALID_GH_PR_JSON_FIELDS = frozenset(
+    {
+        "additions",
+        "assignees",
+        "author",
+        "autoMergeRequest",
+        "baseRefName",
+        "baseRefOid",
+        "body",
+        "changedFiles",
+        "closed",
+        "closedAt",
+        "closingIssuesReferences",
+        "comments",
+        "commits",
+        "createdAt",
+        "deletions",
+        "files",
+        "fullDatabaseId",
+        "headRefName",
+        "headRefOid",
+        "headRepository",
+        "headRepositoryOwner",
+        "id",
+        "isCrossRepository",
+        "isDraft",
+        "labels",
+        "latestReviews",
+        "maintainerCanModify",
+        "mergeCommit",
+        "mergeStateStatus",
+        "mergeable",
+        "mergedAt",
+        "mergedBy",
+        "milestone",
+        "number",
+        "potentialMergeCommit",
+        "projectCards",
+        "projectItems",
+        "reactionGroups",
+        "reviewDecision",
+        "reviewRequests",
+        "reviews",
+        "state",
+        "statusCheckRollup",
+        "title",
+        "updatedAt",
+        "url",
+    }
+)
 
 
 def _strip_inline_comment(line: str) -> str:
@@ -43,8 +96,49 @@ def _has_hidden_segment(path_spec: str) -> bool:
     return False
 
 
+def _validate_gh_pr_json_invocations(name: str, lines: list[str]) -> list[str]:
+    """Validate `--json` fields passed to `gh pr view` / `gh pr list` across single and `\\`-continued lines."""
+    errors: list[str] = []
+    idx = 0
+    while idx < len(lines):
+        raw = lines[idx]
+        stripped = raw.strip()
+        if not stripped or stripped.startswith("#"):
+            idx += 1
+            continue
+
+        start_line = idx + 1
+        combined = _strip_inline_comment(raw).rstrip()
+        j = idx
+        while combined.endswith("\\") and j + 1 < len(lines):
+            combined = combined[:-1].rstrip() + " " + _strip_inline_comment(lines[j + 1]).strip()
+            j += 1
+
+        for cmd_match in _GH_PR_CMD_RE.finditer(combined):
+            subcmd = cmd_match.group(1)
+            args_tail = cmd_match.group(2)
+            for arg_match in _GH_JSON_ARG_RE.finditer(args_tail):
+                raw_val = arg_match.group(1).strip("'\"")
+                if "$" in raw_val:
+                    continue
+                fields = [part.strip() for part in raw_val.split(",")]
+                if not fields or any(not field for field in fields):
+                    errors.append(
+                        f"{name}:{start_line}: empty field in `gh pr {subcmd} --json {raw_val}`"
+                    )
+                    continue
+                unknown = [field for field in fields if field not in VALID_GH_PR_JSON_FIELDS]
+                if unknown:
+                    errors.append(
+                        f"{name}:{start_line}: unknown `gh pr {subcmd} --json` field(s): {', '.join(unknown)}"
+                    )
+
+        idx = j + 1
+    return errors
+
+
 def validate_workflow_text(name: str, text: str) -> list[str]:
-    """Check GitHub Actions workflow text for forbidden secrets-in-if and hidden upload paths."""
+    """Check GitHub Actions workflow text for secrets-in-if, hidden artifact paths, and invalid gh pr --json fields."""
     errors: list[str] = []
     lines = text.splitlines()
     idx = 0
@@ -141,6 +235,9 @@ def validate_workflow_text(name: str, text: str) -> list[str]:
 
         idx += 1
 
+    # 3. Validate `gh pr view` / `gh pr list` `--json` fields against documented gh CLI fields.
+    errors.extend(_validate_gh_pr_json_invocations(name, lines))
+
     return errors
 
 
@@ -157,6 +254,13 @@ class TestGitHubWorkflows(unittest.TestCase):
         text = (WORKFLOWS_DIR / "ovca-reviewer-bot.yml").read_text(encoding="utf-8")
         self.assertIn("OVCA_APP_PRIVATE_KEY: ${{ secrets.OVCA_REVIEWER_APP_PRIVATE_KEY }}", text)
         self.assertNotIn("if: ${{ secrets.", text)
+
+    def test_ovca_reviewer_bot_uses_valid_same_repo_pr_meta_fields(self) -> None:
+        text = (WORKFLOWS_DIR / "ovca-reviewer-bot.yml").read_text(encoding="utf-8")
+        self.assertNotIn("baseRepository", text)
+        self.assertIn("--json state,isDraft,headRefOid,isCrossRepository,headRepository", text)
+        self.assertIn('d.get("isCrossRepository") is False', text)
+        self.assertIn('"nameWithOwner"', text)
 
     def test_admission_observe_uploads_hidden_observe_out_with_flag(self) -> None:
         text = (WORKFLOWS_DIR / "admission-observe.yml").read_text(encoding="utf-8")
@@ -225,6 +329,44 @@ jobs:
           path: ./observe_out/
 """
         self.assertEqual(validate_workflow_text("ok-rel.yml", ok_rel_upload), [])
+
+    def test_validator_rejects_unknown_gh_pr_json_fields(self) -> None:
+        bad_pr_view = """
+jobs:
+  j:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          PR_META=$(gh pr view "$PR" -R "$REPO" --json state,headRepository,baseRepository)
+"""
+        errs = validate_workflow_text("bad-pr-view.yml", bad_pr_view)
+        self.assertEqual(len(errs), 1, errs)
+        self.assertIn("baseRepository", errs[0])
+
+        bad_pr_list_multiline = """
+jobs:
+  j:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          gh pr list -R "$REPO" \\
+            --state open \\
+            --json=number,nonExistentField
+"""
+        list_errs = validate_workflow_text("bad-pr-list.yml", bad_pr_list_multiline)
+        self.assertEqual(len(list_errs), 1, list_errs)
+        self.assertIn("nonExistentField", list_errs[0])
+
+        ok_pr_view_and_json_out = """
+jobs:
+  j:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          gh pr view 4 -R "$REPO" --json state,isDraft,headRefOid,isCrossRepository,headRepository
+          python3 scripts/admission_gate.py observe --json-out .observe_out/report.json
+"""
+        self.assertEqual(validate_workflow_text("ok-pr-view.yml", ok_pr_view_and_json_out), [])
 
 
 if __name__ == "__main__":
