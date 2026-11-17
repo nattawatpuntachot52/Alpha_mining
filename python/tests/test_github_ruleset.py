@@ -33,7 +33,7 @@ class TestGitHubRuleset(unittest.TestCase):
     def test_repo_ruleset_configs_are_valid(self) -> None:
         summary = validate_ruleset_configs(self.std_cfg, self.det_cfg)
         self.assertTrue(summary["valid"])
-        self.assertEqual(summary["required_approving_review_count"], 0)
+        self.assertGreaterEqual(summary["required_approving_review_count"], 1)
         self.assertEqual(summary["required_status_checks"], ["python", "rust"])
 
     def test_rejects_bypass_actor_or_missing_check(self) -> None:
