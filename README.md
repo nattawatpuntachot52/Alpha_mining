@@ -48,6 +48,38 @@ Run the Python bridge and domain boundary tests:
 python3 -m unittest discover -s python/tests -v
 ```
 
+## Syncing Skills to Codex (GitHub SSOT)
+
+Keep `nattawatpuntachot52/Alpha_mining` on GitHub as the Single Source of Truth. After cloning or running `git pull --ff-only`, sync `skills/` (`conditioner-ovca`, `zoom-out`, and any future skills) into `${CODEX_HOME:-$HOME/.codex}/skills/`:
+
+**macOS / Linux:**
+
+```bash
+# Safe copy (stops without overwriting existing skill folders)
+./scripts/sync_codex_skills.sh
+
+# Recommended for local dev: symlink so future `git pull` auto-updates Codex skills
+./scripts/sync_codex_skills.sh --symlink --force
+
+# Preview without modifying files
+./scripts/sync_codex_skills.sh --dry-run
+```
+
+**Windows PowerShell:**
+
+```powershell
+# Safe copy (stops without overwriting existing skill folders)
+.\scripts\sync_codex_skills.ps1
+
+# Recommended for local dev: NTFS directory junction (auto-tracks `git pull`, no admin needed)
+.\scripts\sync_codex_skills.ps1 -Junction -Force
+
+# Preview without modifying files
+.\scripts\sync_codex_skills.ps1 -DryRun
+```
+
+> **Note for Antigravity:** Workspace rules (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`) sync directly from the connected GitHub repository. If you edit `skills/*/SKILL.md`, refresh the installed personal Antigravity skill via `save_skill` as well.
+
 ## Scope & Honest Limitations
 
 - `Alpha_mining` enforces workflow conformance, pre-intake conditioning checks, and architectural boundaries.
