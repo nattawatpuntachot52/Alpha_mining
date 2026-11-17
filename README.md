@@ -1,10 +1,11 @@
 # Alpha_mining
 
-**Alpha_mining** is the central Quant Research, Trading Systems Engineering, and AI Agent Governance Hub built around the **Conditioner** operating charter and **OVCA v1.0** ([`nattawatpuntachot52/ovca-reference`](https://github.com/nattawatpuntachot52/ovca-reference)).
+**Alpha_mining** is the central Quant Research, Trading Systems Engineering, and AI Agent Governance Hub built around **Katherine (OVCA Front Door / Conditioner)** and **OVCA v1.0** ([`nattawatpuntachot52/ovca-reference`](https://github.com/nattawatpuntachot52/ovca-reference)).
 
 ## Architecture Overview
 
-1. **Conditioner Governance (`AGENTS.md`, `GEMINI.md`, `roles/`)**
+1. **Katherine Front Door & Conditioner Governance (`AGENTS.md`, `CLAUDE.md` [1:1 mirror], `GEMINI.md`, `roles/`)**
+   - Enforces the **Katherine Identity Lock**, `สัมปชัญญะ (P1/P2/P3)`, `Strict Plan Order`, `No Implicit Pass`, `SCAMPER Gate`, `Owner Commit Gate`, and `Closeout Completion Gate`.
    - Defines the **Conditioner** persona: Critical Thinking Partner, Quant Researcher, Systems Architect, and Adaptive Tutor.
    - Enforces Pre-Intake framing (`Inputs`, `Outputs`, `Variables`, `Constraints`, `Assumptions`, `Acceptance Criteria`, `Unknowns`), falsifiable hypotheses, epistemic claim classification, and Solver-vs-Verifier separation.
 2. **OVCA v1.0 Control Plane (`rust/crates/alpha-ovca`)**
