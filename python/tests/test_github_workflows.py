@@ -14,13 +14,14 @@ _SECRETS_REF_RE = re.compile(r"\bsecrets(?:\.[A-Za-z0-9_]+|\[\s*['\"][^'\"]+['\"
 _UPLOAD_USES_RE = re.compile(r"^(\s*)(?:-\s*)?uses\s*:\s*['\"]?actions/upload-artifact@")
 _GH_PR_CMD_RE = re.compile(r"\bgh\s+pr\s+(view|list)\b([^\n;|&)]*)")
 _GH_JSON_ARG_RE = re.compile(r"(?:^|\s)--json(?:=|\s+)([^\s'\"`|;&)]+|'[^']*'|\"[^\"]*\")")
-_RCLONE_BACKEND_RE = re.compile(r"(?:^|\s)--backend(?:=|\s+)['\"]?rclone['\"]?(?:\s|$|[;|&)])")
+_RCLONE_BACKEND_RE = re.compile(r"(?:^|\s)--backend(?:=|\s+)['\"]?rclone['\"]?(?:\s|$)")
 _RCLONE_INSTALL_RE = re.compile(
-    r"(?:^|[;&|]\s*|&&\s*)(?!echo\b|printf\b)(?:sudo\s+)?"
-    r"(?:(?:[A-Z_][A-Z0-9_]*=\S+\s+)*(?:apt-get|apt|dnf|yum|apk|snap|brew)\s+[^\n;|&]*?\binstall\b[^\n;|&]*?\brclone\b"
-    r"|(?:curl|wget)\b[^\n;|&]*rclone\.org/install\.sh)"
+    r"^(?:sudo\s+)?"
+    r"(?:(?:[A-Z_][A-Z0-9_]*=\S+\s+)*(?:apt-get|apt|dnf|yum|apk|snap|brew)\s+.*?\binstall\b.*?\brclone\b"
+    r"|(?:curl|wget)\b.*?rclone\.org/install\.sh)"
 )
 _RCLONE_USES_RE = re.compile(r"(?:^|/)[^/\s]*rclone[^/\s]*@")
+_SHELL_CLAUSE_PREFIX_RE = re.compile(r"^(?:then|else|do|elif\b[^;]*?)\s+")
 
 VALID_GH_PR_JSON_FIELDS = frozenset(
     {
@@ -144,6 +145,78 @@ def _validate_gh_pr_json_invocations(name: str, lines: list[str]) -> list[str]:
     return errors
 
 
+def _split_shell_clauses(text: str) -> list[str]:
+    """Split a shell command string on unquoted `;`, `&&`, `||`, or `|`."""
+    clauses: list[str] = []
+    buf: list[str] = []
+    in_single = False
+    in_double = False
+    escape = False
+    i = 0
+    n = len(text)
+    while i < n:
+        ch = text[i]
+        if escape:
+            buf.append(ch)
+            escape = False
+            i += 1
+            continue
+        if ch == "\\" and not in_single:
+            buf.append(ch)
+            escape = True
+            i += 1
+            continue
+        if ch == "'" and not in_double:
+            in_single = not in_single
+            buf.append(ch)
+            i += 1
+            continue
+        if ch == '"' and not in_single:
+            in_double = not in_double
+            buf.append(ch)
+            i += 1
+            continue
+        if not in_single and not in_double:
+            if text.startswith("&&", i) or text.startswith("||", i):
+                clauses.append("".join(buf))
+                buf.clear()
+                i += 2
+                continue
+            if ch in {";", "|"}:
+                clauses.append("".join(buf))
+                buf.clear()
+                i += 1
+                continue
+        buf.append(ch)
+        i += 1
+    if buf:
+        clauses.append("".join(buf))
+    return clauses
+
+
+def _evaluate_shell_line_rclone(
+    name: str,
+    line_no: int,
+    current_job: str,
+    cmd_text: str,
+    runs_on_ubuntu: bool,
+    rclone_installed: bool,
+) -> tuple[bool, list[str]]:
+    errors: list[str] = []
+    for raw_clause in _split_shell_clauses(cmd_text):
+        clause = _SHELL_CLAUSE_PREFIX_RE.sub("", raw_clause.strip()).strip()
+        if not clause or clause.startswith(("echo ", "printf ")):
+            continue
+        if _RCLONE_BACKEND_RE.search(clause) and runs_on_ubuntu and not rclone_installed:
+            errors.append(
+                f"{name}:{line_no}: job '{current_job}' invokes `--backend rclone` "
+                "on ubuntu runner without installing `rclone` beforehand"
+            )
+        if _RCLONE_INSTALL_RE.search(clause):
+            rclone_installed = True
+    return rclone_installed, errors
+
+
 def _validate_rclone_install_before_use(name: str, lines: list[str]) -> list[str]:
     """Ensure Ubuntu jobs invoking `--backend rclone` install `rclone` before calling it."""
     errors: list[str] = []
@@ -152,6 +225,8 @@ def _validate_rclone_install_before_use(name: str, lines: list[str]) -> list[str
     job_indent: int | None = None
     block_indent: int | None = None
     in_run_block = False
+    in_runs_on_list = False
+    runs_on_indent = -1
     current_job: str | None = None
     runs_on_ubuntu = False
     rclone_installed = False
@@ -175,23 +250,16 @@ def _validate_rclone_install_before_use(name: str, lines: list[str]) -> list[str
                     combined = _strip_inline_comment(raw).rstrip()
                     j = idx
                     while combined.endswith("\\") and j + 1 < len(lines):
-                        combined = combined[:-1].rstrip() + " " + _strip_inline_comment(lines[j + 1]).strip()
+                        nxt = lines[j + 1]
+                        nxt_indent = len(nxt) - len(nxt.lstrip(" "))
+                        if nxt.strip() and nxt_indent <= block_indent:
+                            break
+                        combined = combined[:-1].rstrip() + " " + _strip_inline_comment(nxt).strip()
                         j += 1
-                    cmd_text = combined.strip()
-                    if not cmd_text.startswith(("echo ", "printf ")):
-                        install_match = _RCLONE_INSTALL_RE.search(cmd_text)
-                        backend_match = _RCLONE_BACKEND_RE.search(cmd_text)
-                        if backend_match and runs_on_ubuntu:
-                            installed_here_first = (
-                                install_match is not None and install_match.start() < backend_match.start()
-                            )
-                            if not (rclone_installed or installed_here_first):
-                                errors.append(
-                                    f"{name}:{start_line}: job '{current_job}' invokes `--backend rclone` "
-                                    "on ubuntu runner without installing `rclone` beforehand"
-                                )
-                        if install_match:
-                            rclone_installed = True
+                    rclone_installed, line_errs = _evaluate_shell_line_rclone(
+                        name, start_line, current_job, combined.strip(), runs_on_ubuntu, rclone_installed
+                    )
+                    errors.extend(line_errs)
                     idx = j + 1
                     continue
                 idx += 1
@@ -209,14 +277,24 @@ def _validate_rclone_install_before_use(name: str, lines: list[str]) -> list[str
             current_job = None
             runs_on_ubuntu = False
             rclone_installed = False
+            in_runs_on_list = False
             idx += 1
             continue
 
         if in_jobs and indent <= jobs_indent:
             in_jobs = False
             current_job = None
+            in_runs_on_list = False
 
         if in_jobs:
+            if in_runs_on_list:
+                if indent > runs_on_indent or (indent == runs_on_indent and clean.startswith("-")):
+                    if "ubuntu" in clean.lower():
+                        runs_on_ubuntu = True
+                    idx += 1
+                    continue
+                in_runs_on_list = False
+
             job_match = re.match(r"^([A-Za-z0-9_-]+)\s*:(.*)$", clean)
             if (
                 job_match
@@ -228,13 +306,19 @@ def _validate_rclone_install_before_use(name: str, lines: list[str]) -> list[str
                 current_job = job_match.group(1)
                 runs_on_ubuntu = False
                 rclone_installed = False
+                in_runs_on_list = False
                 idx += 1
                 continue
 
             if current_job is not None:
-                runs_on_match = re.match(r"^(?:-\s*)?runs-on\s*:\s*(.+)$", clean)
-                if runs_on_match and "ubuntu" in runs_on_match.group(1).lower():
-                    runs_on_ubuntu = True
+                runs_on_match = re.match(r"^(?:-\s*)?runs-on\s*:\s*(.*)$", clean)
+                if runs_on_match:
+                    runs_on_rhs = runs_on_match.group(1).strip()
+                    if not runs_on_rhs:
+                        in_runs_on_list = True
+                        runs_on_indent = indent + (2 if raw.lstrip().startswith("-") else 0)
+                    elif "ubuntu" in runs_on_rhs.lower():
+                        runs_on_ubuntu = True
                 uses_match = re.match(r"^(?:-\s*)?uses\s*:\s*([^\s#]+)", clean)
                 if uses_match and _RCLONE_USES_RE.search(uses_match.group(1).strip("'\"")):
                     rclone_installed = True
@@ -243,23 +327,16 @@ def _validate_rclone_install_before_use(name: str, lines: list[str]) -> list[str
                 key_offset = 2 if raw.lstrip().startswith("-") else 0
                 if run_key_match:
                     rhs = run_key_match.group(1).strip()
-                    if rhs in {"|", "|-", "|+", ">", ">-", ">+"}:
+                    if rhs in {"", "|", "|-", "|+", ">", ">-", ">+"}:
                         block_indent = indent + key_offset
                         in_run_block = True
                     else:
-                        install_match = _RCLONE_INSTALL_RE.search(rhs)
-                        backend_match = _RCLONE_BACKEND_RE.search(rhs)
-                        if backend_match and runs_on_ubuntu and not rhs.startswith(("echo ", "printf ")):
-                            installed_here_first = (
-                                install_match is not None and install_match.start() < backend_match.start()
-                            )
-                            if not (rclone_installed or installed_here_first):
-                                errors.append(
-                                    f"{name}:{idx + 1}: job '{current_job}' invokes `--backend rclone` "
-                                    "on ubuntu runner without installing `rclone` beforehand"
-                                )
-                        if install_match and not rhs.startswith(("echo ", "printf ")):
-                            rclone_installed = True
+                        if len(rhs) >= 2 and rhs[0] == rhs[-1] and rhs[0] in {"'", '"'}:
+                            rhs = rhs[1:-1].strip()
+                        rclone_installed, line_errs = _evaluate_shell_line_rclone(
+                            name, idx + 1, current_job, rhs, runs_on_ubuntu, rclone_installed
+                        )
+                        errors.extend(line_errs)
                 elif clean.endswith(("|", "|-", "|+", ">", ">-", ">+")):
                     block_indent = indent + key_offset
                     in_run_block = False
@@ -595,6 +672,77 @@ jobs:
       - run: python3 scripts/vault_sync.py pull-drive --backend=rclone
 """
         self.assertEqual(validate_workflow_text("ok-action-rclone.yml", ok_action_before), [])
+
+        bad_chained_after_echo = """
+jobs:
+  vault:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "prep" && python3 scripts/vault_sync.py pull-drive --backend rclone
+"""
+        self.assertEqual(len(validate_workflow_text("bad-chained-echo.yml", bad_chained_after_echo)), 1)
+
+        bad_quoted_fake_install = """
+jobs:
+  vault:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "ok; sudo apt-get install -y rclone" && python3 scripts/vault_sync.py pull-drive --backend rclone
+"""
+        self.assertEqual(len(validate_workflow_text("bad-quoted-fake.yml", bad_quoted_fake_install)), 1)
+
+        bad_backslash_outdent = """
+jobs:
+  vault:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo prep \\
+      - run: python3 scripts/vault_sync.py pull-drive --backend rclone
+"""
+        self.assertEqual(len(validate_workflow_text("bad-outdent.yml", bad_backslash_outdent)), 1)
+
+        bad_runs_on_list = """
+jobs:
+  vault:
+    runs-on:
+      - self-hosted
+      - ubuntu-24.04
+    steps:
+      - run: python3 scripts/vault_sync.py pull-drive --backend rclone
+"""
+        self.assertEqual(len(validate_workflow_text("bad-runs-on-list.yml", bad_runs_on_list)), 1)
+
+        bad_plain_multiline_run = """
+jobs:
+  vault:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sync
+        run:
+          python3 scripts/vault_sync.py pull-drive --backend rclone
+"""
+        self.assertEqual(len(validate_workflow_text("bad-plain-run.yml", bad_plain_multiline_run)), 1)
+
+        ok_quoted_single_line = """
+jobs:
+  vault:
+    runs-on: ubuntu-latest
+    steps:
+      - run: "sudo apt-get install -y rclone"
+      - run: python3 scripts/vault_sync.py pull-drive --backend rclone
+"""
+        self.assertEqual(validate_workflow_text("ok-quoted-single.yml", ok_quoted_single_line), [])
+
+        ok_single_line_if = """
+jobs:
+  vault:
+    runs-on: ubuntu-latest
+    steps:
+      - run: if ! command -v rclone >/dev/null; then sudo apt-get install -y rclone; fi
+      - run: python3 scripts/vault_sync.py pull-drive --backend rclone
+"""
+        self.assertEqual(validate_workflow_text("ok-single-if.yml", ok_single_line_if), [])
 
 
 if __name__ == "__main__":
