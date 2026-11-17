@@ -61,8 +61,10 @@ Implemented the 4-part GitHub-centered Multi-Agent Control Plane for `Alpha_mini
   - `pr_audit.py` originally propagated stacked blocks only 1 hop and risked `headRefName == "main"` fork collisions.
 - **Hardlink Truncation Defect Caught During Test Expansion**: Adding `test_hardlinks_xz_roundtrip_symlink_dir_and_unmanifested_member_rejection` caught that `_add_deterministic_regular_file()` in `vault.py` switched `tarfile` `LNKTYPE` to `REGTYPE` without resetting `info.size = abs_path.stat().st_size`, silently extracting hardlinked files as 0 bytes (`e3b0c44...`). Fixed and re-verified (`24/24`).
 - **Sorted Check Order Assertion Mismatch**: `validate_ruleset_configs` returned sorted `["python", "rust"]`, breaking older unsorted assertion `["rust", "python"]` in `test_github_ruleset.py`. Fixed cleanly.
+- **GitHub Actions `ubuntu-latest` CI Catch (`run 44064307437`)**: Local VM had `/opt/antigravity/bin/gdrive` on `PATH`, masking missing `shutil.which` mocks in two `test_vault_storage.py` unit tests when executed on clean `ubuntu-latest` CI (`python` job failed with `'gdrive' CLI is not installed`). Fixed by mocking `alpha_mining.storage.vault.shutil.which` explicitly and testing `PATH` without `/opt/antigravity/bin`.
 
 ## 5. Lessons Learned
 
 - Writing adversarial failure/edge-case tests (hardlinks, 3-hop stacks, fork `main`, unmanifested tar members, remote API failures) directly catches silent data-truncation and CLI contract bugs that happy-path tests miss.
+- Unit tests calling CLI wrappers must mock `shutil.which` and be checked under stripped `PATH` so host-installed tools (like `/opt/antigravity/bin/gdrive`) do not mask CI runner failures.
 - Keeping GitHub Ruleset `required_approving_review_count` at `0` until separate GitHub App credentials are populated prevents accidental repository self-lockout while still enforcing PR-only merges and required `rust`/`python` CI checks.

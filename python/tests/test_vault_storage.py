@@ -119,6 +119,8 @@ class TestVaultStorage(unittest.TestCase):
                 extract_verified_archive(evil_tar, evil_manifest, tmp_dir / "extract_root")
 
     def test_push_and_pull_drive_cache_hit_and_miss(self) -> None:
+        from unittest import mock
+
         with tempfile.TemporaryDirectory() as tmp:
             tmp_dir = Path(tmp)
             src = tmp_dir / "bt_src"
@@ -138,6 +140,10 @@ class TestVaultStorage(unittest.TestCase):
             )
             archive_path = cache_dir / manifest["archive_name"]
 
+            with mock.patch("alpha_mining.storage.vault.shutil.which", return_value=None):
+                with self.assertRaises(VaultError):
+                    push_to_drive(manifest_path, archive_path, backend="gdrive")
+
             commands_seen: list[list[str]] = []
 
             def fake_gdrive_push(cmd: list[str]) -> subprocess.CompletedProcess[str]:
@@ -149,26 +155,28 @@ class TestVaultStorage(unittest.TestCase):
                     "",
                 )
 
-            pushed = push_to_drive(
-                manifest_path,
-                archive_path,
-                backend="gdrive",
-                runner=fake_gdrive_push,
-            )
+            with mock.patch("alpha_mining.storage.vault.shutil.which", return_value="/usr/bin/gdrive"):
+                pushed = push_to_drive(
+                    manifest_path,
+                    archive_path,
+                    backend="gdrive",
+                    runner=fake_gdrive_push,
+                )
             self.assertEqual(pushed["gdrive_file_id"], "drive-file-999")
             self.assertIn("1mSUfgnR4yNhSi3ggM_DYHMjP9ynB5Yxr", commands_seen[0])
 
-            # Cache hit skips Drive download completely
+            # Cache hit skips Drive download completely (works even when Drive CLIs are absent)
             def fail_if_called(cmd: list[str]) -> subprocess.CompletedProcess[str]:
                 raise AssertionError(f"Drive download should not run on cache hit: {cmd}")
 
-            hit_res = pull_from_drive(
-                manifest_path,
-                tmp_dir / "out_hit",
-                cache_dir=cache_dir,
-                backend="gdrive",
-                runner=fail_if_called,
-            )
+            with mock.patch("alpha_mining.storage.vault.shutil.which", return_value=None):
+                hit_res = pull_from_drive(
+                    manifest_path,
+                    tmp_dir / "out_hit",
+                    cache_dir=cache_dir,
+                    backend="gdrive",
+                    runner=fail_if_called,
+                )
             self.assertTrue(hit_res["cache_hit"])
 
             # Move archive aside and test cache miss download from Drive
@@ -180,13 +188,14 @@ class TestVaultStorage(unittest.TestCase):
                 Path(cmd[out_idx]).write_bytes(saved_bytes)
                 return subprocess.CompletedProcess(cmd, 0, "Downloaded ok\n", "")
 
-            miss_res = pull_from_drive(
-                manifest_path,
-                tmp_dir / "out_miss",
-                cache_dir=cache_dir,
-                backend="gdrive",
-                runner=fake_gdrive_pull,
-            )
+            with mock.patch("alpha_mining.storage.vault.shutil.which", return_value="/usr/bin/gdrive"):
+                miss_res = pull_from_drive(
+                    manifest_path,
+                    tmp_dir / "out_miss",
+                    cache_dir=cache_dir,
+                    backend="gdrive",
+                    runner=fake_gdrive_pull,
+                )
             self.assertFalse(miss_res["cache_hit"])
             self.assertEqual((tmp_dir / "out_miss" / "pnl.parquet").read_bytes(), b"backtest-bytes")
 
@@ -359,7 +368,8 @@ class TestVaultStorage(unittest.TestCase):
                 seen_cmds.append(cmd)
                 return subprocess.CompletedProcess(cmd, 0, "Updated\n", "")
 
-            updated = push_to_drive(manifest_path, archive_path, backend="gdrive", runner=fake_update)
+            with mock.patch("alpha_mining.storage.vault.shutil.which", return_value="/usr/bin/gdrive"):
+                updated = push_to_drive(manifest_path, archive_path, backend="gdrive", runner=fake_update)
             self.assertEqual(seen_cmds[0][:4], ["gdrive", "mutate", "update", "existing-file-123"])
             self.assertEqual(updated["gdrive_file_id"], "existing-file-123")
 
