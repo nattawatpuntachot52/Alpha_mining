@@ -17,7 +17,7 @@
    - Pre-intake JSON templates, research gate checklists, synthetic OVCA reference fixtures, and reproducible run logs (`workflows/runs/`).
 5. **Installable Skills (`skills/`)**
    - `skills/conditioner-ovca/SKILL.md`: Portable skill encapsulating the Conditioner role + OVCA workflow rules.
-   - `skills/zoom-out/SKILL.md`: Evidence-grounded codebase/system mapping skill synced from `ovca-reference`.
+   - `skills/zoom-out/SKILL.md`: Evidence-grounded codebase overview skill synced from `ovca-reference` (`5b0726c`).
 
 ## Quick Verification
 
