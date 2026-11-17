@@ -1,0 +1,80 @@
+{
+  "contract_version": "1.0",
+  "brief_id": "brief-github-control-plane-001",
+  "title": "GitHub Multi-Agent Control Plane, Bot Quorum Readiness, AGENT_ACK + PR Semantic Audit, and 3-Tier Drive Vault",
+  "public_summary": "Upgrade Alpha_mining into a GitHub-centered multi-agent control plane with 2-layer main Rulesets, separate Reviewer App readiness, AGENT_ACK runtime disclosure, multi-PR semantic audit, and 3-tier Google Drive + Actions Cache vault",
+  "domain": "infrastructure",
+  "target_evidence_status": "reproducible",
+  "inputs": [
+    "Owner approvals Q1-Q4 (rulesets on main, bot quorum >=1 workflow + 0->1 CLI, AGENT_ACK + PR Semantic Audit, Drive Alpha_mining_Vault + Actions Cache)",
+    "Pinned OVCA v1.0 crates (ovca-types, ovca-workflow @ 5b0726c)",
+    "Live GitHub repository nattawatpuntachot52/Alpha_mining and Google Drive folder Alpha_mining_Vault"
+  ],
+  "outputs": [
+    "config/github/rulesets/ (standard-main-protection.json, details-main-protection.json) + live deployed GitHub Rulesets",
+    ".github/workflows/ (ci.yml, ovca-reviewer-bot.yml, vault-sync.yml) & .github/pull_request_template.md",
+    "python/alpha_mining/control_plane/{github_ruleset,agent_ack,pr_audit}.py & scripts/{github_ruleset,pr_audit}.py",
+    "python/alpha_mining/storage/vault.py & scripts/vault_sync.py + config/storage/drive_vault.json",
+    "docs/bot-account-setup.md & workflows/templates/agent_ack.template.md + expanded unit tests"
+  ],
+  "variables": [
+    "required_approving_review_count (0 temporarily until Owner configures OVCA_REVIEWER_APP_ID secrets)",
+    "required_status_checks (rust, python @ integration_id 15368)",
+    "archive_codec (auto: zstd when present else tar.gz; xz supported)"
+  ],
+  "constraints": [
+    "Keep ovca-reference v1.0 wire contracts untouched",
+    "Keep AGENTS.md and CLAUDE.md 1:1 byte-identical (cmp -s)",
+    "Do not set required_approving_review_count >= 1 before separate Bot/App credentials are installed (avoid self-approval deadlock)",
+    "Submit feature changes via PR after activating main branch Rulesets; never commit binary datasets or secrets"
+  ],
+  "assumptions": [
+    "Owner will later register the GitHub App and set OVCA_REVIEWER_APP_ID + OVCA_REVIEWER_APP_PRIVATE_KEY per docs/bot-account-setup.md",
+    "GitHub Actions ubuntu-latest runners provide actions/checkout@v4, setup-python@v5, cache@v4, and create-github-app-token@v1"
+  ],
+  "unknowns": [],
+  "block_on_unresolved_unknowns": true,
+  "acceptance_criteria": [
+    "Live main branch protected by both Rulesets with zero drift against config/github/rulesets/",
+    "cmp -s AGENTS.md CLAUDE.md, Cargo fmt/check/test/clippy, and unittest suite pass after final edits",
+    "alpha-ovca validate-brief and verify-stream exit 0 for wf-github-control-plane-001",
+    "Feature branch pushed and audited PR created cleanly against main with CI rust and python checks passing"
+  ],
+  "governance": {
+    "solver_actor": "antigravity-katherine-impl",
+    "verifier_actor": "local-cargo-unittest-ci-verifier",
+    "reviewer_actor": "research-subagent-adversarial-reviewer",
+    "auditor_actor": "post-fix-independent-verifier-auditor"
+  },
+  "authority": {
+    "contract_version": "1.0",
+    "authority_id": "auth-github-control-plane-001",
+    "granted_by": "owner",
+    "objective": "Implement and verify the 4-part GitHub Multi-Agent Control Plane and 3-tier Quant Data Vault",
+    "scope": [
+      "AGENTS.md",
+      "CLAUDE.md",
+      "GEMINI.md",
+      "README.md",
+      "docs/",
+      "roles/",
+      "skills/conditioner-ovca/",
+      "config/",
+      ".github/",
+      ".gitignore",
+      "python/alpha_mining/",
+      "python/tests/",
+      "scripts/",
+      "workflows/"
+    ],
+    "constraints": [
+      "Follow Katherine Front Door Doctrines, Strict Plan Order, No Implicit Pass, and Owner Commit/PR Gate"
+    ]
+  },
+  "budget": {
+    "contract_version": "1.0",
+    "max_repair_attempts": 1,
+    "max_events": 14
+  },
+  "created_at": "2026-11-17T09:58:00Z"
+}

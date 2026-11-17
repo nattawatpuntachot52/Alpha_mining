@@ -30,9 +30,21 @@ flowchart TD
 |---|---|---|---|
 | **Role Charter** | `AGENTS.md`, `CLAUDE.md` (1:1 mirror), `GEMINI.md`, `roles/` | Defines Katherine Identity Lock, Conditioner principles, research gates, and OVCA role isolation | Does not execute code or certify results |
 | **Conditioner + OVCA CLI** | `rust/crates/alpha-ovca` | Validates `ConditioningBrief`, emits `IntakeAccepted`, replays/verifies/appends `WorkflowEvent` streams via `ovca-workflow` | Does not authenticate actors, run backtests, or prove market edge |
-| **Python Hub Bridge** | `python/alpha_mining/control_plane/` | Constructs briefs/events in Python and delegates deterministic validation to `alpha-ovca` | Never reimplements a divergent workflow state machine |
+| **Python Hub & PR Audit** | `python/alpha_mining/control_plane/` | Bridges Python to `alpha-ovca`, manages 2-layer GitHub Rulesets, validates `AGENT_ACK`, runs multi-PR Semantic Conflict Audits | Never reimplements OVCA state reduction; never bypasses GitHub Rulesets |
 | **Quant Domain Layers** | `python/alpha_mining/{research,strategy,execution,risk,accounting}/` | Separates hypothesis testing, signal logic, order routing, risk limits, and PnL/cost reconciliation | Research never submits orders; Execution never alters risk limits |
-| **Workflow Ledger** | `workflows/{templates,examples,runs}/` | Stores conditioning templates, synthetic fixtures, and reproducible run logs (including negative results) | Synthetic fixtures never represent live trading performance |
+| **Hybrid Data & State Vault** | `python/alpha_mining/storage/`, `workflows/vault_manifests/`, `config/storage/drive_vault.json` | Tracks deterministic SHA-256 manifests in Git, hydrates hot Actions Cache (<= 10 GB), and syncs compressed payloads to Google Drive `Alpha_mining_Vault` | Never commits large binary/Parquet datasets directly to Git |
+| **Workflow Ledger & Templates** | `workflows/{templates,examples,runs}/` | Stores conditioning templates, `AGENT_ACK` disclosure template, synthetic fixtures, and reproducible run logs (including negative results) | Synthetic fixtures never represent live trading performance |
+
+## GitHub Control Plane & Hybrid State Layer
+
+1. **2-Layer `main` Ruleset ([config/github/rulesets/](../config/github/rulesets/))**:
+   - **Standard (`standard-main-protection`)**: Blocks `deletion` and `non_fast_forward`; enforces PRs, stale-review dismissal, and thread resolution (`required_approving_review_count: 0` until a separate Reviewer App/Bot is registered to avoid GitHub self-approval deadlock).
+   - **Details (`alpha-mining-details-main-protection`)**: Enforces `strict_required_status_checks_policy: true` with exact CI checks `rust` and `python` (`integration_id: 15368`).
+2. **Separate Reviewer Bot (`ovca-reviewer-bot.yml`)**: Runs cleanly on `workflow_run` / `workflow_dispatch` (checking out `main` only), executes `scripts/pr_audit.py`, posts the semantic audit table, and issues App approvals once `OVCA_REVIEWER_APP_ID` + `OVCA_REVIEWER_APP_PRIVATE_KEY` are configured ([docs/bot-account-setup.md](bot-account-setup.md)).
+3. **3-Tier State & Quant Data Vault**:
+   - **Git SSOT**: `workflows/vault_manifests/<artifact_id>.manifest.json` (SHA-256 + `cache_key`)
+   - **Hot Cache**: `.vault_cache/` & `actions/cache@v4` (CI Cargo/vault hydration)
+   - **Master Vault (Google Drive `Alpha_mining_Vault`, ID `1uB0PU8GvrCx5payhEufdkxFXuWf4RGFp`)**: `datasets/` (`12q4OVX65a0R1fubWJuey5kqkXUNoDXsX`), `backtests/` (`1mSUfgnR4yNhSi3ggM_DYHMjP9ynB5Yxr`), `state_snapshots/` (`11LgT2EI6OrjeBoF8y91Smz2wEfRwfxbt`), synchronized via `scripts/vault_sync.py` and `.github/workflows/vault-sync.yml`.
 
 ## Security & Epistemic Boundaries
 

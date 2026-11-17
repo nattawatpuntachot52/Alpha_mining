@@ -1,0 +1,406 @@
+[
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-github-control-plane-001",
+    "event_id": "ev-gcp-0",
+    "sequence": 0,
+    "occurred_at": "2026-11-17T09:59:00Z",
+    "type": "intake_accepted",
+    "data": {
+      "request_ref": "brief-github-control-plane-001",
+      "public_summary": "Upgrade Alpha_mining into a GitHub-centered multi-agent control plane with 2-layer main Rulesets, separate Reviewer App readiness, AGENT_ACK runtime disclosure, multi-PR semantic audit, and 3-tier Google Drive + Actions Cache vault",
+      "authority": {
+        "contract_version": "1.0",
+        "authority_id": "auth-github-control-plane-001",
+        "granted_by": "owner",
+        "objective": "Implement and verify the 4-part GitHub Multi-Agent Control Plane and 3-tier Quant Data Vault",
+        "scope": [
+          "AGENTS.md",
+          "CLAUDE.md",
+          "GEMINI.md",
+          "README.md",
+          "docs/",
+          "roles/",
+          "skills/conditioner-ovca/",
+          "config/",
+          ".github/",
+          ".gitignore",
+          "python/alpha_mining/",
+          "python/tests/",
+          "scripts/",
+          "workflows/"
+        ],
+        "constraints": [
+          "Follow Katherine Front Door Doctrines, Strict Plan Order, No Implicit Pass, and Owner Commit/PR Gate"
+        ]
+      },
+      "budget": {
+        "contract_version": "1.0",
+        "max_repair_attempts": 1,
+        "max_events": 14
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-github-control-plane-001",
+    "event_id": "ev-gcp-1",
+    "sequence": 1,
+    "previous_event_id": "ev-gcp-0",
+    "occurred_at": "2026-11-17T10:00:00Z",
+    "type": "coordinator_dispatched",
+    "data": {
+      "invocation": {
+        "contract_version": "1.0",
+        "invocation_id": "inv-gcp-1",
+        "requested_by": "coordinator",
+        "role": "engineer",
+        "objective": "Deploy live 2-layer GitHub Rulesets & Drive Alpha_mining_Vault folders and implement control_plane/storage modules, workflows, templates, and governance docs",
+        "authority_ref": "auth-github-control-plane-001",
+        "input_refs": [
+          "brief-github-control-plane-001"
+        ],
+        "attempt": 1,
+        "requested_at": "2026-11-17T10:00:00Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-github-control-plane-001",
+    "event_id": "ev-gcp-2",
+    "sequence": 2,
+    "previous_event_id": "ev-gcp-1",
+    "occurred_at": "2026-11-17T10:08:00Z",
+    "type": "engineer_returned",
+    "data": {
+      "result": {
+        "contract_version": "1.0",
+        "result_id": "res-gcp-1",
+        "invocation_ref": "inv-gcp-1",
+        "role": "engineer",
+        "status": "succeeded",
+        "summary": "Deployed GitHub Rulesets (27447738, 27447741), created Drive Vault folders (1uB0PU8GvrCx5payhEufdkxFXuWf4RGFp), and wrote initial control_plane/storage implementation on branch feat/github-control-plane",
+        "evidence": [
+          {
+            "contract_version": "1.0",
+            "evidence_id": "evd-gcp-impl-1",
+            "kind": "implementation",
+            "summary": "Live rulesets active on main; Drive Vault folders created; initial Python modules, CLIs, workflows, and 16 unit tests written",
+            "source": "antigravity-katherine-impl",
+            "collected_at": "2026-11-17T10:08:00Z"
+          }
+        ],
+        "completed_at": "2026-11-17T10:08:00Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-github-control-plane-001",
+    "event_id": "ev-gcp-3",
+    "sequence": 3,
+    "previous_event_id": "ev-gcp-2",
+    "occurred_at": "2026-11-17T10:12:00Z",
+    "type": "verification_recorded",
+    "data": {
+      "outcome": {
+        "contract_version": "1.0",
+        "verification_id": "ver-gcp-1",
+        "subject_result_ref": "res-gcp-1",
+        "status": "passed",
+        "checks": [
+          {
+            "name": "initial-cargo-and-16-python-tests",
+            "status": "passed",
+            "summary": "Initial cargo check/test/clippy and 16 Python tests passed prior to adversarial security audit"
+          }
+        ],
+        "evidence": [
+          {
+            "contract_version": "1.0",
+            "evidence_id": "evd-gcp-ver-1",
+            "kind": "verification",
+            "summary": "Baseline checks passed on Attempt 1 implementation before independent adversarial review",
+            "source": "local-cargo-unittest-ci-verifier",
+            "collected_at": "2026-11-17T10:12:00Z"
+          }
+        ],
+        "completed_at": "2026-11-17T10:12:00Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-github-control-plane-001",
+    "event_id": "ev-gcp-4",
+    "sequence": 4,
+    "previous_event_id": "ev-gcp-3",
+    "occurred_at": "2026-11-17T10:15:00Z",
+    "type": "reviewer_decided",
+    "data": {
+      "packet": {
+        "contract_version": "1.0",
+        "review_id": "rev-gcp-1",
+        "engineer_result_ref": "res-gcp-1",
+        "verification_ref": "ver-gcp-1",
+        "decision": "repair",
+        "findings": [
+          {
+            "code": "reviewer-bot-cli-and-gate-hardening",
+            "severity": "blocking",
+            "summary": "ovca-reviewer-bot.yml passed -R to scripts/pr_audit.py (--repo only), lacked private key / TOCTOU / CI-bypass guards, and auto-approved MERGE_WITH_CAUTION",
+            "evidence_refs": [
+              "evd-gcp-impl-1"
+            ]
+          },
+          {
+            "code": "vault-tar-security-and-hardlink-gaps",
+            "severity": "blocking",
+            "summary": "vault.py encoded hardlinks without resetting REGTYPE size (truncating to 0 bytes), lacked archive_name traversal check, unmanifested tar member rejection, symlink-dir guard, and rclone pull fallback",
+            "evidence_refs": [
+              "evd-gcp-impl-1"
+            ]
+          },
+          {
+            "code": "pr-audit-ack-and-ruleset-edge-cases",
+            "severity": "blocking",
+            "summary": "pr_audit.py needed multi-hop stack propagation, fork main branch isolation, legacy StatusContext support, trusted commenter filter; agent_ack needed indented block dedent; github_ruleset needed drift detection, bool rejection, and remote-before-disk mutation",
+            "evidence_refs": [
+              "evd-gcp-impl-1"
+            ]
+          },
+          {
+            "code": "missing-adversarial-unit-test-coverage",
+            "severity": "blocking",
+            "summary": "Attempt 1 unit tests omitted coverage for live drift detection, hardlinks, multi-hop stacks, fork heads, unmanifested archive members, and CLI invocations",
+            "evidence_refs": [
+              "evd-gcp-ver-1"
+            ]
+          }
+        ],
+        "evidence_refs": [
+          "evd-gcp-impl-1",
+          "evd-gcp-ver-1"
+        ],
+        "completed_at": "2026-11-17T10:15:00Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-github-control-plane-001",
+    "event_id": "ev-gcp-5",
+    "sequence": 5,
+    "previous_event_id": "ev-gcp-4",
+    "occurred_at": "2026-11-17T10:16:00Z",
+    "type": "auditor_counterchecked",
+    "data": {
+      "packet": {
+        "contract_version": "1.0",
+        "audit_id": "aud-gcp-1",
+        "review_ref": "rev-gcp-1",
+        "decision": "concur",
+        "findings": [],
+        "evidence_refs": [
+          "evd-gcp-impl-1",
+          "evd-gcp-ver-1"
+        ],
+        "completed_at": "2026-11-17T10:16:00Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-github-control-plane-001",
+    "event_id": "ev-gcp-6",
+    "sequence": 6,
+    "previous_event_id": "ev-gcp-5",
+    "occurred_at": "2026-11-17T10:17:00Z",
+    "type": "repair_directed",
+    "data": {
+      "directive": {
+        "contract_version": "1.0",
+        "directive_id": "dir-gcp-1",
+        "source_review_ref": "rev-gcp-1",
+        "source_audit_ref": "aud-gcp-1",
+        "attempt": 1,
+        "instructions": [
+          "Harden ovca-reviewer-bot.yml, vault-sync.yml, github_ruleset.py, agent_ack.py, pr_audit.py, vault.py (including resetting info.size on hardlinked REGTYPE entries), and CLI -R flags",
+          "Align docs/bot-account-setup.md with strict READY_TO_MERGE auto-approve rule",
+          "Expand unit tests to 24 cases covering all adversarial edge cases and re-run full verification suite"
+        ],
+        "evidence_refs": [
+          "evd-gcp-impl-1",
+          "evd-gcp-ver-1"
+        ],
+        "issued_at": "2026-11-17T10:17:00Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-github-control-plane-001",
+    "event_id": "ev-gcp-7",
+    "sequence": 7,
+    "previous_event_id": "ev-gcp-6",
+    "occurred_at": "2026-11-17T10:18:00Z",
+    "type": "coordinator_dispatched",
+    "data": {
+      "invocation": {
+        "contract_version": "1.0",
+        "invocation_id": "inv-gcp-2",
+        "requested_by": "coordinator",
+        "role": "engineer",
+        "objective": "Execute all adversarial hardening fixes and expand unit test suite",
+        "authority_ref": "auth-github-control-plane-001",
+        "input_refs": [
+          "dir-gcp-1"
+        ],
+        "attempt": 2,
+        "requested_at": "2026-11-17T10:18:00Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-github-control-plane-001",
+    "event_id": "ev-gcp-8",
+    "sequence": 8,
+    "previous_event_id": "ev-gcp-7",
+    "occurred_at": "2026-11-17T10:20:00Z",
+    "type": "engineer_returned",
+    "data": {
+      "result": {
+        "contract_version": "1.0",
+        "result_id": "res-gcp-2",
+        "invocation_ref": "inv-gcp-2",
+        "role": "engineer",
+        "status": "succeeded",
+        "summary": "Applied all security and correctness hardening fixes across workflows, CLIs, control_plane/storage modules, aligned bot doc, fixed tarfile hardlink size bug caught during test expansion, and expanded unit tests to 24 cases",
+        "evidence": [
+          {
+            "contract_version": "1.0",
+            "evidence_id": "evd-gcp-impl-2",
+            "kind": "implementation",
+            "summary": "Fixed tarfile hardlink size reset in vault.py, indented AGENT_ACK fence extraction, multi-hop PR stack & fork isolation, drift detection in verify_live_rulesets, CLI -R support, and expanded tests to 24 cases",
+            "source": "antigravity-katherine-impl",
+            "collected_at": "2026-11-17T10:20:00Z"
+          }
+        ],
+        "completed_at": "2026-11-17T10:20:00Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-github-control-plane-001",
+    "event_id": "ev-gcp-9",
+    "sequence": 9,
+    "previous_event_id": "ev-gcp-8",
+    "occurred_at": "2026-11-17T10:21:25Z",
+    "type": "verification_recorded",
+    "data": {
+      "outcome": {
+        "contract_version": "1.0",
+        "verification_id": "ver-gcp-2",
+        "subject_result_ref": "res-gcp-2",
+        "status": "passed",
+        "checks": [
+          {
+            "name": "governance-mirror-yaml-links-shellcheck",
+            "status": "passed",
+            "summary": "cmp -s AGENTS.md CLAUDE.md, PyYAML parse on 3 workflows, markdown relative link check, bash -n, and shellcheck passed"
+          },
+          {
+            "name": "rust-fmt-check-test-clippy-and-ovca-cli",
+            "status": "passed",
+            "summary": "cargo fmt, check, test (2 CLI + 8 integration), clippy -D warnings, validate-brief, and example stream verify passed"
+          },
+          {
+            "name": "python-unittest-and-live-ruleset-verify",
+            "status": "passed",
+            "summary": "24/24 python unittest cases, github_ruleset.py validate-configs & live verify (27447738, 27447741, main protected=true), and pr_audit.py passed"
+          }
+        ],
+        "evidence": [
+          {
+            "contract_version": "1.0",
+            "evidence_id": "evd-gcp-ver-2",
+            "kind": "verification",
+            "summary": "Post-repair verification suite passed on current workspace code (with zstd & Windows PowerShell script explicitly documented as not run on this Linux VM)",
+            "source": "local-cargo-unittest-ci-verifier",
+            "collected_at": "2026-11-17T10:21:25Z"
+          }
+        ],
+        "completed_at": "2026-11-17T10:21:25Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-github-control-plane-001",
+    "event_id": "ev-gcp-10",
+    "sequence": 10,
+    "previous_event_id": "ev-gcp-9",
+    "occurred_at": "2026-11-17T10:22:00Z",
+    "type": "reviewer_decided",
+    "data": {
+      "packet": {
+        "contract_version": "1.0",
+        "review_id": "rev-gcp-2",
+        "engineer_result_ref": "res-gcp-2",
+        "verification_ref": "ver-gcp-2",
+        "decision": "pass",
+        "findings": [],
+        "evidence_refs": [
+          "evd-gcp-ver-2"
+        ],
+        "completed_at": "2026-11-17T10:22:00Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-github-control-plane-001",
+    "event_id": "ev-gcp-11",
+    "sequence": 11,
+    "previous_event_id": "ev-gcp-10",
+    "occurred_at": "2026-11-17T10:22:30Z",
+    "type": "auditor_counterchecked",
+    "data": {
+      "packet": {
+        "contract_version": "1.0",
+        "audit_id": "aud-gcp-2",
+        "review_ref": "rev-gcp-2",
+        "decision": "concur",
+        "findings": [],
+        "evidence_refs": [
+          "evd-gcp-ver-2"
+        ],
+        "completed_at": "2026-11-17T10:22:30Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-github-control-plane-001",
+    "event_id": "ev-gcp-12",
+    "sequence": 12,
+    "previous_event_id": "ev-gcp-11",
+    "occurred_at": "2026-11-17T10:23:00Z",
+    "type": "coordinator_finalized",
+    "data": {
+      "response": {
+        "contract_version": "1.0",
+        "response_id": "resp-gcp-1",
+        "outcome": "passed",
+        "public_summary": "GitHub Multi-Agent Control Plane (2-layer Rulesets, Bot Quorum readiness, AGENT_ACK + PR Semantic Audit, and 3-tier Google Drive Quant Vault) passed adversarial review and post-fix verification",
+        "evidence_refs": [
+          "evd-gcp-ver-2"
+        ],
+        "completed_at": "2026-11-17T10:23:00Z"
+      }
+    }
+  }
+]

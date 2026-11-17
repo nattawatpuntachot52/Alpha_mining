@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "vault_name": "Alpha_mining_Vault",
+  "root_folder_id": "1uB0PU8GvrCx5payhEufdkxFXuWf4RGFp",
+  "root_url": "https://drive.google.com/drive/folders/1uB0PU8GvrCx5payhEufdkxFXuWf4RGFp",
+  "categories": {
+    "dataset": {
+      "folder_name": "datasets",
+      "folder_id": "12q4OVX65a0R1fubWJuey5kqkXUNoDXsX"
+    },
+    "backtest_cache": {
+      "folder_name": "backtests",
+      "folder_id": "1mSUfgnR4yNhSi3ggM_DYHMjP9ynB5Yxr"
+    },
+    "state_snapshot": {
+      "folder_name": "state_snapshots",
+      "folder_id": "11LgT2EI6OrjeBoF8y91Smz2wEfRwfxbt"
+    }
+  }
+}

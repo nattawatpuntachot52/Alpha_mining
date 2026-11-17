@@ -1,0 +1,115 @@
+name: OVCA Reviewer Bot
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "Pull request number to audit and review"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  unconfigured-notice:
+    if: ${{ vars.OVCA_REVIEWER_APP_ID == '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Bot App not configured yet
+        run: |
+          echo "OVCA_REVIEWER_APP_ID is not set; skipping automated GitHub App review."
+          echo "See docs/bot-account-setup.md to enable separate-account PR quorum (>= 1)."
+
+  reviewer-audit:
+    if: ${{ vars.OVCA_REVIEWER_APP_ID != '' && (github.event_name == 'workflow_dispatch' || github.event.workflow_run.event == 'pull_request') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check App Private Key availability
+        if: ${{ secrets.OVCA_REVIEWER_APP_PRIVATE_KEY == '' }}
+        run: |
+          echo "OVCA_REVIEWER_APP_ID is configured without OVCA_REVIEWER_APP_PRIVATE_KEY." >&2
+          exit 1
+
+      # Security: always check out trusted base branch (`main`), never untrusted PR head code.
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Generate GitHub App installation token
+        id: app_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.OVCA_REVIEWER_APP_ID }}
+          private-key: ${{ secrets.OVCA_REVIEWER_APP_PRIVATE_KEY }}
+
+      - name: Resolve target PR and run Semantic Audit + Reviewer verdict
+        env:
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
+          REPO_NAME: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_PR_NUMBER: ${{ inputs.pr_number }}
+          RUN_PR_NUM: ${{ github.event.workflow_run.pull_requests[0].number || '' }}
+          RUN_HEAD_SHA: ${{ github.event.workflow_run.head_sha || '' }}
+          RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion || '' }}
+        run: |
+          set -euo pipefail
+          PR_NUM=""
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            PR_NUM="$INPUT_PR_NUMBER"
+          else
+            PR_NUM="$RUN_PR_NUM"
+            if [[ -z "$PR_NUM" && -n "$RUN_HEAD_SHA" ]]; then
+              PR_NUM=$(gh pr list -R "$REPO_NAME" --state open --search "$RUN_HEAD_SHA" --json number --jq '.[0].number // ""')
+            fi
+          fi
+
+          if [[ -z "$PR_NUM" ]]; then
+            echo "No associated open pull request found for this run; exiting cleanly."
+            exit 0
+          fi
+          if [[ ! "$PR_NUM" =~ ^[0-9]+$ ]]; then
+            echo "Invalid PR number: $PR_NUM" >&2
+            exit 1
+          fi
+
+          PR_META=$(gh pr view "$PR_NUM" -R "$REPO_NAME" --json state,isDraft,headRefOid,headRepository,baseRepository)
+          PR_STATE=$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["state"])' "$PR_META")
+          if [[ "$PR_STATE" != "OPEN" ]]; then
+            echo "PR #$PR_NUM state is $PR_STATE; skipping comment/review."
+            exit 0
+          fi
+
+          IS_DRAFT=$(python3 -c 'import json,sys; print("true" if json.loads(sys.argv[1])["isDraft"] else "false")' "$PR_META")
+          CURRENT_HEAD_SHA=$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["headRefOid"])' "$PR_META")
+          SAME_REPO=$(python3 -c 'import json,sys; d=json.loads(sys.argv[1]); print("true" if d["headRepository"]["nameWithOwner"]==d["baseRepository"]["nameWithOwner"] else "false")' "$PR_META")
+
+          if [[ "$EVENT_NAME" == "workflow_run" && -n "$RUN_HEAD_SHA" && "$CURRENT_HEAD_SHA" != "$RUN_HEAD_SHA" ]]; then
+            echo "PR #$PR_NUM head moved ($RUN_HEAD_SHA -> $CURRENT_HEAD_SHA); skipping stale CI run review."
+            exit 0
+          fi
+
+          python3 scripts/pr_audit.py --repo "$REPO_NAME" --pr "$PR_NUM" --format json > audit.json
+          python3 scripts/pr_audit.py --repo "$REPO_NAME" --pr "$PR_NUM" --format markdown > audit.md
+
+          VERDICT=$(python3 -c 'import json,sys; d=json.load(open("audit.json",encoding="utf-8")); n=int(sys.argv[1]); print(next((r["verdict"] for r in d if r["number"]==n),"UNKNOWN"))' "$PR_NUM")
+          CHECKS_SUMMARY=$(python3 -c 'import json,sys; d=json.load(open("audit.json",encoding="utf-8")); n=int(sys.argv[1]); print(next((r["checks_summary"] for r in d if r["number"]==n),"UNKNOWN"))' "$PR_NUM")
+
+          echo "PR #$PR_NUM same_repo=$SAME_REPO draft=$IS_DRAFT checks=$CHECKS_SUMMARY run_conclusion=$RUN_CONCLUSION audit_verdict=$VERDICT"
+          gh pr comment "$PR_NUM" -R "$REPO_NAME" --body-file audit.md
+
+          if [[ "$SAME_REPO" == "true" && "$IS_DRAFT" == "false" && "$CHECKS_SUMMARY" == "SUCCESS" && ( "$EVENT_NAME" == "workflow_dispatch" || "$RUN_CONCLUSION" == "success" ) && "$VERDICT" == "READY_TO_MERGE" ]]; then
+            gh pr review "$PR_NUM" -R "$REPO_NAME" --approve \
+              --body "OVCA Reviewer Bot: checks=$CHECKS_SUMMARY, semantic_audit=$VERDICT on head $CURRENT_HEAD_SHA."
+          elif [[ "$VERDICT" == "RECONCILE_REQUIRED" || "$VERDICT" == "BLOCKED" || "$CHECKS_SUMMARY" == "FAILURE" || "$RUN_CONCLUSION" == "failure" ]]; then
+            gh pr review "$PR_NUM" -R "$REPO_NAME" --request-changes \
+              --body "OVCA Reviewer Bot: cannot approve yet (checks=$CHECKS_SUMMARY, audit_verdict=$VERDICT). See semantic audit comment."
+          else
+            echo "Leaving review pending (same_repo=$SAME_REPO, draft=$IS_DRAFT, checks=$CHECKS_SUMMARY, verdict=$VERDICT)."
+          fi

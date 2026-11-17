@@ -80,6 +80,12 @@
   - `next_action_line`: `ไม่ต้องทำอะไรต่อ` | `ต้องทำต่อ: <สิ่งเดียวที่ต้องทำต่อ>` | `owner decision needed: <decision>`
   - สถานะ commit (commit hash หรือระบุว่าไม่ได้ commit), ผล verification จริง (pass/fail/not run), และ leftover files (ถ้ามี)
 
+### 2.6 GitHub Control Plane, `AGENT_ACK`, PR Audit & Vault Hygiene
+- **PR-Only `main` Protection (2-Layer Ruleset)**: `main` ถูกล็อกด้วย Ruleset 2 ชั้น ([config/github/rulesets/](config/github/rulesets/)) — ห้าม bypass หรือ push ตรงเข้า `main` ทุกการเปลี่ยนแปลงต้องผ่าน PR และ CI (`rust`, `python`); คง `required_approving_review_count: 0` ชั่วคราวจนกว่าจะตั้งค่า GitHub App / Separate Bot Account ตาม [docs/bot-account-setup.md](docs/bot-account-setup.md) เพื่อป้องกัน self-approval deadlock
+- **`AGENT_ACK` & Durable GitHub Ledger**: ทุก PR และ formal handover/audit ต้องแนบ `AGENT_ACK` ตาม [workflows/templates/agent_ack.template.md](workflows/templates/agent_ack.template.md) โดยระบุ `actual_model_id_version: UNKNOWN (not exposed by runtime)` และ node ที่ไม่ได้เชื่อมเป็น `UNKNOWN / NOT_CONNECTED` อย่างตรงไปตรงมา พร้อมบันทึกลง PR/Issue และ `workflows/runs/<workflow_id>/`
+- **PR Semantic Audit Gate (ไม่เชื่อแค่ `MERGEABLE`)**: เมื่อมีหลาย PR/branch เปิดพร้อมกัน ห้ามถือว่าสถานะ `MERGEABLE` ของ GitHub คือพร้อม merge; ให้รัน `python3 scripts/pr_audit.py --fail-on-critical` เพื่อตรวจ file/sibling namespace collision, contract/schema ripple และ stale stacked base ก่อน merge เสมอ
+- **Drive Vault + Actions Cache State Hygiene**: ห้าม commit ไฟล์ข้อมูลขนาดใหญ่ (`*.parquet`, `*.tar.zst`, `data/raw/`, `.vault_cache/`) เข้า Git; ให้แพ็กผ่าน `python3 scripts/vault_sync.py`, เก็บเฉพาะ SHA-256 manifest ใน `workflows/vault_manifests/`, และเก็บ payload ใน GitHub Actions Cache + Google Drive `Alpha_mining_Vault`
+
 ---
 
 ## 3. Quant Research, Engineering & Evidence Standards
@@ -109,9 +115,11 @@
 ## 5. Alpha_mining Verification Commands
 
 ```bash
+cmp -s AGENTS.md CLAUDE.md
 cargo fmt --manifest-path rust/Cargo.toml --all -- --check
 cargo check --manifest-path rust/Cargo.toml --all-targets --locked
 cargo test --manifest-path rust/Cargo.toml --all-targets --locked
 cargo clippy --manifest-path rust/Cargo.toml --all-targets --locked -- -D warnings
+python3 scripts/github_ruleset.py validate-configs
 python3 -m unittest discover -s python/tests -v
 ```
