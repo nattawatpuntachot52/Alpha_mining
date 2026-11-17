@@ -1,0 +1,174 @@
+[
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-synth-microstructure-001",
+    "event_id": "synth-ev-0",
+    "sequence": 0,
+    "occurred_at": "2026-11-17T00:01:00Z",
+    "type": "intake_accepted",
+    "data": {
+      "request_ref": "brief-synth-microstructure-001",
+      "public_summary": "Synthetic conditioning fixture demonstrating OVCA intake for microstructure research",
+      "authority": {
+        "contract_version": "1.0",
+        "authority_id": "auth-synth-microstructure-001",
+        "granted_by": "owner",
+        "objective": "Validate synthetic OVCA workflow wiring under Conditioner gates",
+        "scope": ["workflows/examples"],
+        "constraints": ["synthetic reference fixture only"]
+      },
+      "budget": {
+        "contract_version": "1.0",
+        "max_repair_attempts": 1,
+        "max_events": 14
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-synth-microstructure-001",
+    "event_id": "synth-ev-1",
+    "sequence": 1,
+    "previous_event_id": "synth-ev-0",
+    "occurred_at": "2026-11-17T00:02:00Z",
+    "type": "coordinator_dispatched",
+    "data": {
+      "invocation": {
+        "contract_version": "1.0",
+        "invocation_id": "inv-synth-1",
+        "requested_by": "coordinator",
+        "role": "engineer",
+        "objective": "Execute synthetic microstructure evaluation under causal alignment",
+        "authority_ref": "auth-synth-microstructure-001",
+        "input_refs": ["brief-synth-microstructure-001"],
+        "attempt": 1,
+        "requested_at": "2026-11-17T00:02:00Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-synth-microstructure-001",
+    "event_id": "synth-ev-2",
+    "sequence": 2,
+    "previous_event_id": "synth-ev-1",
+    "occurred_at": "2026-11-17T00:03:00Z",
+    "type": "engineer_returned",
+    "data": {
+      "result": {
+        "contract_version": "1.0",
+        "result_id": "res-synth-1",
+        "invocation_ref": "inv-synth-1",
+        "role": "engineer",
+        "status": "succeeded",
+        "summary": "Synthetic fixture candidate artifact produced without real trading claims",
+        "evidence": [
+          {
+            "contract_version": "1.0",
+            "evidence_id": "evd-synth-impl-1",
+            "kind": "implementation",
+            "summary": "Synthetic causal alignment pipeline executed",
+            "source": "engineer-synth-solver",
+            "collected_at": "2026-11-17T00:03:00Z"
+          }
+        ],
+        "completed_at": "2026-11-17T00:03:00Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-synth-microstructure-001",
+    "event_id": "synth-ev-3",
+    "sequence": 3,
+    "previous_event_id": "synth-ev-2",
+    "occurred_at": "2026-11-17T00:04:00Z",
+    "type": "verification_recorded",
+    "data": {
+      "outcome": {
+        "contract_version": "1.0",
+        "verification_id": "ver-synth-1",
+        "subject_result_ref": "res-synth-1",
+        "status": "passed",
+        "checks": [
+          {
+            "name": "synthetic-causal-invariant",
+            "status": "passed",
+            "summary": "Verified synthetic fixture structure and causal ordering"
+          }
+        ],
+        "evidence": [
+          {
+            "contract_version": "1.0",
+            "evidence_id": "evd-synth-ver-1",
+            "kind": "verification",
+            "summary": "Independent verifier checks passed on synthetic fixture",
+            "source": "verifier-synth-checks",
+            "collected_at": "2026-11-17T00:04:00Z"
+          }
+        ],
+        "completed_at": "2026-11-17T00:04:00Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-synth-microstructure-001",
+    "event_id": "synth-ev-4",
+    "sequence": 4,
+    "previous_event_id": "synth-ev-3",
+    "occurred_at": "2026-11-17T00:05:00Z",
+    "type": "reviewer_decided",
+    "data": {
+      "packet": {
+        "contract_version": "1.0",
+        "review_id": "rev-synth-1",
+        "engineer_result_ref": "res-synth-1",
+        "verification_ref": "ver-synth-1",
+        "decision": "pass",
+        "findings": [],
+        "evidence_refs": ["evd-synth-ver-1"],
+        "completed_at": "2026-11-17T00:05:00Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-synth-microstructure-001",
+    "event_id": "synth-ev-5",
+    "sequence": 5,
+    "previous_event_id": "synth-ev-4",
+    "occurred_at": "2026-11-17T00:06:00Z",
+    "type": "auditor_counterchecked",
+    "data": {
+      "packet": {
+        "contract_version": "1.0",
+        "audit_id": "aud-synth-1",
+        "review_ref": "rev-synth-1",
+        "decision": "concur",
+        "findings": [],
+        "evidence_refs": ["evd-synth-ver-1"],
+        "completed_at": "2026-11-17T00:06:00Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-synth-microstructure-001",
+    "event_id": "synth-ev-6",
+    "sequence": 6,
+    "previous_event_id": "synth-ev-5",
+    "occurred_at": "2026-11-17T00:07:00Z",
+    "type": "coordinator_finalized",
+    "data": {
+      "response": {
+        "contract_version": "1.0",
+        "response_id": "resp-synth-1",
+        "outcome": "passed",
+        "public_summary": "Synthetic OVCA reference stream verified end-to-end",
+        "evidence_refs": ["evd-synth-ver-1"],
+        "completed_at": "2026-11-17T00:07:00Z"
+      }
+    }
+  }
+]

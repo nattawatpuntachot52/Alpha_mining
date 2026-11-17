@@ -1,0 +1,23 @@
+[workspace]
+resolver = "2"
+members = [
+  "crates/alpha-ovca",
+]
+default-members = [
+  "crates/alpha-ovca",
+]
+
+[workspace.package]
+authors = ["Nattawatpuntachot"]
+edition = "2021"
+license = "Apache-2.0"
+publish = false
+repository = "https://github.com/nattawatpuntachot52/Alpha_mining"
+rust-version = "1.85"
+
+[workspace.dependencies]
+ovca-types = { git = "https://github.com/nattawatpuntachot52/ovca-reference.git", rev = "5b0726ceddc5c92ccf334e6ef94ba9875ce0c5f4" }
+ovca-workflow = { git = "https://github.com/nattawatpuntachot52/ovca-reference.git", rev = "5b0726ceddc5c92ccf334e6ef94ba9875ce0c5f4" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "1"

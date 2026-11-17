@@ -1,0 +1,17 @@
+[package]
+name = "alpha-ovca"
+version = "0.1.0"
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+publish.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Conditioner pre-intake gates and OVCA v1.0 workflow runner for Alpha_mining"
+
+[dependencies]
+ovca-types = { workspace = true }
+ovca-workflow = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }

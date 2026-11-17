@@ -1,0 +1,76 @@
+{
+  "contract_version": "1.0",
+  "brief_id": "brief-synth-microstructure-001",
+  "title": "SYNTHETIC EXAMPLE: Short-Horizon Queue Imbalance Study",
+  "public_summary": "Synthetic conditioning fixture demonstrating OVCA intake for microstructure research",
+  "domain": "quant_research",
+  "target_evidence_status": "reproducible",
+  "inputs": [
+    "synthetic_l1_book_events.json (UTC timestamps, deterministic fixture)"
+  ],
+  "outputs": [
+    "synthetic_verification_summary.json"
+  ],
+  "variables": [
+    "imbalance_window_events",
+    "cost_bps"
+  ],
+  "constraints": [
+    "synthetic conformance fixture only — no live market data or alpha claim",
+    "zero lookahead indexing"
+  ],
+  "assumptions": [
+    "synthetic maker/taker fees remain fixed across the sample window"
+  ],
+  "unknowns": [],
+  "block_on_unresolved_unknowns": true,
+  "acceptance_criteria": [
+    "alpha-ovca verify-stream exits 0 and matches brief_id, authority, and budget"
+  ],
+  "hypothesis": {
+    "statement": "SYNTHETIC FIXTURE: Extreme L1 queue imbalance precedes short-horizon mid-price tick shifts",
+    "economic_rationale": "SYNTHETIC FIXTURE: Asymmetric order arrival consumes top-of-book liquidity faster than replenishment",
+    "alternative_explanations": [
+      "Quote flickering without true directional order flow",
+      "Tick-size discretization artifact"
+    ],
+    "falsification_criteria": [
+      "Net expected return after half-spread and fees is <= 0 on unseen out-of-sample slice"
+    ]
+  },
+  "quant_checks": {
+    "cost_model_assumptions": [
+      "half-spread + 1.0 bps fee per round turn"
+    ],
+    "leakage_controls": [
+      "strict causal timestamp ordering (t_signal < t_execution)"
+    ],
+    "multiple_testing_plan": "Log total parameter evaluations and apply Bonferroni/DSR penalty",
+    "oos_validation_plan": "Chronological purged walk-forward split",
+    "target_proof_level": "correctness"
+  },
+  "governance": {
+    "solver_actor": "engineer-synth-solver",
+    "verifier_actor": "verifier-synth-checks",
+    "reviewer_actor": "reviewer-synth-critic",
+    "auditor_actor": "auditor-synth-countercheck"
+  },
+  "authority": {
+    "contract_version": "1.0",
+    "authority_id": "auth-synth-microstructure-001",
+    "granted_by": "owner",
+    "objective": "Validate synthetic OVCA workflow wiring under Conditioner gates",
+    "scope": [
+      "workflows/examples"
+    ],
+    "constraints": [
+      "synthetic reference fixture only"
+    ]
+  },
+  "budget": {
+    "contract_version": "1.0",
+    "max_repair_attempts": 1,
+    "max_events": 14
+  },
+  "created_at": "2026-11-17T00:00:00Z"
+}

@@ -1,0 +1,75 @@
+{
+  "contract_version": "1.0",
+  "brief_id": "brief-replace-me-001",
+  "title": "Short descriptive title of task or research question",
+  "public_summary": "One-line public intake summary (no secrets or sensitive details)",
+  "domain": "quant_research",
+  "target_evidence_status": "reproducible",
+  "inputs": [
+    "Explicit input datasets, parameters, or specs with units and timezones"
+  ],
+  "outputs": [
+    "Expected artifacts, metrics, or reports"
+  ],
+  "variables": [
+    "Free or decision variables"
+  ],
+  "constraints": [
+    "Hard limits, latency/cost bounds, no lookahead leakage"
+  ],
+  "assumptions": [
+    "Explicit provisional assumptions that must be challenged"
+  ],
+  "unknowns": [
+    "List unresolved questions here; set block_on_unresolved_unknowns=true until answered"
+  ],
+  "block_on_unresolved_unknowns": true,
+  "acceptance_criteria": [
+    "Measurable pass/fail acceptance criteria"
+  ],
+  "hypothesis": {
+    "statement": "Falsifiable hypothesis statement",
+    "economic_rationale": "Structural market mechanism explaining why the effect exists and who is on the other side",
+    "alternative_explanations": [
+      "Alternative non-alpha explanation (e.g., bid-ask bounce, volatility clustering, leakage)"
+    ],
+    "falsification_criteria": [
+      "Specific statistical or empirical result that rejects this hypothesis"
+    ]
+  },
+  "quant_checks": {
+    "cost_model_assumptions": [
+      "Explicit spread, commission, funding, and slippage assumptions"
+    ],
+    "leakage_controls": [
+      "Strict chronological split with purge/embargo"
+    ],
+    "multiple_testing_plan": "Track all tested configurations and adjust significance (e.g., DSR / FDR)",
+    "oos_validation_plan": "Define exact unseen out-of-sample period and walk-forward protocol",
+    "target_proof_level": "correctness"
+  },
+  "governance": {
+    "solver_actor": "engineer-solver",
+    "verifier_actor": "verifier-independent",
+    "reviewer_actor": "reviewer-independent",
+    "auditor_actor": "auditor-adversarial"
+  },
+  "authority": {
+    "contract_version": "1.0",
+    "authority_id": "auth-replace-me-001",
+    "granted_by": "owner",
+    "objective": "Clear bounded objective authorized by Owner",
+    "scope": [
+      "Allowed directories or modules"
+    ],
+    "constraints": [
+      "Explicit safety or non-execution constraints"
+    ]
+  },
+  "budget": {
+    "contract_version": "1.0",
+    "max_repair_attempts": 1,
+    "max_events": 14
+  },
+  "created_at": "2026-11-17T00:00:00Z"
+}

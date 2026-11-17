@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust toolchain components
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Rust format check
+        run: cargo fmt --manifest-path rust/Cargo.toml --all -- --check
+      - name: Rust check
+        run: cargo check --manifest-path rust/Cargo.toml --all-targets --locked
+      - name: Rust tests
+        run: cargo test --manifest-path rust/Cargo.toml --all-targets --locked
+      - name: Rust Clippy
+        run: cargo clippy --manifest-path rust/Cargo.toml --all-targets --locked -- -D warnings
+
+  python:
+    runs-on: ubuntu-latest
+    needs: rust
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Run Python bridge and domain boundary tests
+        run: python3 -m unittest discover -s python/tests -v

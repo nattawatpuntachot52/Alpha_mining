@@ -1,0 +1,28 @@
+# Rust
+target/
+**/*.rs.bk
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+
+# Environments & secrets
+.env
+.env.*
+*.key
+*.pem
+*.secret
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
