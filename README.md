@@ -15,8 +15,9 @@
    - Strict 5-layer separation: `research/` | `strategy/` | `risk/` | `execution/` | `accounting/`.
 4. **Workflow Ledger & Templates (`workflows/`)**
    - Pre-intake JSON templates, research gate checklists, synthetic OVCA reference fixtures, and reproducible run logs (`workflows/runs/`).
-5. **Installable Skill (`skills/conditioner-ovca/SKILL.md`)**
-   - Portable skill encapsulating the Conditioner role + OVCA workflow rules.
+5. **Installable Skills (`skills/`)**
+   - `skills/conditioner-ovca/SKILL.md`: Portable skill encapsulating the Conditioner role + OVCA workflow rules.
+   - `skills/zoom-out/SKILL.md`: Evidence-grounded codebase/system mapping skill synced from `ovca-reference`.
 
 ## Quick Verification
 
