@@ -30,10 +30,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check App Private Key availability
-        if: ${{ secrets.OVCA_REVIEWER_APP_PRIVATE_KEY == '' }}
+        env:
+          OVCA_APP_PRIVATE_KEY: ${{ secrets.OVCA_REVIEWER_APP_PRIVATE_KEY }}
         run: |
-          echo "OVCA_REVIEWER_APP_ID is configured without OVCA_REVIEWER_APP_PRIVATE_KEY." >&2
-          exit 1
+          set -euo pipefail
+          if [[ -z "${OVCA_APP_PRIVATE_KEY:-}" ]]; then
+            echo "OVCA_REVIEWER_APP_ID is configured without OVCA_REVIEWER_APP_PRIVATE_KEY." >&2
+            exit 1
+          fi
 
       # Security: always check out trusted base branch (`main`), never untrusted PR head code.
       - uses: actions/checkout@v4

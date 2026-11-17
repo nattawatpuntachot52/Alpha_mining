@@ -48,4 +48,5 @@ jobs:
           name: admission-observe-report
           path: .observe_out/
           retention-days: 30
+          include-hidden-files: true
           if-no-files-found: ignore
