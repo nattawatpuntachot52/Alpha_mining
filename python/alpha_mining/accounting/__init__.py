@@ -16,3 +16,19 @@ class ReconciliationEntry:
     slippage_cost: float
     reconciled: bool
     reconciled_at_utc: str
+
+
+from .contracts import (  # noqa: E402
+    AccountedOutcome,
+    CostAssumptions,
+    account_for_reconciliation,
+    compute_net_r,
+)
+
+__all__ = [
+    "AccountedOutcome",
+    "CostAssumptions",
+    "ReconciliationEntry",
+    "account_for_reconciliation",
+    "compute_net_r",
+]

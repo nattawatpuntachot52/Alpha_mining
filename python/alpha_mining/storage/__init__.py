@@ -1,5 +1,20 @@
 """Hybrid storage layer separating Git SHA-256 manifests from Actions hot cache and Google Drive."""
 
+from .brain_memory import (
+    BrainEpisode,
+    BrainMemoryError,
+    DecisionContext,
+    EpisodeOutcome,
+    TranslationEnvelope,
+    append_episode,
+    daily_log_path,
+    load_episodes,
+    outcome_from_accounted,
+    pack_daily_snapshot,
+    render_day_markdown,
+    resolve_episode_outcome,
+    summarize_day,
+)
 from .vault import (
     VaultError,
     VaultIntegrityError,
@@ -16,16 +31,29 @@ from .vault import (
 )
 
 __all__ = [
+    "BrainEpisode",
+    "BrainMemoryError",
+    "DecisionContext",
+    "EpisodeOutcome",
+    "TranslationEnvelope",
     "VaultError",
     "VaultIntegrityError",
+    "append_episode",
     "build_cache_key",
+    "daily_log_path",
     "default_vault_config_path",
     "extract_verified_archive",
+    "load_episodes",
     "load_manifest",
     "load_vault_config",
+    "outcome_from_accounted",
     "pack_artifact",
+    "pack_daily_snapshot",
     "pull_from_drive",
     "push_to_drive",
+    "render_day_markdown",
+    "resolve_episode_outcome",
     "sha256_file",
+    "summarize_day",
     "verify_archive_checksum",
 ]

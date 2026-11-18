@@ -1,0 +1,78 @@
+{
+  "contract_version": "1.0",
+  "brief_id": "brief-brain-memory-001",
+  "title": "Daily Brain Memory Ledger, Vault Snapshot CLI, and Teacher-Guided ML Trading Domain Contracts",
+  "public_summary": "Implement structured Daily Brain Memory JSONL storage with anti-leakage and secret guardrails, snapshot packing into Google Drive Vault categories, and domain-isolated JSON contracts for owner-taught ML trading where LLM translates NL to JSON only.",
+  "domain": "infrastructure",
+  "target_evidence_status": "reproducible",
+  "inputs": [
+    "Owner architecture approval: store lightweight sanitized daily JSONL logs under workflows/memory/YYYY-MM-DD.jsonl in Git and pack snapshots via vault_sync.py into state_snapshots",
+    "Owner constraint: keep specific market, timeframe, and teaching strategy rules deferred until owner teaching sessions; LLM must act strictly as NL <-> JSON translator and never execute trades or bypass risk gates",
+    "Existing storage/vault infrastructure (python/alpha_mining/storage/vault.py) and 5 domain boundary modules (research, strategy, risk, execution, accounting)"
+  ],
+  "outputs": [
+    "python/alpha_mining/storage/brain_memory.py + scripts/brain_memory.py + updated storage exports",
+    "Domain contract skeletons: research/contracts.py, strategy/contracts.py, risk/contracts.py, execution/contracts.py, accounting/contracts.py + backward-compatible __init__.py exports",
+    "workflows/memory/README.md + initial sanitized governance episode log under workflows/memory/",
+    "Unit tests in python/tests/test_brain_memory.py and python/tests/test_domain_contracts.py"
+  ],
+  "variables": [
+    "session_date (YYYY-MM-DD UTC)",
+    "episode_kind (trading_lesson | governance_decision | quant_hypothesis | system_error)",
+    "outcome.status (pending | resolved | void)",
+    "min_prob_net_positive (deterministic meta-label acceptance threshold)"
+  ],
+  "constraints": [
+    "Preserve all existing dataclasses and passing tests in python/tests/ without breaking backward compatibility",
+    "Use Python 3.11 standard library only (no third-party dependencies in runtime or tests)",
+    "Enforce lookahead invariance: resolved BrainEpisode outcomes must satisfy outcome_at_utc >= observed_at_utc, and resolving pending episodes cannot mutate features/context/translation retroactively",
+    "Enforce secret sanitization on all BrainEpisode records written under workflows/memory/",
+    "Enforce translator isolation (translator_role == 'nl_to_json_only') and deterministic risk gating before ExecutionOrderRequest creation",
+    "Never modify governance charters (AGENTS.md, CLAUDE.md, GEMINI.md, roles/) or fabricate live trading alpha claims"
+  ],
+  "assumptions": [
+    "Market instrument, timeframe, and primary strategy rules remain deferred pending Owner teaching sessions and will require dedicated quant_research ConditioningBriefs in Phase 2",
+    "Remote Drive push/pull automation awaits Owner configuring RCLONE_CONFIG_GDRIVE OAuth secret; local snapshot packing uses existing vault.py state_snapshot pipeline"
+  ],
+  "unknowns": [],
+  "block_on_unresolved_unknowns": true,
+  "acceptance_criteria": [
+    "alpha-ovca validate-brief and verify-stream pass on workflows/runs/wf-brain-memory-001/",
+    "All new and existing Python unittests, Rust fmt/check/test/clippy --locked, ruleset validation, and admission policy parity checks pass cleanly",
+    "scripts/brain_memory.py validate passes on workflows/memory/ and deterministic snapshot round-trip passes checksum verification",
+    "Independent adversarial code audit catches zero critical or high-severity flaws and PR #7 passes CI + OVCA Reviewer Bot"
+  ],
+  "governance": {
+    "solver_actor": "antigravity-katherine-impl",
+    "verifier_actor": "local-cargo-unittest-ci-verifier",
+    "reviewer_actor": "research-subagent-adversarial-reviewer",
+    "auditor_actor": "post-fix-independent-verifier-auditor"
+  },
+  "authority": {
+    "contract_version": "1.0",
+    "authority_id": "auth-brain-memory-001",
+    "granted_by": "owner",
+    "objective": "Build Daily Brain Memory storage/snapshot tooling and domain-neutral contracts for owner-taught ML trading on a clean feature branch",
+    "scope": [
+      "python/alpha_mining/storage/",
+      "python/alpha_mining/research/",
+      "python/alpha_mining/strategy/",
+      "python/alpha_mining/risk/",
+      "python/alpha_mining/execution/",
+      "python/alpha_mining/accounting/",
+      "python/tests/",
+      "scripts/brain_memory.py",
+      "workflows/memory/",
+      "workflows/runs/wf-brain-memory-001/"
+    ],
+    "constraints": [
+      "Keep PR strictly bounded to approved scope; do not merge or alter governance files"
+    ]
+  },
+  "budget": {
+    "contract_version": "1.0",
+    "max_repair_attempts": 1,
+    "max_events": 14
+  },
+  "created_at": "2026-11-18T05:00:00Z"
+}

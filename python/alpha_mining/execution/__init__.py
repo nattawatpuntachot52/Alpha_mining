@@ -20,3 +20,18 @@ class ExecutionReport:
     avg_fill_price: float
     fee_paid: float
     executed_at_utc: str
+
+
+from .contracts import (  # noqa: E402
+    ExecutionAdapter,
+    ExecutionOrderRequest,
+    build_order_from_risk_decision,
+)
+
+__all__ = [
+    "ExecutionAdapter",
+    "ExecutionOrderRequest",
+    "ExecutionReport",
+    "OrderSide",
+    "build_order_from_risk_decision",
+]
