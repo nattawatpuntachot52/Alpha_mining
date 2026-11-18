@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import fcntl
+import hashlib
 import json
 import math
 import os
 import re
 import tempfile
 from collections import Counter
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import date, datetime
@@ -20,8 +21,10 @@ from typing import Any, Literal
 from .vault import (
     Codec,
     CommandRunner,
+    VaultError,
     _default_runner,
     default_vault_config_path,
+    load_manifest,
     pack_artifact,
 )
 
@@ -731,7 +734,11 @@ def _read_episodes_unlocked(memory_dir: Path, session_date: str | None = None) -
             parse_session_date(path.stem)
         else:
             raise BrainMemoryError(f"unexpected daily log filename {path.name!r}: expected YYYY-MM-DD.jsonl")
-        for line_no, raw in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        try:
+            content = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError) as exc:
+            raise BrainMemoryError(f"failed to read daily log {path.name!r}: {exc}") from exc
+        for line_no, raw in enumerate(content.splitlines(), start=1):
             stripped = raw.strip()
             if not stripped:
                 continue
@@ -925,10 +932,12 @@ def pack_daily_snapshot(
         (stage / f"{session_date}.jsonl").write_text(
             "\n".join(serialized_lines) + "\n",
             encoding="utf-8",
+            newline="\n",
         )
         (stage / f"{session_date}.summary.json").write_text(
             json.dumps(summary, indent=2, sort_keys=True, ensure_ascii=False, allow_nan=False) + "\n",
             encoding="utf-8",
+            newline="\n",
         )
         return pack_artifact(
             stage,
@@ -941,6 +950,261 @@ def pack_daily_snapshot(
             codec=codec,
             runner=runner,
         )
+
+
+def _canonical_jsonl_sha256(episodes: Sequence[BrainEpisode]) -> tuple[str, int]:
+    payload = ("\n".join(ep.to_json_line() for ep in episodes) + "\n").encode("utf-8")
+    return hashlib.sha256(payload).hexdigest(), len(payload)
+
+
+def _canonical_summary_sha256(session_date: str, episodes: Sequence[BrainEpisode]) -> tuple[str, int]:
+    summary = _summarize_episodes(session_date, episodes)
+    payload = (json.dumps(summary, indent=2, sort_keys=True, ensure_ascii=False, allow_nan=False) + "\n").encode(
+        "utf-8"
+    )
+    return hashlib.sha256(payload).hexdigest(), len(payload)
+
+
+def plan_snapshot_sync(
+    memory_dir: Path,
+    *,
+    manifest_dirs: Sequence[Path],
+    authoritative_manifest_dir: Path | None = None,
+    session_date: str | None = None,
+    force: bool = False,
+) -> dict[str, Any]:
+    """Identify which daily JSONL logs need packing and/or Google Drive upload."""
+    if not isinstance(force, bool):
+        raise BrainMemoryError("force must be a boolean")
+
+    explicit_date: str | None = None
+    if session_date is not None and session_date != "auto":
+        parse_session_date(session_date)
+        explicit_date = session_date
+
+    resolved_auth_dir: Path | None = None
+    auth_dir_entry: tuple[Path, Path | None] | None = None
+    if authoritative_manifest_dir is not None:
+        if authoritative_manifest_dir.is_symlink():
+            raise BrainMemoryError(
+                f"symlink disallowed for authoritative_manifest_dir: {authoritative_manifest_dir}"
+            )
+        if authoritative_manifest_dir.exists():
+            if not authoritative_manifest_dir.is_dir():
+                raise BrainMemoryError(
+                    f"authoritative_manifest_dir is not a directory: {authoritative_manifest_dir}"
+                )
+            resolved_auth_dir = authoritative_manifest_dir.resolve()
+            auth_dir_entry = (authoritative_manifest_dir, resolved_auth_dir)
+        else:
+            auth_dir_entry = (authoritative_manifest_dir, None)
+
+    resolved_manifest_dirs: list[tuple[Path, Path | None, bool]] = []
+    seen_existing_dirs: set[Path] = set()
+    for mdir in manifest_dirs:
+        if mdir.is_symlink():
+            raise BrainMemoryError(f"symlink disallowed for manifest_dir: {mdir}")
+        if mdir.exists():
+            if not mdir.is_dir():
+                raise BrainMemoryError(f"manifest_dir is not a directory: {mdir}")
+            r_mdir = mdir.resolve()
+            if r_mdir in seen_existing_dirs:
+                continue
+            seen_existing_dirs.add(r_mdir)
+            is_auth = resolved_auth_dir is not None and r_mdir == resolved_auth_dir
+            resolved_manifest_dirs.append((mdir, r_mdir, is_auth))
+        else:
+            resolved_manifest_dirs.append((mdir, None, False))
+
+    if auth_dir_entry is not None and auth_dir_entry[1] is not None and auth_dir_entry[1] not in seen_existing_dirs:
+        resolved_manifest_dirs.append((auth_dir_entry[0], auth_dir_entry[1], True))
+
+    by_date: dict[str, list[BrainEpisode]] = {}
+    with _memory_lock(memory_dir, shared=True, create_dir=False):
+        if explicit_date is not None:
+            resolved_mem_dir = _assert_safe_memory_dir(memory_dir, allow_missing=False)
+            assert resolved_mem_dir is not None
+            src_jsonl = daily_log_path(memory_dir, explicit_date)
+            _assert_safe_log_file(src_jsonl, resolved_mem_dir, allow_missing=False)
+            day_eps = _read_episodes_unlocked(memory_dir, explicit_date)
+            if not day_eps:
+                raise BrainMemoryError(f"cannot plan snapshot: daily log {src_jsonl.name} contains zero episodes")
+            by_date[explicit_date] = day_eps
+        else:
+            resolved_mem_dir = _assert_safe_memory_dir(memory_dir, allow_missing=True)
+            if resolved_mem_dir is not None:
+                all_paths = sorted(memory_dir.glob("*.jsonl"))
+                all_episodes = _read_episodes_unlocked(memory_dir, session_date=None)
+                for ep in all_episodes:
+                    by_date.setdefault(ep.session_date, []).append(ep)
+                for path in all_paths:
+                    if path.stem not in by_date:
+                        raise BrainMemoryError(
+                            f"cannot plan snapshot: daily log {path.name} contains zero episodes"
+                        )
+
+    items: list[dict[str, Any]] = []
+    for s_date in sorted(by_date.keys()):
+        day_eps = by_date[s_date]
+        canonical_sha, canonical_bytes = _canonical_jsonl_sha256(day_eps)
+        canonical_summary_sha, canonical_summary_bytes = _canonical_summary_sha256(s_date, day_eps)
+        expected_artifact_id = f"brain-daily-{s_date}"
+        manifest_filename = f"{expected_artifact_id}.manifest.json"
+        expected_relpath = f"{s_date}.jsonl"
+        expected_summary_relpath = f"{s_date}.summary.json"
+
+        found_any_manifest = False
+        found_matching_jsonl = False
+        found_matching_payload = False
+        matching_pushed: list[tuple[tuple[datetime, int], str, bool]] = []
+        conflicting_pushed: list[tuple[tuple[datetime, int], str]] = []
+
+        for mdir, resolved_mdir, is_auth in resolved_manifest_dirs:
+            if resolved_mdir is None:
+                continue
+            candidate = mdir / manifest_filename
+            if candidate.is_symlink():
+                raise BrainMemoryError(f"symlink disallowed for manifest file: {candidate}")
+            if not candidate.exists():
+                continue
+            if not candidate.is_file():
+                raise BrainMemoryError(f"non-regular manifest path disallowed: {candidate}")
+            resolved_cand = candidate.resolve()
+            if not resolved_cand.is_relative_to(resolved_mdir):
+                raise BrainMemoryError(f"manifest escapes manifest_dir: {candidate}")
+
+            try:
+                manifest = load_manifest(candidate)
+            except VaultError as exc:
+                raise BrainMemoryError(f"invalid snapshot manifest {candidate}: {exc}") from exc
+
+            if manifest.get("schema_version") != "1.0":
+                raise BrainMemoryError(
+                    f"manifest {candidate} schema_version {manifest.get('schema_version')!r} != '1.0'"
+                )
+            if manifest.get("artifact_id") != expected_artifact_id:
+                raise BrainMemoryError(
+                    f"manifest {candidate} artifact_id {manifest.get('artifact_id')!r} != {expected_artifact_id!r}"
+                )
+            if manifest.get("category") != "state_snapshot":
+                raise BrainMemoryError(
+                    f"manifest {candidate} category {manifest.get('category')!r} != 'state_snapshot'"
+                )
+            if manifest.get("compression") not in {"tar.zst", "tar.gz", "tar.xz"}:
+                raise BrainMemoryError(
+                    f"manifest {candidate} has invalid compression {manifest.get('compression')!r}"
+                )
+            if not manifest["archive_name"].startswith(f"{expected_artifact_id}."):
+                raise BrainMemoryError(
+                    f"manifest {candidate} archive_name {manifest['archive_name']!r} does not match {expected_artifact_id!r}"
+                )
+
+            last_pushed = manifest.get("last_pushed_utc")
+            pushed_ts: tuple[datetime, int] | None = None
+            if last_pushed is not None:
+                if not isinstance(last_pushed, str) or not last_pushed.strip():
+                    raise BrainMemoryError(
+                        f"manifest {candidate} has invalid last_pushed_utc {last_pushed!r}"
+                    )
+                pushed_ts = parse_utc_z_ns(last_pushed, "manifest.last_pushed_utc")
+
+            entries_by_relpath: dict[str, dict[str, Any]] = {}
+            for entry in manifest["files"]:
+                rel = entry["relpath"]
+                if rel in entries_by_relpath:
+                    raise BrainMemoryError(f"manifest {candidate} contains duplicate relpath {rel!r}")
+                entries_by_relpath[rel] = entry
+
+            found_any_manifest = True
+            j_entry = entries_by_relpath.get(expected_relpath)
+            s_entry = entries_by_relpath.get(expected_summary_relpath)
+
+            jsonl_matches = (
+                j_entry is not None
+                and j_entry["sha256"] == canonical_sha
+                and j_entry["bytes"] == canonical_bytes
+            )
+            summary_matches = (
+                s_entry is not None
+                and s_entry["sha256"] == canonical_summary_sha
+                and s_entry["bytes"] == canonical_summary_bytes
+            )
+            if jsonl_matches:
+                found_matching_jsonl = True
+
+            payload_matches = jsonl_matches and summary_matches
+            if payload_matches:
+                found_matching_payload = True
+                if pushed_ts is not None:
+                    matching_pushed.append((pushed_ts, str(candidate), is_auth))
+            elif pushed_ts is not None:
+                conflicting_pushed.append((pushed_ts, str(candidate)))
+
+        max_conflict_ts = max((ts for ts, _ in conflicting_pushed), default=None)
+        eligible_matching = [
+            (ts, path, is_auth)
+            for ts, path, is_auth in matching_pushed
+            if (authoritative_manifest_dir is None or is_auth)
+        ]
+        fresh_matching = [
+            (ts, path, is_auth)
+            for ts, path, is_auth in eligible_matching
+            if max_conflict_ts is None or ts > max_conflict_ts
+        ]
+
+        synced_manifest_path: str | None = None
+        if fresh_matching:
+            _, synced_manifest_path, _ = max(fresh_matching, key=lambda item: item[0])
+            if force:
+                needs_sync = True
+                reason = "forced"
+            else:
+                needs_sync = False
+                reason = "up_to_date"
+        elif eligible_matching and max_conflict_ts is not None:
+            needs_sync = True
+            reason = "conflicting_newer_push"
+        elif authoritative_manifest_dir is not None and matching_pushed and not eligible_matching:
+            needs_sync = True
+            reason = "missing_authoritative_manifest"
+        elif matching_pushed and max_conflict_ts is not None:
+            needs_sync = True
+            reason = "conflicting_newer_push"
+        elif found_matching_payload:
+            needs_sync = True
+            reason = "never_pushed"
+        elif found_matching_jsonl:
+            needs_sync = True
+            reason = "summary_sha256_changed"
+        elif found_any_manifest:
+            needs_sync = True
+            reason = "jsonl_sha256_changed"
+        else:
+            needs_sync = True
+            reason = "missing_manifest"
+
+        items.append(
+            {
+                "session_date": s_date,
+                "episode_count": len(day_eps),
+                "jsonl_sha256": canonical_sha,
+                "jsonl_bytes": canonical_bytes,
+                "summary_sha256": canonical_summary_sha,
+                "summary_bytes": canonical_summary_bytes,
+                "needs_sync": needs_sync,
+                "reason": reason,
+                "synced_manifest": synced_manifest_path,
+            }
+        )
+
+    return {
+        "schema_version": "1.0",
+        "memory_dir": str(memory_dir),
+        "total_session_dates": len(items),
+        "pending_dates": [item["session_date"] for item in items if item["needs_sync"]],
+        "up_to_date_dates": [item["session_date"] for item in items if not item["needs_sync"]],
+        "items": items,
+    }
 
 
 def outcome_from_accounted(

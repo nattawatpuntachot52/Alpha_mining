@@ -1,0 +1,261 @@
+name: Daily Brain Memory Snapshot Sync
+
+on:
+  schedule:
+    # Run daily at 18:00 UTC (01:00 Asia/Bangkok / UTC+7) after the day completes.
+    - cron: "0 18 * * *"
+  workflow_dispatch:
+    inputs:
+      session_date:
+        description: "Target session date (YYYY-MM-DD) or 'auto' for all pending/changed dates"
+        required: false
+        default: "auto"
+        type: string
+      dry_run:
+        description: "Validate and pack snapshot, then run push-snapshot --dry-run without uploading"
+        required: false
+        default: false
+        type: boolean
+      force_resync:
+        description: "Re-pack and push even when a matching synced manifest already exists"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+# Serialize daily snapshot sync runs so Actions Cache and Drive state do not race.
+concurrency:
+  group: alpha-brain-memory-sync
+  cancel-in-progress: false
+
+jobs:
+  daily-brain-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate all Daily Brain Memory JSONL logs
+        run: python3 scripts/brain_memory.py validate
+
+      - name: Restore Brain Snapshot Hot Cache & Manifest State
+        id: brain_cache
+        uses: actions/cache@v4
+        with:
+          path: .vault_cache
+          key: alpha-brain-sync-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            alpha-brain-sync-
+
+      - name: Install rclone and zstd cleanly on runner
+        run: |
+          set -euo pipefail
+          if ! command -v rclone >/dev/null 2>&1 || ! command -v zstd >/dev/null 2>&1; then
+            echo "Installing rclone and zstd packages..."
+            sudo apt-get update -qq
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends rclone zstd
+          fi
+          rclone --version
+          zstd --version
+
+      - name: Plan, pack, summarize, and push Daily Brain Memory snapshots
+        env:
+          INPUT_SESSION_DATE: ${{ inputs.session_date || 'auto' }}
+          INPUT_DRY_RUN: ${{ inputs.dry_run || false }}
+          INPUT_FORCE_RESYNC: ${{ inputs.force_resync || false }}
+          RCLONE_CONFIG_GDRIVE_DATA: ${{ secrets.RCLONE_CONFIG_GDRIVE }}
+          RCLONE_ASK_PASSWORD: "false"
+        run: |
+          set -euo pipefail
+          OUT_DIR=".vault_staging/brain_sync_out"
+          DRIVE_MANIFEST_DIR=".vault_staging/drive_manifests"
+          CRON_ARCHIVE_DIR=".vault_staging/archives"
+          rm -rf "$OUT_DIR" "$DRIVE_MANIFEST_DIR" "$CRON_ARCHIVE_DIR" .vault_cache/drive_manifests
+          mkdir -p .vault_cache/brain_manifests .vault_cache/brain_summaries "$DRIVE_MANIFEST_DIR" "$CRON_ARCHIVE_DIR" "$OUT_DIR"
+
+          if [[ "$INPUT_SESSION_DATE" != "auto" && ! "$INPUT_SESSION_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+            echo "Invalid session_date input: $INPUT_SESSION_DATE (expected 'auto' or YYYY-MM-DD)" >&2
+            exit 1
+          fi
+
+          RCLONE_TMP=""
+          RCLONE_ERR=""
+          cleanup() {
+            if [[ -n "${RCLONE_TMP:-}" && -f "$RCLONE_TMP" ]]; then
+              rm -f "$RCLONE_TMP"
+            fi
+            if [[ -n "${RCLONE_ERR:-}" && -f "$RCLONE_ERR" ]]; then
+              rm -f "$RCLONE_ERR"
+            fi
+          }
+          trap cleanup EXIT
+
+          RCLONE_READY="false"
+          RCLONE_TRIMMED="${RCLONE_CONFIG_GDRIVE_DATA:-}"
+          if [[ -n "${RCLONE_TRIMMED//[[:space:]]/}" ]]; then
+            RCLONE_TMP=$(mktemp)
+            chmod 600 "$RCLONE_TMP"
+            printf '%s\n' "$RCLONE_CONFIG_GDRIVE_DATA" | tr -d '\r' > "$RCLONE_TMP"
+            if ! grep -Eq '^[[:space:]]*\[gdrive\][[:space:]]*$' "$RCLONE_TMP"; then
+              echo "RCLONE_CONFIG_GDRIVE secret is missing the required [gdrive] section header." >&2
+              exit 1
+            fi
+            RCLONE_READY="true"
+          fi
+
+          DRIVE_CHECKED="false"
+          if [[ "$RCLONE_READY" == "true" ]]; then
+            RCLONE_ERR=$(mktemp)
+            set +e
+            ROOT_DIRS=$(RCLONE_CONFIG="$RCLONE_TMP" rclone lsf --dirs-only "gdrive:" </dev/null 2>"$RCLONE_ERR")
+            ROOT_RC=$?
+            set -e
+            if [[ "$ROOT_RC" -ne 0 ]]; then
+              cat "$RCLONE_ERR" >&2
+              exit "$ROOT_RC"
+            fi
+            if ! printf '%s\n' "$ROOT_DIRS" | grep -Fxq "Alpha_mining_Vault/"; then
+              if printf '%s\n' "$ROOT_DIRS" | grep -Fxq "state_snapshots/"; then
+                echo "RCLONE_CONFIG_GDRIVE appears scoped inside Alpha_mining_Vault (found state_snapshots/ at gdrive: root); configure gdrive: at Drive root so gdrive:Alpha_mining_Vault/ matches vault_sync.py." >&2
+              else
+                echo "Alpha_mining_Vault/ folder not found at gdrive: root; verify RCLONE_CONFIG_GDRIVE account/root_folder_id." >&2
+              fi
+              exit 1
+            fi
+
+            set +e
+            LS_DIRS=$(RCLONE_CONFIG="$RCLONE_TMP" rclone lsf --dirs-only "gdrive:Alpha_mining_Vault/state_snapshots/" </dev/null 2>"$RCLONE_ERR")
+            LS_RC=$?
+            set -e
+            if [[ "$LS_RC" -eq 0 ]]; then
+              if printf '%s\n' "$LS_DIRS" | grep -Fxq "manifests/"; then
+                RCLONE_CONFIG="$RCLONE_TMP" rclone copy \
+                  "gdrive:Alpha_mining_Vault/state_snapshots/manifests/" \
+                  "$DRIVE_MANIFEST_DIR/" \
+                  --max-depth 1 \
+                  --include "brain-daily-*.manifest.json" </dev/null
+              fi
+            elif [[ "$LS_RC" -eq 3 ]]; then
+              echo "Remote state_snapshots directory not created on Drive yet; will create on push."
+            else
+              cat "$RCLONE_ERR" >&2
+              exit "$LS_RC"
+            fi
+            DRIVE_CHECKED="true"
+          fi
+
+          PLAN_ARGS=(
+            "--manifest-dir" "workflows/vault_manifests"
+            "--manifest-dir" ".vault_cache/brain_manifests"
+            "--session-date" "$INPUT_SESSION_DATE"
+          )
+          if [[ "$DRIVE_CHECKED" == "true" ]]; then
+            PLAN_ARGS+=(
+              "--manifest-dir" "$DRIVE_MANIFEST_DIR"
+              "--authoritative-manifest-dir" "$DRIVE_MANIFEST_DIR"
+            )
+          fi
+          if [[ "$INPUT_FORCE_RESYNC" == "true" ]]; then
+            PLAN_ARGS+=("--force")
+          fi
+          python3 scripts/brain_memory.py plan-sync "${PLAN_ARGS[@]}" > "$OUT_DIR/plan.json"
+          cat "$OUT_DIR/plan.json"
+
+          PENDING_DATES=$(python3 -c 'import json, sys; print("\n".join(json.load(open(sys.argv[1], encoding="utf-8"))["pending_dates"]))' "$OUT_DIR/plan.json")
+
+          {
+            echo "## Daily Brain Memory Snapshot Sync"
+            echo ""
+            echo "- **Trigger**: \`${GITHUB_EVENT_NAME}\`"
+            echo "- **Session Date Selector**: \`${INPUT_SESSION_DATE}\`"
+            echo "- **Dry Run**: \`${INPUT_DRY_RUN}\`"
+            echo "- **Force Resync**: \`${INPUT_FORCE_RESYNC}\`"
+            echo "- **Drive Secret Configured**: \`${RCLONE_READY}\`"
+            echo "- **Drive Authoritative State Checked**: \`${DRIVE_CHECKED}\`"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [[ -z "$PENDING_DATES" ]]; then
+            echo "All Daily Brain Memory logs are already up to date; nothing to pack or push."
+            echo "No pending or modified daily logs required snapshot sync." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          {
+            echo "| Session Date | Archive | Push Status |"
+            echo "| :--- | :--- | :--- |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [[ "$INPUT_DRY_RUN" == "true" ]]; then
+            MANIFEST_TARGET_DIR="$OUT_DIR/manifests"
+            SUMMARY_TARGET_DIR="$OUT_DIR/summaries"
+            ARCHIVE_TARGET_DIR=".vault_staging/dry_run_archives"
+            rm -rf "$ARCHIVE_TARGET_DIR"
+            mkdir -p "$MANIFEST_TARGET_DIR" "$SUMMARY_TARGET_DIR" "$ARCHIVE_TARGET_DIR"
+          else
+            MANIFEST_TARGET_DIR=".vault_cache/brain_manifests"
+            SUMMARY_TARGET_DIR=".vault_cache/brain_summaries"
+            ARCHIVE_TARGET_DIR="$CRON_ARCHIVE_DIR"
+          fi
+
+          while IFS= read -r SESSION_DATE; do
+            [[ -z "$SESSION_DATE" ]] && continue
+            MANIFEST_PATH="${MANIFEST_TARGET_DIR}/brain-daily-${SESSION_DATE}.manifest.json"
+            SUMMARY_PATH="${SUMMARY_TARGET_DIR}/${SESSION_DATE}.summary.md"
+
+            python3 scripts/brain_memory.py pack-snapshot \
+              --session-date "$SESSION_DATE" \
+              --manifest-out "$MANIFEST_PATH" \
+              --archive-dir "$ARCHIVE_TARGET_DIR" \
+              --codec auto >/dev/null
+
+            python3 scripts/brain_memory.py summarize \
+              --session-date "$SESSION_DATE" \
+              --format markdown > "$SUMMARY_PATH"
+
+            ARCHIVE_NAME=$(python3 -c 'import json, sys; name = json.load(open(sys.argv[1], encoding="utf-8"))["archive_name"]; assert "/" not in name and "\\" not in name and ".." not in name; print(name)' "$MANIFEST_PATH")
+            ARCHIVE_PATH="${ARCHIVE_TARGET_DIR}/${ARCHIVE_NAME}"
+
+            if [[ "$INPUT_DRY_RUN" == "true" ]]; then
+              python3 scripts/brain_memory.py push-snapshot \
+                --manifest "$MANIFEST_PATH" \
+                --archive "$ARCHIVE_PATH" \
+                --backend rclone \
+                --dry-run
+              PUSH_STATUS="dry-run"
+            elif [[ "$RCLONE_READY" != "true" ]]; then
+              echo "::warning::RCLONE_CONFIG_GDRIVE secret is not set; packed ${SESSION_DATE} cleanly but skipped Google Drive upload."
+              PUSH_STATUS="skipped (RCLONE_CONFIG_GDRIVE not set)"
+            else
+              RCLONE_CONFIG="$RCLONE_TMP" python3 scripts/brain_memory.py push-snapshot \
+                --manifest "$MANIFEST_PATH" \
+                --archive "$ARCHIVE_PATH" \
+                --backend rclone
+              RCLONE_CONFIG="$RCLONE_TMP" rclone copyto \
+                "$MANIFEST_PATH" \
+                "gdrive:Alpha_mining_Vault/state_snapshots/manifests/brain-daily-${SESSION_DATE}.manifest.json" </dev/null
+              PUSH_STATUS="pushed to Drive"
+            fi
+
+            if [[ "$INPUT_DRY_RUN" != "true" ]]; then
+              cp "$MANIFEST_PATH" "$OUT_DIR/brain-daily-${SESSION_DATE}.manifest.json"
+              cp "$SUMMARY_PATH" "$OUT_DIR/${SESSION_DATE}.summary.md"
+            fi
+
+            echo "| ${SESSION_DATE} | \`${ARCHIVE_NAME}\` | ${PUSH_STATUS} |" >> "$GITHUB_STEP_SUMMARY"
+          done <<< "$PENDING_DATES"
+
+      - name: Upload Brain Snapshot Manifests & Summaries
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: brain-daily-snapshots
+          path: .vault_staging/brain_sync_out/
+          retention-days: 90
+          include-hidden-files: true
+          if-no-files-found: ignore

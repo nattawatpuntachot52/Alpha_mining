@@ -22,6 +22,7 @@ Backend = Literal["auto", "gdrive", "rclone"]
 
 ARTIFACT_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 SAFE_FILENAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,180}$")
+SHA256_HEX_RE = re.compile(r"^[0-9a-f]{64}$")
 DRIVE_ID_IN_TEXT_RE = re.compile(r"\(ID:\s*([A-Za-z0-9_-]+)\)")
 
 
@@ -37,7 +38,7 @@ CommandRunner = Callable[[list[str]], subprocess.CompletedProcess[str]]
 
 
 def _default_runner(cmd: list[str]) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(cmd, capture_output=True, text=True, check=False)
+    return subprocess.run(cmd, stdin=subprocess.DEVNULL, capture_output=True, text=True, check=False)
 
 
 def default_vault_config_path(repo_root: Path) -> Path:
@@ -227,14 +228,14 @@ def pack_artifact(
         "files": file_records,
     }
     manifest_out.parent.mkdir(parents=True, exist_ok=True)
-    manifest_out.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    manifest_out.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8", newline="\n")
     return manifest
 
 
 def load_manifest(manifest_path: Path) -> dict[str, Any]:
     try:
         data = json.loads(manifest_path.read_text(encoding="utf-8"))
-    except OSError as exc:
+    except (OSError, UnicodeDecodeError) as exc:
         raise VaultError(f"failed to read manifest '{manifest_path}': {exc}") from exc
     except json.JSONDecodeError as exc:
         raise VaultError(f"invalid JSON in manifest '{manifest_path}': {exc}") from exc
@@ -246,14 +247,38 @@ def load_manifest(manifest_path: Path) -> dict[str, Any]:
         if key not in data:
             raise VaultError(f"manifest '{manifest_path}' missing required field '{key}'")
 
-    validate_artifact_id(str(data["artifact_id"]))
-    _validate_safe_archive_name(str(data["archive_name"]))
+    for str_key in ("schema_version", "artifact_id", "category", "compression", "archive_name", "archive_sha256"):
+        if not isinstance(data[str_key], str):
+            raise VaultIntegrityError(
+                f"manifest '{manifest_path}' field '{str_key}' must be a string, got {type(data[str_key]).__name__}"
+            )
+
+    validate_artifact_id(data["artifact_id"])
+    _validate_safe_archive_name(data["archive_name"])
+    if not SHA256_HEX_RE.fullmatch(data["archive_sha256"]):
+        raise VaultIntegrityError(
+            f"manifest '{manifest_path}' field 'archive_sha256' must be 64 lowercase hex chars"
+        )
+    if "archive_bytes" in data and (type(data["archive_bytes"]) is not int or data["archive_bytes"] < 0):
+        raise VaultIntegrityError(
+            f"manifest '{manifest_path}' field 'archive_bytes' must be a non-negative integer"
+        )
     if not isinstance(data["files"], list):
         raise VaultError(f"manifest '{manifest_path}' field 'files' must be a list")
     for entry in data["files"]:
         if not isinstance(entry, dict) or "relpath" not in entry or "sha256" not in entry or "bytes" not in entry:
             raise VaultIntegrityError(f"manifest '{manifest_path}' contains malformed file entry")
-        _validate_safe_relpath(str(entry["relpath"]))
+        if not isinstance(entry["relpath"], str):
+            raise VaultIntegrityError(f"manifest '{manifest_path}' file entry 'relpath' must be a string")
+        _validate_safe_relpath(entry["relpath"])
+        if not isinstance(entry["sha256"], str) or not SHA256_HEX_RE.fullmatch(entry["sha256"]):
+            raise VaultIntegrityError(
+                f"manifest '{manifest_path}' file entry '{entry['relpath']}' has invalid sha256"
+            )
+        if type(entry["bytes"]) is not int or entry["bytes"] < 0:
+            raise VaultIntegrityError(
+                f"manifest '{manifest_path}' file entry '{entry['relpath']}' 'bytes' must be a non-negative int"
+            )
     return data
 
 
@@ -265,7 +290,9 @@ def verify_archive_checksum(archive_path: Path, manifest: dict[str, Any]) -> Non
         raise VaultIntegrityError(
             f"archive SHA-256 mismatch for '{archive_path.name}': expected {manifest['archive_sha256']}, got {actual_sha}"
         )
-    if "archive_bytes" in manifest and actual_bytes != int(manifest["archive_bytes"]):
+    if "archive_bytes" in manifest and (
+        type(manifest["archive_bytes"]) is not int or actual_bytes != manifest["archive_bytes"]
+    ):
         raise VaultIntegrityError(
             f"archive size mismatch for '{archive_path.name}': expected {manifest['archive_bytes']}, got {actual_bytes}"
         )
@@ -445,7 +472,7 @@ def push_to_drive(
             manifest["gdrive_file_id"] = parsed_id
             manifest["gdrive_url"] = f"https://drive.google.com/file/d/{parsed_id}/view"
     manifest["last_pushed_utc"] = utc_now_z()
-    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8", newline="\n")
     return manifest
 
 

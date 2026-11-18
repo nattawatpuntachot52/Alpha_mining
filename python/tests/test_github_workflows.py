@@ -596,6 +596,38 @@ jobs:
         self.assertIn("tr -d '\\r'", text)
         self.assertNotIn("rclone --version | head", text)
 
+    def test_brain_memory_cron_schedule_rclone_and_secret_hygiene(self) -> None:
+        text = (WORKFLOWS_DIR / "brain-memory-cron.yml").read_text(encoding="utf-8")
+        self.assertIn("schedule:", text)
+        self.assertIn('cron: "0 18 * * *"', text)
+        self.assertIn("workflow_dispatch:", text)
+        self.assertIn("permissions:\n  contents: read", text)
+        self.assertIn("group: alpha-brain-memory-sync", text)
+        self.assertIn("cancel-in-progress: false", text)
+        self.assertIn("python3 scripts/brain_memory.py validate", text)
+        self.assertIn("python3 scripts/brain_memory.py plan-sync", text)
+        self.assertIn("--authoritative-manifest-dir", text)
+        self.assertIn("python3 scripts/brain_memory.py pack-snapshot", text)
+        self.assertIn("python3 scripts/brain_memory.py push-snapshot", text)
+        self.assertIn("path: .vault_staging/brain_sync_out/", text)
+        self.assertIn("CRON_ARCHIVE_DIR=\".vault_staging/archives\"", text)
+        self.assertIn("include-hidden-files: true", text)
+        self.assertNotIn("if: ${{ secrets.", text)
+        self.assertIn('RCLONE_ASK_PASSWORD: "false"', text)
+        self.assertIn("</dev/null", text)
+        self.assertIn("--max-depth 1", text)
+        self.assertIn('rclone lsf --dirs-only "gdrive:"', text)
+        self.assertIn("elif [[ \"$LS_RC\" -eq 3 ]]; then", text)
+
+        apt_pos = text.find("apt-get install -y -qq --no-install-recommends rclone zstd")
+        dry_push_pos = text.find("scripts/brain_memory.py push-snapshot")
+        self.assertGreater(apt_pos, 0)
+        self.assertGreater(dry_push_pos, apt_pos)
+        self.assertIn("--backend rclone", text[dry_push_pos:])
+        self.assertIn("tr -d '\\r'", text)
+        self.assertIn("chmod 600", text)
+        self.assertIn("[gdrive]", text)
+
     def test_validator_rejects_rclone_backend_without_prior_install(self) -> None:
         bad_no_install = """
 jobs:
