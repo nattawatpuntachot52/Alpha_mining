@@ -27,6 +27,8 @@ from alpha_mining.storage import (
     load_episodes,
     outcome_from_accounted,
     pack_daily_snapshot,
+    plan_snapshot_sync,
+    push_to_drive,
     render_day_markdown,
     resolve_episode_outcome,
     summarize_day,
@@ -581,6 +583,327 @@ class TestBrainMemory(unittest.TestCase):
         for ep in episodes:
             summary = summarize_day(repo_mem, ep.session_date)
             self.assertGreaterEqual(summary["total_episodes"], 1)
+
+    def test_plan_snapshot_sync_lifecycle_and_fail_closed_guards(self) -> None:
+        from unittest import mock
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_dir = Path(tmp)
+            mem_dir = tmp_dir / "memory"
+            git_manifests = tmp_dir / "git_manifests"
+            cache_manifests = tmp_dir / "cache_manifests"
+            drive_manifests = tmp_dir / "drive_manifests"
+            archive_dir = tmp_dir / "archives"
+
+            # Empty / missing memory_dir in auto mode returns empty plan cleanly
+            empty_plan = plan_snapshot_sync(mem_dir, manifest_dirs=[git_manifests])
+            self.assertEqual(empty_plan["total_session_dates"], 0)
+            self.assertEqual(empty_plan["pending_dates"], [])
+
+            # Explicit session date fails if missing
+            with self.assertRaises(BrainMemoryError):
+                plan_snapshot_sync(mem_dir, manifest_dirs=[git_manifests], session_date="2026-11-18")
+
+            append_episode(mem_dir, _sample_episode(episode_id="ep-sync-001", session_date="2026-11-18"))
+            append_episode(mem_dir, _sample_episode(episode_id="ep-sync-002", session_date="2026-11-19"))
+
+            # Initial state: missing manifests
+            p1 = plan_snapshot_sync(
+                mem_dir,
+                manifest_dirs=[git_manifests, cache_manifests, drive_manifests],
+            )
+            self.assertEqual(p1["pending_dates"], ["2026-11-18", "2026-11-19"])
+            self.assertEqual([item["reason"] for item in p1["items"]], ["missing_manifest", "missing_manifest"])
+
+            # Pack 2026-11-18 without pushing (dry-run / missing secret) -> reason == never_pushed
+            m18_path = cache_manifests / "brain-daily-2026-11-18.manifest.json"
+            m18 = pack_daily_snapshot(
+                mem_dir,
+                "2026-11-18",
+                repo_root=REPO_ROOT,
+                manifest_out=m18_path,
+                archive_dir=archive_dir,
+                codec="gz",
+            )
+            # Even with trailing blank lines in source JSONL, canonical hash matches manifest
+            src18 = mem_dir / "2026-11-18.jsonl"
+            src18.write_text(src18.read_text(encoding="utf-8") + "\n\n", encoding="utf-8")
+
+            p2 = plan_snapshot_sync(mem_dir, manifest_dirs=[git_manifests, cache_manifests])
+            items_by_date = {item["session_date"]: item for item in p2["items"]}
+            self.assertEqual(items_by_date["2026-11-18"]["reason"], "never_pushed")
+            self.assertTrue(items_by_date["2026-11-18"]["needs_sync"])
+            self.assertEqual(items_by_date["2026-11-19"]["reason"], "missing_manifest")
+
+            # Simulated rclone push sets last_pushed_utc on Drive manifest sidecar
+            archive18 = archive_dir / m18["archive_name"]
+            with mock.patch("alpha_mining.storage.vault.shutil.which", return_value="/usr/bin/rclone"):
+                pushed = push_to_drive(
+                    m18_path,
+                    archive18,
+                    backend="rclone",
+                    runner=lambda cmd: subprocess.CompletedProcess(cmd, 0, "", ""),
+                )
+            self.assertIn("last_pushed_utc", pushed)
+            drive_manifests.mkdir(parents=True, exist_ok=True)
+            (drive_manifests / "brain-daily-2026-11-18.manifest.json").write_text(
+                m18_path.read_text(encoding="utf-8"),
+                encoding="utf-8",
+            )
+            # Strip last_pushed_utc from cache_manifests copy; drive_manifests still proves synced!
+            stale_unpushed = json.loads(m18_path.read_text(encoding="utf-8"))
+            stale_unpushed.pop("last_pushed_utc", None)
+            m18_path.write_text(json.dumps(stale_unpushed) + "\n", encoding="utf-8")
+
+            p3 = plan_snapshot_sync(
+                mem_dir,
+                manifest_dirs=[git_manifests, cache_manifests, drive_manifests],
+            )
+            self.assertEqual(p3["up_to_date_dates"], ["2026-11-18"])
+            self.assertEqual(p3["pending_dates"], ["2026-11-19"])
+
+            # force=True forces even up-to-date days back into pending_dates
+            p3_force = plan_snapshot_sync(
+                mem_dir,
+                manifest_dirs=[git_manifests, cache_manifests, drive_manifests],
+                force=True,
+            )
+            self.assertEqual(p3_force["pending_dates"], ["2026-11-18", "2026-11-19"])
+            self.assertEqual(p3_force["items"][0]["reason"], "forced")
+
+            # Mutating 2026-11-18 via resolve_episode_outcome -> jsonl_sha256_changed
+            resolve_episode_outcome(
+                mem_dir,
+                "2026-11-18",
+                "ep-sync-001",
+                EpisodeOutcome(
+                    status="resolved",
+                    outcome_at_utc="2026-11-18T06:00:00Z",
+                    net_return_r=1.0,
+                    cost_r=0.1,
+                ),
+            )
+            p4 = plan_snapshot_sync(
+                mem_dir,
+                manifest_dirs=[git_manifests, cache_manifests, drive_manifests],
+                session_date="2026-11-18",
+            )
+            self.assertEqual(p4["pending_dates"], ["2026-11-18"])
+            self.assertEqual(p4["items"][0]["reason"], "jsonl_sha256_changed")
+
+            # CLI integration test for plan-sync
+            cli_out = subprocess.run(
+                [
+                    sys.executable,
+                    str(REPO_ROOT / "scripts" / "brain_memory.py"),
+                    "--memory-dir",
+                    str(mem_dir),
+                    "plan-sync",
+                    "--manifest-dir",
+                    str(git_manifests),
+                    "--manifest-dir",
+                    str(drive_manifests),
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(cli_out.returncode, 0, cli_out.stderr)
+            cli_plan = json.loads(cli_out.stdout)
+            self.assertEqual(cli_plan["pending_dates"], ["2026-11-18", "2026-11-19"])
+
+            # Fail closed on tampered/corrupt manifest, bool-as-int bytes, conflicting timestamps, and missing authoritative manifest
+            # 1) Authoritative manifest missing on Drive even though cache/git have stale pushed manifest -> missing_authoritative_manifest
+            p_missing_auth = plan_snapshot_sync(
+                mem_dir,
+                manifest_dirs=[git_manifests, drive_manifests],
+                authoritative_manifest_dir=drive_manifests,
+                session_date="2026-11-18",
+            )
+            self.assertEqual(p_missing_auth["pending_dates"], ["2026-11-18"])
+
+            # Create authoritative rev2 manifest matching resolved 2026-11-18
+            m18_v2_path = drive_manifests / "brain-daily-2026-11-18.manifest.json"
+            m18_v2 = pack_daily_snapshot(
+                mem_dir,
+                "2026-11-18",
+                repo_root=REPO_ROOT,
+                manifest_out=m18_v2_path,
+                archive_dir=archive_dir,
+                codec="gz",
+            )
+            with mock.patch("alpha_mining.storage.vault.shutil.which", return_value="/usr/bin/rclone"):
+                push_to_drive(
+                    m18_v2_path,
+                    archive_dir / m18_v2["archive_name"],
+                    backend="rclone",
+                    runner=lambda cmd: subprocess.CompletedProcess(cmd, 0, "", ""),
+                )
+
+            # Force v2 timestamp strictly newer than git_manifests stale v1 manifest
+            v2_data = json.loads(m18_v2_path.read_text(encoding="utf-8"))
+            v2_data["last_pushed_utc"] = "2099-01-01T00:00:00Z"
+            m18_v2_path.write_text(json.dumps(v2_data) + "\n", encoding="utf-8")
+
+            # Seed git_manifests with an OLDER v1 pushed manifest matching an empty temporary v1 dir
+            v1_mem_dir = tmp_dir / "v1_memory"
+            append_episode(v1_mem_dir, _sample_episode(episode_id="ep-sync-001", session_date="2026-11-18"))
+            git_manifests.mkdir(parents=True, exist_ok=True)
+            m18_v1_git_path = git_manifests / "brain-daily-2026-11-18.manifest.json"
+            m18_v1 = pack_daily_snapshot(
+                v1_mem_dir,
+                "2026-11-18",
+                repo_root=REPO_ROOT,
+                manifest_out=m18_v1_git_path,
+                archive_dir=archive_dir,
+                codec="gz",
+            )
+            v1_data = json.loads(m18_v1_git_path.read_text(encoding="utf-8"))
+            v1_data["last_pushed_utc"] = "2026-11-18T00:00:00Z"
+            m18_v1_git_path.write_text(json.dumps(v1_data) + "\n", encoding="utf-8")
+
+            # If local reverts to v1 while Drive holds newer v2 -> conflicting_newer_push (NOT false up_to_date!)
+            p_conflict = plan_snapshot_sync(
+                v1_mem_dir,
+                manifest_dirs=[git_manifests, drive_manifests],
+                session_date="2026-11-18",
+            )
+            self.assertEqual(p_conflict["pending_dates"], ["2026-11-18"])
+            self.assertEqual(p_conflict["items"][0]["reason"], "conflicting_newer_push")
+
+            # When Drive has matching newer v2 and Git has older v1 -> up_to_date!
+            p_v2_auth = plan_snapshot_sync(
+                mem_dir,
+                manifest_dirs=[git_manifests, cache_manifests],
+                authoritative_manifest_dir=drive_manifests,
+                session_date="2026-11-18",
+            )
+            self.assertEqual(p_v2_auth["up_to_date_dates"], ["2026-11-18"])
+            self.assertEqual(p_v2_auth["items"][0]["reason"], "up_to_date")
+
+            # If Drive manifest disappears -> missing_authoritative_manifest even though git/cache has pushed copy
+            m18_v2_path.unlink()
+            p_deleted_drive = plan_snapshot_sync(
+                v1_mem_dir,
+                manifest_dirs=[git_manifests],
+                authoritative_manifest_dir=drive_manifests,
+                session_date="2026-11-18",
+            )
+            self.assertEqual(p_deleted_drive["pending_dates"], ["2026-11-18"])
+            self.assertEqual(p_deleted_drive["items"][0]["reason"], "missing_authoritative_manifest")
+
+            # CLI --authoritative-manifest-dir check
+            cli_auth = subprocess.run(
+                [
+                    sys.executable,
+                    str(REPO_ROOT / "scripts" / "brain_memory.py"),
+                    "--memory-dir",
+                    str(v1_mem_dir),
+                    "plan-sync",
+                    "--manifest-dir",
+                    str(git_manifests),
+                    "--authoritative-manifest-dir",
+                    str(drive_manifests),
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(cli_auth.returncode, 0, cli_auth.stderr)
+            self.assertEqual(json.loads(cli_auth.stdout)["pending_dates"], ["2026-11-18"])
+
+            # Summary tamper detection (valid jsonl SHA, mismatched summary.json SHA -> summary_sha256_changed)
+            sum_tamper = dict(v1_data)
+            sum_files = []
+            for f in sum_tamper["files"]:
+                if f["relpath"].endswith(".summary.json"):
+                    sum_files.append({**f, "sha256": "0" * 64})
+                else:
+                    sum_files.append(f)
+            sum_tamper["files"] = sum_files
+            m18_v1_git_path.write_text(json.dumps(sum_tamper) + "\n", encoding="utf-8")
+            p_sum_tamper = plan_snapshot_sync(
+                v1_mem_dir,
+                manifest_dirs=[git_manifests],
+                session_date="2026-11-18",
+            )
+            self.assertEqual(p_sum_tamper["pending_dates"], ["2026-11-18"])
+            self.assertEqual(p_sum_tamper["items"][0]["reason"], "summary_sha256_changed")
+
+            # Fail closed on bool-as-int bytes, non-string archive_name, corrupt manifest JSON
+            bool_bytes = dict(v1_data)
+            bool_bytes["files"] = [{**v1_data["files"][0], "bytes": True}]
+            m18_v1_git_path.write_text(json.dumps(bool_bytes) + "\n", encoding="utf-8")
+            with self.assertRaises(BrainMemoryError):
+                plan_snapshot_sync(v1_mem_dir, manifest_dirs=[git_manifests])
+
+            non_str_archive = dict(v1_data)
+            non_str_archive["archive_name"] = None
+            m18_v1_git_path.write_text(json.dumps(non_str_archive) + "\n", encoding="utf-8")
+            with self.assertRaises(BrainMemoryError):
+                plan_snapshot_sync(v1_mem_dir, manifest_dirs=[git_manifests])
+
+            corrupt_path = git_manifests / "brain-daily-2026-11-18.manifest.json"
+            corrupt_path.write_text("{not-json", encoding="utf-8")
+            with self.assertRaises(BrainMemoryError):
+                plan_snapshot_sync(v1_mem_dir, manifest_dirs=[git_manifests])
+            corrupt_path.unlink()
+
+            # Zero-episode JSONL rejected in both auto and explicit modes
+            zero_mem = tmp_dir / "zero_mem"
+            zero_mem.mkdir()
+            (zero_mem / "2026-11-20.jsonl").write_text("\n\n", encoding="utf-8")
+            with self.assertRaises(BrainMemoryError):
+                plan_snapshot_sync(zero_mem, manifest_dirs=[git_manifests])
+            with self.assertRaises(BrainMemoryError):
+                plan_snapshot_sync(zero_mem, manifest_dirs=[git_manifests], session_date="2026-11-20")
+
+            # Invalid session_date or non-boolean force
+            for bad_date in ("", " ", "2026-02-31"):
+                with self.assertRaises(BrainMemoryError):
+                    plan_snapshot_sync(v1_mem_dir, manifest_dirs=[git_manifests], session_date=bad_date)
+            with self.assertRaises(BrainMemoryError):
+                plan_snapshot_sync(v1_mem_dir, manifest_dirs=[git_manifests], force=1)  # type: ignore[arg-type]
+
+            # Symlinked manifest_dir, symlinked manifest file, and symlinked jsonl rejected
+            sym_mdir = tmp_dir / "sym_manifests"
+            os.symlink(git_manifests, sym_mdir)
+            with self.assertRaises(BrainMemoryError):
+                plan_snapshot_sync(v1_mem_dir, manifest_dirs=[sym_mdir])
+
+            sym_mfile = git_manifests / "brain-daily-2026-11-18.manifest.json"
+            target_outside = tmp_dir / "outside_manifest.json"
+            target_outside.write_text(json.dumps(v1_data) + "\n", encoding="utf-8")
+            os.symlink(target_outside, sym_mfile)
+            with self.assertRaises(BrainMemoryError):
+                plan_snapshot_sync(v1_mem_dir, manifest_dirs=[git_manifests])
+            sym_mfile.unlink()
+
+            sym_mem = tmp_dir / "sym_mem"
+            sym_mem.mkdir()
+            os.symlink(v1_mem_dir / "2026-11-18.jsonl", sym_mem / "2026-11-18.jsonl")
+            with self.assertRaises(BrainMemoryError):
+                plan_snapshot_sync(sym_mem, manifest_dirs=[git_manifests])
+
+            # Non-UTF-8 file fails cleanly without Python traceback in CLI
+            bad_utf8_mem = tmp_dir / "bad_utf8_mem"
+            bad_utf8_mem.mkdir()
+            (bad_utf8_mem / "2026-11-21.jsonl").write_bytes(b"\xff\xfe\xfd\n")
+            cli_bad_utf8 = subprocess.run(
+                [
+                    sys.executable,
+                    str(REPO_ROOT / "scripts" / "brain_memory.py"),
+                    "--memory-dir",
+                    str(bad_utf8_mem),
+                    "plan-sync",
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(cli_bad_utf8.returncode, 1)
+            self.assertIn("error:", cli_bad_utf8.stderr)
+            self.assertNotIn("Traceback", cli_bad_utf8.stderr)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,385 @@
+[
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-brain-memory-cron-001",
+    "event_id": "ev-bmc-0",
+    "sequence": 0,
+    "occurred_at": "2026-11-18T06:06:10Z",
+    "type": "intake_accepted",
+    "data": {
+      "request_ref": "brief-brain-memory-cron-001",
+      "public_summary": "Add deterministic pending-snapshot planning in brain_memory.py and a scheduled/dispatchable GitHub Actions workflow (.github/workflows/brain-memory-cron.yml) that validates workflows/memory/*.jsonl, packs changed/unsynced daily snapshots, and pushes archives + manifest sidecars to Google Drive Vault safely under PR-only main rulesets.",
+      "authority": {
+        "contract_version": "1.0",
+        "authority_id": "auth-brain-memory-cron-001",
+        "granted_by": "owner",
+        "objective": "Wire automated daily GitHub Actions Brain Memory validate -> pack-snapshot -> push-snapshot cron cleanly on a dedicated feature branch",
+        "scope": [
+          ".github/workflows/brain-memory-cron.yml",
+          "python/alpha_mining/storage/",
+          "python/tests/",
+          "scripts/brain_memory.py",
+          "workflows/memory/README.md",
+          "workflows/runs/wf-brain-memory-cron-001/"
+        ],
+        "constraints": [
+          "Keep PR bounded to approved scope; do not bypass Rulesets or alter governance files"
+        ]
+      },
+      "budget": {
+        "contract_version": "1.0",
+        "max_repair_attempts": 1,
+        "max_events": 14
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-brain-memory-cron-001",
+    "event_id": "ev-bmc-1",
+    "sequence": 1,
+    "previous_event_id": "ev-bmc-0",
+    "occurred_at": "2026-11-18T06:06:20Z",
+    "type": "coordinator_dispatched",
+    "data": {
+      "invocation": {
+        "contract_version": "1.0",
+        "invocation_id": "inv-bmc-1",
+        "requested_by": "coordinator",
+        "role": "engineer",
+        "objective": "Implement plan_snapshot_sync in brain_memory.py, plan-sync CLI, .github/workflows/brain-memory-cron.yml, documentation, and regression tests",
+        "authority_ref": "auth-brain-memory-cron-001",
+        "input_refs": [
+          "brief-brain-memory-cron-001"
+        ],
+        "attempt": 1,
+        "requested_at": "2026-11-18T06:06:20Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-brain-memory-cron-001",
+    "event_id": "ev-bmc-2",
+    "sequence": 2,
+    "previous_event_id": "ev-bmc-1",
+    "occurred_at": "2026-11-18T06:12:00Z",
+    "type": "engineer_returned",
+    "data": {
+      "result": {
+        "contract_version": "1.0",
+        "result_id": "res-bmc-1",
+        "invocation_ref": "inv-bmc-1",
+        "role": "engineer",
+        "status": "succeeded",
+        "summary": "Implemented initial plan_snapshot_sync, plan-sync CLI, .github/workflows/brain-memory-cron.yml, README update, and initial regression tests",
+        "evidence": [
+          {
+            "contract_version": "1.0",
+            "evidence_id": "evd-bmc-impl-1",
+            "kind": "implementation",
+            "summary": "Initial cron & sync-planning implementation on feat/brain-memory-daily-cron prior to adversarial audit",
+            "source": "antigravity-katherine-impl",
+            "collected_at": "2026-11-18T06:12:00Z"
+          }
+        ],
+        "completed_at": "2026-11-18T06:12:00Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-brain-memory-cron-001",
+    "event_id": "ev-bmc-3",
+    "sequence": 3,
+    "previous_event_id": "ev-bmc-2",
+    "occurred_at": "2026-11-18T06:16:35Z",
+    "type": "verification_recorded",
+    "data": {
+      "outcome": {
+        "contract_version": "1.0",
+        "verification_id": "ver-bmc-1",
+        "subject_result_ref": "res-bmc-1",
+        "status": "passed",
+        "checks": [
+          {
+            "name": "initial-rust-python-yaml-e2e-suite",
+            "status": "passed",
+            "summary": "55/55 python unittests, 4 fake-rclone E2E scenarios, PyYAML check, 17/17 rust tests, and ruleset/admission checks passed prior to adversarial audit"
+          }
+        ],
+        "evidence": [
+          {
+            "contract_version": "1.0",
+            "evidence_id": "evd-bmc-ver-1",
+            "kind": "verification",
+            "summary": "Local test and E2E suite passed on Attempt 1",
+            "source": "local-cargo-unittest-ci-verifier",
+            "collected_at": "2026-11-18T06:16:35Z"
+          }
+        ],
+        "completed_at": "2026-11-18T06:16:35Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-brain-memory-cron-001",
+    "event_id": "ev-bmc-4",
+    "sequence": 4,
+    "previous_event_id": "ev-bmc-3",
+    "occurred_at": "2026-11-18T06:18:37Z",
+    "type": "reviewer_decided",
+    "data": {
+      "packet": {
+        "contract_version": "1.0",
+        "review_id": "rev-bmc-1",
+        "engineer_result_ref": "res-bmc-1",
+        "verification_ref": "ver-bmc-1",
+        "decision": "repair",
+        "findings": [
+          {
+            "code": "authoritative-manifest-and-conflict-ordering",
+            "severity": "blocking",
+            "summary": "HIGH-1: plan_snapshot_sync returns up_to_date on first matching manifest without authoritative_manifest_dir or cross-dir last_pushed_utc conflict detection, letting stale cache/Git manifests mask Drive deletions or newer conflicting pushes",
+            "evidence_refs": [
+              "evd-bmc-impl-1"
+            ]
+          },
+          {
+            "code": "rclone-noninteractive-manifest-integrity-and-root-check",
+            "severity": "blocking",
+            "summary": "MEDIUM-2..4: Missing RCLONE_ASK_PASSWORD=false & DEVNULL stdin in vault._default_runner; plan_snapshot_sync omits summary.json SHA/type strictness & vault.load_manifest str checks; LS_RC=3 can mask misconfigured root_folder_id without checking gdrive: root for Alpha_mining_Vault/ and skips Drive query in dry_run",
+            "evidence_refs": [
+              "evd-bmc-impl-1",
+              "evd-bmc-ver-1"
+            ]
+          }
+        ],
+        "evidence_refs": [
+          "evd-bmc-impl-1",
+          "evd-bmc-ver-1"
+        ],
+        "completed_at": "2026-11-18T06:18:37Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-brain-memory-cron-001",
+    "event_id": "ev-bmc-5",
+    "sequence": 5,
+    "previous_event_id": "ev-bmc-4",
+    "occurred_at": "2026-11-18T06:18:45Z",
+    "type": "auditor_counterchecked",
+    "data": {
+      "packet": {
+        "contract_version": "1.0",
+        "audit_id": "aud-bmc-1",
+        "review_ref": "rev-bmc-1",
+        "decision": "concur",
+        "findings": [],
+        "evidence_refs": [
+          "evd-bmc-impl-1",
+          "evd-bmc-ver-1"
+        ],
+        "completed_at": "2026-11-18T06:18:45Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-brain-memory-cron-001",
+    "event_id": "ev-bmc-6",
+    "sequence": 6,
+    "previous_event_id": "ev-bmc-5",
+    "occurred_at": "2026-11-18T06:18:55Z",
+    "type": "repair_directed",
+    "data": {
+      "directive": {
+        "contract_version": "1.0",
+        "directive_id": "dir-bmc-1",
+        "source_review_ref": "rev-bmc-1",
+        "source_audit_ref": "aud-bmc-1",
+        "attempt": 1,
+        "instructions": [
+          "Add authoritative_manifest_dir + cross-dir last_pushed_utc conflict detection in plan_snapshot_sync & --authoritative-manifest-dir in scripts/brain_memory.py and brain-memory-cron.yml",
+          "Harden non-interactive rclone execution (RCLONE_ASK_PASSWORD=false, </dev/null, DEVNULL stdin in _default_runner), verify gdrive: root Alpha_mining_Vault/ before treating state_snapshots rc=3 as bootstrap, query Drive manifests read-only in dry_run when configured, and add --max-depth 1",
+          "Harden load_manifest type/hex checks in vault.py, verify summary.json canonical SHA + strict entry checks in plan_snapshot_sync, move cron archives/drive_manifests to .vault_staging, catch UnicodeDecodeError in scripts/brain_memory.py, pass newline='\\n', and expand tests for all findings"
+        ],
+        "evidence_refs": [
+          "evd-bmc-impl-1",
+          "evd-bmc-ver-1"
+        ],
+        "issued_at": "2026-11-18T06:18:55Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-brain-memory-cron-001",
+    "event_id": "ev-bmc-7",
+    "sequence": 7,
+    "previous_event_id": "ev-bmc-6",
+    "occurred_at": "2026-11-18T06:19:00Z",
+    "type": "coordinator_dispatched",
+    "data": {
+      "invocation": {
+        "contract_version": "1.0",
+        "invocation_id": "inv-bmc-2",
+        "requested_by": "coordinator",
+        "role": "engineer",
+        "objective": "Resolve all 1 High, 3 Medium, and 3 Low adversarial audit findings across vault.py, brain_memory.py, scripts/brain_memory.py, brain-memory-cron.yml, and test suites",
+        "authority_ref": "auth-brain-memory-cron-001",
+        "input_refs": [
+          "dir-bmc-1"
+        ],
+        "attempt": 2,
+        "requested_at": "2026-11-18T06:19:00Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-brain-memory-cron-001",
+    "event_id": "ev-bmc-8",
+    "sequence": 8,
+    "previous_event_id": "ev-bmc-7",
+    "occurred_at": "2026-11-18T06:27:30Z",
+    "type": "engineer_returned",
+    "data": {
+      "result": {
+        "contract_version": "1.0",
+        "result_id": "res-bmc-2",
+        "invocation_ref": "inv-bmc-2",
+        "role": "engineer",
+        "status": "succeeded",
+        "summary": "Resolved all Attempt 1 adversarial findings (HIGH-1, MEDIUM-2..4, LOW-5..7) across brain_memory.py, vault.py, scripts/brain_memory.py, brain-memory-cron.yml, README.md, and test suites",
+        "evidence": [
+          {
+            "contract_version": "1.0",
+            "evidence_id": "evd-bmc-impl-2",
+            "kind": "implementation",
+            "summary": "Added authoritative_manifest_dir + nanosecond last_pushed_utc conflict ordering, non-interactive rclone & gdrive root Alpha_mining_Vault/ check, dry_run Drive read query, .vault_staging isolation, strict vault/manifest validation, and expanded tests",
+            "source": "antigravity-katherine-impl",
+            "collected_at": "2026-11-18T06:27:30Z"
+          }
+        ],
+        "completed_at": "2026-11-18T06:27:30Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-brain-memory-cron-001",
+    "event_id": "ev-bmc-9",
+    "sequence": 9,
+    "previous_event_id": "ev-bmc-8",
+    "occurred_at": "2026-11-18T06:27:40Z",
+    "type": "verification_recorded",
+    "data": {
+      "outcome": {
+        "contract_version": "1.0",
+        "verification_id": "ver-bmc-2",
+        "subject_result_ref": "res-bmc-2",
+        "status": "passed",
+        "checks": [
+          {
+            "name": "python-55-tests-yaml-and-mocked-rclone-e2e",
+            "status": "passed",
+            "summary": "55/55 Python unittests, brain_memory.py validate/plan-sync, PyYAML parse, and 6 mocked-rclone workflow E2E scenarios passed (live Drive upload verification not run without RCLONE_CONFIG_GDRIVE)"
+          },
+          {
+            "name": "rust-fmt-check-test-clippy-locked",
+            "status": "passed",
+            "summary": "cargo fmt --check, cargo check --locked, cargo test --all-targets --locked, and cargo clippy -D warnings passed"
+          },
+          {
+            "name": "governance-mirror-ruleset-policy-hygiene",
+            "status": "passed",
+            "summary": "cmp -s AGENTS.md CLAUDE.md, github_ruleset validate-configs & live verify, admission_gate parity, git diff --check, and 0o644 file-mode checks passed"
+          }
+        ],
+        "evidence": [
+          {
+            "contract_version": "1.0",
+            "evidence_id": "evd-bmc-ver-2",
+            "kind": "verification",
+            "summary": "Post-Attempt-2 verification suite passed on feat/brain-memory-daily-cron (live remote Drive upload pending Owner RCLONE_CONFIG_GDRIVE Secret)",
+            "source": "local-cargo-unittest-ci-verifier",
+            "collected_at": "2026-11-18T06:27:40Z"
+          }
+        ],
+        "completed_at": "2026-11-18T06:27:40Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-brain-memory-cron-001",
+    "event_id": "ev-bmc-10",
+    "sequence": 10,
+    "previous_event_id": "ev-bmc-9",
+    "occurred_at": "2026-11-18T06:27:50Z",
+    "type": "reviewer_decided",
+    "data": {
+      "packet": {
+        "contract_version": "1.0",
+        "review_id": "rev-bmc-2",
+        "engineer_result_ref": "res-bmc-2",
+        "verification_ref": "ver-bmc-2",
+        "decision": "pass",
+        "findings": [],
+        "evidence_refs": [
+          "evd-bmc-impl-2",
+          "evd-bmc-ver-2"
+        ],
+        "completed_at": "2026-11-18T06:27:50Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-brain-memory-cron-001",
+    "event_id": "ev-bmc-11",
+    "sequence": 11,
+    "previous_event_id": "ev-bmc-10",
+    "occurred_at": "2026-11-18T06:28:00Z",
+    "type": "auditor_counterchecked",
+    "data": {
+      "packet": {
+        "contract_version": "1.0",
+        "audit_id": "aud-bmc-2",
+        "review_ref": "rev-bmc-2",
+        "decision": "concur",
+        "findings": [],
+        "evidence_refs": [
+          "evd-bmc-impl-2",
+          "evd-bmc-ver-2"
+        ],
+        "completed_at": "2026-11-18T06:28:00Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-brain-memory-cron-001",
+    "event_id": "ev-bmc-12",
+    "sequence": 12,
+    "previous_event_id": "ev-bmc-11",
+    "occurred_at": "2026-11-18T06:28:10Z",
+    "type": "coordinator_finalized",
+    "data": {
+      "response": {
+        "contract_version": "1.0",
+        "response_id": "resp-bmc-1",
+        "outcome": "passed",
+        "public_summary": "Daily Brain Memory incremental sync planner and scheduled/dispatchable GitHub Actions Cron workflow passed Attempt 2 independent adversarial re-audit and local verification",
+        "evidence_refs": [
+          "evd-bmc-ver-2"
+        ],
+        "completed_at": "2026-11-18T06:28:10Z"
+      }
+    }
+  }
+]

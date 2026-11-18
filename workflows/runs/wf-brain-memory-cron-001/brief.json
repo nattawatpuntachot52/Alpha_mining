@@ -1,0 +1,73 @@
+{
+  "contract_version": "1.0",
+  "brief_id": "brief-brain-memory-cron-001",
+  "title": "Daily GitHub Actions Cron for Brain Memory Validate, Pack-Snapshot, and Google Drive Push-Snapshot",
+  "public_summary": "Add deterministic pending-snapshot planning in brain_memory.py and a scheduled/dispatchable GitHub Actions workflow (.github/workflows/brain-memory-cron.yml) that validates workflows/memory/*.jsonl, packs changed/unsynced daily snapshots, and pushes archives + manifest sidecars to Google Drive Vault safely under PR-only main rulesets.",
+  "domain": "infrastructure",
+  "target_evidence_status": "reproducible",
+  "inputs": [
+    "Owner instruction: connect daily GitHub Actions Cron to run validate -> pack-snapshot -> push-snapshot to Google Drive automatically",
+    "Existing Daily Brain Memory storage & CLI (python/alpha_mining/storage/brain_memory.py, scripts/brain_memory.py, python/alpha_mining/storage/vault.py)",
+    "PR-only 2-layer GitHub Rulesets on main with zero bypass actors and static safety invariants in python/tests/test_github_workflows.py"
+  ],
+  "outputs": [
+    "plan_snapshot_sync() in python/alpha_mining/storage/brain_memory.py (and export in storage/__init__.py)",
+    "plan-sync subcommand in scripts/brain_memory.py",
+    ".github/workflows/brain-memory-cron.yml (schedule 18:00 UTC daily + workflow_dispatch with session_date, dry_run, force_resync)",
+    "Updated workflows/memory/README.md and regression tests in python/tests/test_brain_memory.py and python/tests/test_github_workflows.py"
+  ],
+  "variables": [
+    "cron_schedule (0 18 * * * UTC == 01:00 Asia/Bangkok)",
+    "session_date (auto | YYYY-MM-DD)",
+    "dry_run (false | true)",
+    "force_resync (false | true)"
+  ],
+  "constraints": [
+    "Never reference secrets.* in any GitHub Actions if: expression",
+    "Require include-hidden-files: true on actions/upload-artifact whenever path contains a dot-prefixed segment",
+    "Install rclone (and zstd) before any --backend rclone execution in Ubuntu runner jobs",
+    "Never attempt direct push to main; persist state across runs via Actions Cache, workflow artifacts, and Drive state_snapshots/manifests/ sidecar",
+    "Compare canonical serialized JSONL SHA-256 against manifest files + verify valid last_pushed_utc so minor trailing blank lines do not trigger duplicate uploads and failed/skipped pushes never falsely mark synced",
+    "Preserve all existing tests and governance charters (AGENTS.md, CLAUDE.md, GEMINI.md, roles/) untouched"
+  ],
+  "assumptions": [
+    "RCLONE_CONFIG_GDRIVE Secret is not yet configured in repository Secrets (verified via gh secret list), so live remote Drive upload requires Owner adding the Secret after PR merge while dry-run and unit tests verify workflow logic cleanly"
+  ],
+  "unknowns": [],
+  "block_on_unresolved_unknowns": true,
+  "acceptance_criteria": [
+    "alpha-ovca validate-brief and verify-stream pass on workflows/runs/wf-brain-memory-cron-001/",
+    "scripts/brain_memory.py validate and plan-sync pass on workflows/memory/ and detect missing/changed/never-pushed snapshots vs already-pushed snapshots",
+    "test_github_workflows.py passes on .github/workflows/brain-memory-cron.yml including rclone install ordering, no secrets-in-if, and hidden artifact upload flags",
+    "Full Python unittest suite, Rust cargo fmt/check/test/clippy --locked, github_ruleset validate-configs, and admission_gate parity pass cleanly"
+  ],
+  "governance": {
+    "solver_actor": "antigravity-katherine-impl",
+    "verifier_actor": "local-cargo-unittest-ci-verifier",
+    "reviewer_actor": "research-subagent-adversarial-reviewer",
+    "auditor_actor": "post-fix-independent-verifier-auditor"
+  },
+  "authority": {
+    "contract_version": "1.0",
+    "authority_id": "auth-brain-memory-cron-001",
+    "granted_by": "owner",
+    "objective": "Wire automated daily GitHub Actions Brain Memory validate -> pack-snapshot -> push-snapshot cron cleanly on a dedicated feature branch",
+    "scope": [
+      ".github/workflows/brain-memory-cron.yml",
+      "python/alpha_mining/storage/",
+      "python/tests/",
+      "scripts/brain_memory.py",
+      "workflows/memory/README.md",
+      "workflows/runs/wf-brain-memory-cron-001/"
+    ],
+    "constraints": [
+      "Keep PR bounded to approved scope; do not bypass Rulesets or alter governance files"
+    ]
+  },
+  "budget": {
+    "contract_version": "1.0",
+    "max_repair_attempts": 1,
+    "max_events": 14
+  },
+  "created_at": "2026-11-18T06:06:00Z"
+}

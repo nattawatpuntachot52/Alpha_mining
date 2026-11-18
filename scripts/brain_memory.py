@@ -21,6 +21,7 @@ from alpha_mining.storage import (  # noqa: E402
     load_episodes,
     load_manifest,
     pack_daily_snapshot,
+    plan_snapshot_sync,
     push_to_drive,
     render_day_markdown,
     resolve_episode_outcome,
@@ -63,6 +64,12 @@ def main(argv: list[str] | None = None) -> int:
     sum_p = sub.add_parser("summarize", help="Generate deterministic summary of one session date")
     sum_p.add_argument("--session-date", required=True)
     sum_p.add_argument("--format", choices=("json", "markdown"), default="json")
+
+    plan_p = sub.add_parser("plan-sync", help="Detect daily logs missing snapshots, changed since push, or unpushed")
+    plan_p.add_argument("--manifest-dir", type=Path, action="append", default=[])
+    plan_p.add_argument("--authoritative-manifest-dir", type=Path, default=None)
+    plan_p.add_argument("--session-date", default="auto")
+    plan_p.add_argument("--force", action="store_true")
 
     pack_p = sub.add_parser("pack-snapshot", help="Pack daily log + summary into state_snapshot Vault manifest")
     pack_p.add_argument("--session-date", required=True)
@@ -118,6 +125,18 @@ def main(argv: list[str] | None = None) -> int:
                 print(json.dumps(summary, indent=2, ensure_ascii=False))
             return 0
 
+        if args.cmd == "plan-sync":
+            manifest_dirs = args.manifest_dir or [REPO_ROOT / "workflows" / "vault_manifests"]
+            plan = plan_snapshot_sync(
+                args.memory_dir,
+                manifest_dirs=manifest_dirs,
+                authoritative_manifest_dir=args.authoritative_manifest_dir,
+                session_date=args.session_date,
+                force=args.force,
+            )
+            print(json.dumps(plan, indent=2, ensure_ascii=False))
+            return 0
+
         if args.cmd == "pack-snapshot":
             manifest = pack_daily_snapshot(
                 args.memory_dir,
@@ -146,7 +165,7 @@ def main(argv: list[str] | None = None) -> int:
 
         parser.error(f"unknown subcommand: {args.cmd}")
         return 2
-    except (OSError, json.JSONDecodeError, BrainMemoryError, VaultError) as exc:
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError, BrainMemoryError, VaultError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
 
