@@ -1,0 +1,397 @@
+[
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-brain-memory-001",
+    "event_id": "ev-bm-0",
+    "sequence": 0,
+    "occurred_at": "2026-11-18T05:00:30Z",
+    "type": "intake_accepted",
+    "data": {
+      "request_ref": "brief-brain-memory-001",
+      "public_summary": "Implement structured Daily Brain Memory JSONL storage with anti-leakage and secret guardrails, snapshot packing into Google Drive Vault categories, and domain-isolated JSON contracts for owner-taught ML trading where LLM translates NL to JSON only.",
+      "authority": {
+        "contract_version": "1.0",
+        "authority_id": "auth-brain-memory-001",
+        "granted_by": "owner",
+        "objective": "Build Daily Brain Memory storage/snapshot tooling and domain-neutral contracts for owner-taught ML trading on a clean feature branch",
+        "scope": [
+          "python/alpha_mining/storage/",
+          "python/alpha_mining/research/",
+          "python/alpha_mining/strategy/",
+          "python/alpha_mining/risk/",
+          "python/alpha_mining/execution/",
+          "python/alpha_mining/accounting/",
+          "python/tests/",
+          "scripts/brain_memory.py",
+          "workflows/memory/",
+          "workflows/runs/wf-brain-memory-001/"
+        ],
+        "constraints": [
+          "Keep PR strictly bounded to approved scope; do not merge or alter governance files"
+        ]
+      },
+      "budget": {
+        "contract_version": "1.0",
+        "max_repair_attempts": 1,
+        "max_events": 14
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-brain-memory-001",
+    "event_id": "ev-bm-1",
+    "sequence": 1,
+    "previous_event_id": "ev-bm-0",
+    "occurred_at": "2026-11-18T05:01:00Z",
+    "type": "coordinator_dispatched",
+    "data": {
+      "invocation": {
+        "contract_version": "1.0",
+        "invocation_id": "inv-bm-1",
+        "requested_by": "coordinator",
+        "role": "engineer",
+        "objective": "Implement brain_memory storage/snapshot CLI and domain-neutral contracts for NL->JSON translation, deterministic Meta-Labeling gate, risk limits, execution approval guard, and cost accounting",
+        "authority_ref": "auth-brain-memory-001",
+        "input_refs": [
+          "brief-brain-memory-001"
+        ],
+        "attempt": 1,
+        "requested_at": "2026-11-18T05:01:00Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-brain-memory-001",
+    "event_id": "ev-bm-2",
+    "sequence": 2,
+    "previous_event_id": "ev-bm-1",
+    "occurred_at": "2026-11-18T05:03:20Z",
+    "type": "engineer_returned",
+    "data": {
+      "result": {
+        "contract_version": "1.0",
+        "result_id": "res-bm-1",
+        "invocation_ref": "inv-bm-1",
+        "role": "engineer",
+        "status": "succeeded",
+        "summary": "Implemented initial brain_memory module/CLI, 5-layer domain contract files, workflows/memory/2026-11-18.jsonl starter log, and initial unit tests",
+        "evidence": [
+          {
+            "contract_version": "1.0",
+            "evidence_id": "evd-bm-impl-1",
+            "kind": "implementation",
+            "summary": "Initial implementation committed on feat/brain-memory-and-skeleton prior to adversarial audit",
+            "source": "antigravity-katherine-impl",
+            "collected_at": "2026-11-18T05:03:20Z"
+          }
+        ],
+        "completed_at": "2026-11-18T05:03:20Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-brain-memory-001",
+    "event_id": "ev-bm-3",
+    "sequence": 3,
+    "previous_event_id": "ev-bm-2",
+    "occurred_at": "2026-11-18T05:03:28Z",
+    "type": "verification_recorded",
+    "data": {
+      "outcome": {
+        "contract_version": "1.0",
+        "verification_id": "ver-bm-1",
+        "subject_result_ref": "res-bm-1",
+        "status": "passed",
+        "checks": [
+          {
+            "name": "initial-rust-python-suite",
+            "status": "passed",
+            "summary": "48/48 python unittests, brain_memory.py validate, ruleset/admission parity, and 17/17 rust tests passed prior to adversarial audit"
+          }
+        ],
+        "evidence": [
+          {
+            "contract_version": "1.0",
+            "evidence_id": "evd-bm-ver-1",
+            "kind": "verification",
+            "summary": "Local test suite passed on Attempt 1",
+            "source": "local-cargo-unittest-ci-verifier",
+            "collected_at": "2026-11-18T05:03:28Z"
+          }
+        ],
+        "completed_at": "2026-11-18T05:03:28Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-brain-memory-001",
+    "event_id": "ev-bm-4",
+    "sequence": 4,
+    "previous_event_id": "ev-bm-3",
+    "occurred_at": "2026-11-18T05:08:12Z",
+    "type": "reviewer_decided",
+    "data": {
+      "packet": {
+        "contract_version": "1.0",
+        "review_id": "rev-bm-1",
+        "engineer_result_ref": "res-bm-1",
+        "verification_ref": "ver-bm-1",
+        "decision": "repair",
+        "findings": [
+          {
+            "code": "risk-execution-boundary-seal",
+            "severity": "blocking",
+            "summary": "HIGH-1: Direct ExecutionOrderRequest construction and unsealed RiskDecision bypass risk gating",
+            "evidence_refs": [
+              "evd-bm-impl-1"
+            ]
+          },
+          {
+            "code": "strategy-decision-nan-exposure-bypass",
+            "severity": "blocking",
+            "summary": "HIGH-2: StrategyDecision lacked validation; NaN/Inf/bool target_exposure bypassed min/max and approved max_abs_exposure",
+            "evidence_refs": [
+              "evd-bm-impl-1"
+            ]
+          },
+          {
+            "code": "secret-lookahead-symlink-concurrency-hardening",
+            "severity": "blocking",
+            "summary": "HIGH-3 + MEDIUM-1..4: Secret sanitizer misses nested/compound/Bearer/JWT/ya29./unknown keys; mutable dicts + missing allow_nan=False; symlinks; SignalIntent lookahead/nanoseconds/void numeric/op-in; flock + cross-day episode_id + double-read",
+            "evidence_refs": [
+              "evd-bm-impl-1",
+              "evd-bm-ver-1"
+            ]
+          }
+        ],
+        "evidence_refs": [
+          "evd-bm-impl-1",
+          "evd-bm-ver-1"
+        ],
+        "completed_at": "2026-11-18T05:08:12Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-brain-memory-001",
+    "event_id": "ev-bm-5",
+    "sequence": 5,
+    "previous_event_id": "ev-bm-4",
+    "occurred_at": "2026-11-18T05:08:20Z",
+    "type": "auditor_counterchecked",
+    "data": {
+      "packet": {
+        "contract_version": "1.0",
+        "audit_id": "aud-bm-1",
+        "review_ref": "rev-bm-1",
+        "decision": "concur",
+        "findings": [],
+        "evidence_refs": [
+          "evd-bm-impl-1",
+          "evd-bm-ver-1"
+        ],
+        "completed_at": "2026-11-18T05:08:20Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-brain-memory-001",
+    "event_id": "ev-bm-6",
+    "sequence": 6,
+    "previous_event_id": "ev-bm-5",
+    "occurred_at": "2026-11-18T05:08:30Z",
+    "type": "repair_directed",
+    "data": {
+      "directive": {
+        "contract_version": "1.0",
+        "directive_id": "dir-bm-1",
+        "source_review_ref": "rev-bm-1",
+        "source_audit_ref": "aud-bm-1",
+        "attempt": 1,
+        "instructions": [
+          "Seal RiskDecision and ExecutionOrderRequest with unforgeable process-private HMAC capabilities so orders require evaluate_pre_trade_risk while keeping RiskDecision backward-compatible",
+          "Validate StrategyDecision.__post_init__ and reject NaN/Inf/bool/non-numeric target_exposure inside evaluate_pre_trade_risk",
+          "Harden Brain Memory secret sanitization (nested/compound keys, case-insensitive patterns, unknown keys), freeze dicts + allow_nan=False, reject symlinks, add flock + global episode_id + single-read snapshot, enforce SignalIntent/nanosecond/void/op-in lookahead guards, set 0o644 file mode, harden Accounting fields, and test every finding"
+        ],
+        "evidence_refs": [
+          "evd-bm-impl-1",
+          "evd-bm-ver-1"
+        ],
+        "issued_at": "2026-11-18T05:08:30Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-brain-memory-001",
+    "event_id": "ev-bm-7",
+    "sequence": 7,
+    "previous_event_id": "ev-bm-6",
+    "occurred_at": "2026-11-18T05:08:40Z",
+    "type": "coordinator_dispatched",
+    "data": {
+      "invocation": {
+        "contract_version": "1.0",
+        "invocation_id": "inv-bm-2",
+        "requested_by": "coordinator",
+        "role": "engineer",
+        "objective": "Fix all 3 High, 4 Medium, and 3 Low adversarial audit findings across brain_memory and domain contracts",
+        "authority_ref": "auth-brain-memory-001",
+        "input_refs": [
+          "dir-bm-1"
+        ],
+        "attempt": 2,
+        "requested_at": "2026-11-18T05:08:40Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-brain-memory-001",
+    "event_id": "ev-bm-8",
+    "sequence": 8,
+    "previous_event_id": "ev-bm-7",
+    "occurred_at": "2026-11-18T05:21:10Z",
+    "type": "engineer_returned",
+    "data": {
+      "result": {
+        "contract_version": "1.0",
+        "result_id": "res-bm-2",
+        "invocation_ref": "inv-bm-2",
+        "role": "engineer",
+        "status": "succeeded",
+        "summary": "Resolved all Attempt 1 adversarial findings (HIGH-1..3, MEDIUM-1..4, LOW-1..3) and all 3 residual Low polish notes across brain_memory and domain contracts with expanded regression tests",
+        "evidence": [
+          {
+            "contract_version": "1.0",
+            "evidence_id": "evd-bm-impl-2",
+            "kind": "implementation",
+            "summary": "Added HMAC capability seals across RiskDecision and ExecutionOrderRequest, finite numeric guards on StrategyDecision/Risk, recursive secret sanitization + MappingProxyType freezing + symlink/flock/cross-day uniqueness/0o644 permissions + ASCII nanosecond UTC-Z validation, and 53 Python tests",
+            "source": "antigravity-katherine-impl",
+            "collected_at": "2026-11-18T05:21:10Z"
+          }
+        ],
+        "completed_at": "2026-11-18T05:21:10Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-brain-memory-001",
+    "event_id": "ev-bm-9",
+    "sequence": 9,
+    "previous_event_id": "ev-bm-8",
+    "occurred_at": "2026-11-18T05:21:15Z",
+    "type": "verification_recorded",
+    "data": {
+      "outcome": {
+        "contract_version": "1.0",
+        "verification_id": "ver-bm-2",
+        "subject_result_ref": "res-bm-2",
+        "status": "passed",
+        "checks": [
+          {
+            "name": "python-53-tests-and-brain-memory-cli",
+            "status": "passed",
+            "summary": "53/53 Python unittests, brain_memory.py validate, and brain_memory.py summarize (json/markdown) passed"
+          },
+          {
+            "name": "rust-fmt-check-test-clippy-locked",
+            "status": "passed",
+            "summary": "cargo fmt --check, cargo check --locked, cargo test --all-targets --locked (3 CLI + 14 integration = 17/17), and cargo clippy -D warnings passed"
+          },
+          {
+            "name": "governance-mirror-ruleset-policy-hygiene",
+            "status": "passed",
+            "summary": "cmp -s AGENTS.md CLAUDE.md, github_ruleset validate-configs, admission_gate --verify-rust-parity, git diff --check, and 0o644 file-mode checks passed"
+          }
+        ],
+        "evidence": [
+          {
+            "contract_version": "1.0",
+            "evidence_id": "evd-bm-ver-2",
+            "kind": "verification",
+            "summary": "Post-repair and post-Low-polish verification suite passed on feat/brain-memory-and-skeleton (with live rclone Drive push awaiting Owner RCLONE_CONFIG_GDRIVE Secret)",
+            "source": "local-cargo-unittest-ci-verifier",
+            "collected_at": "2026-11-18T05:21:15Z"
+          }
+        ],
+        "completed_at": "2026-11-18T05:21:15Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-brain-memory-001",
+    "event_id": "ev-bm-10",
+    "sequence": 10,
+    "previous_event_id": "ev-bm-9",
+    "occurred_at": "2026-11-18T05:21:20Z",
+    "type": "reviewer_decided",
+    "data": {
+      "packet": {
+        "contract_version": "1.0",
+        "review_id": "rev-bm-2",
+        "engineer_result_ref": "res-bm-2",
+        "verification_ref": "ver-bm-2",
+        "decision": "pass",
+        "findings": [],
+        "evidence_refs": [
+          "evd-bm-impl-2",
+          "evd-bm-ver-2"
+        ],
+        "completed_at": "2026-11-18T05:21:20Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-brain-memory-001",
+    "event_id": "ev-bm-11",
+    "sequence": 11,
+    "previous_event_id": "ev-bm-10",
+    "occurred_at": "2026-11-18T05:21:25Z",
+    "type": "auditor_counterchecked",
+    "data": {
+      "packet": {
+        "contract_version": "1.0",
+        "audit_id": "aud-bm-2",
+        "review_ref": "rev-bm-2",
+        "decision": "concur",
+        "findings": [],
+        "evidence_refs": [
+          "evd-bm-impl-2",
+          "evd-bm-ver-2"
+        ],
+        "completed_at": "2026-11-18T05:21:25Z"
+      }
+    }
+  },
+  {
+    "contract_version": "1.0",
+    "workflow_id": "wf-brain-memory-001",
+    "event_id": "ev-bm-12",
+    "sequence": 12,
+    "previous_event_id": "ev-bm-11",
+    "occurred_at": "2026-11-18T05:21:30Z",
+    "type": "coordinator_finalized",
+    "data": {
+      "response": {
+        "contract_version": "1.0",
+        "response_id": "resp-bm-1",
+        "outcome": "passed",
+        "public_summary": "Daily Brain Memory JSONL storage, Vault snapshot CLI, and 5-layer domain-neutral NL->JSON contract skeletons passed Attempt 2 adversarial re-audit, Low-polish hardening, and full verification",
+        "evidence_refs": [
+          "evd-bm-ver-2"
+        ],
+        "completed_at": "2026-11-18T05:21:30Z"
+      }
+    }
+  }
+]

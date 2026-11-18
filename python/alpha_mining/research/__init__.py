@@ -30,3 +30,24 @@ class ExperimentRecord:
     def __post_init__(self) -> None:
         if self.trials_tested < 1:
             raise ValueError("trials_tested must be at least 1 for multiple-testing accounting")
+
+
+from .contracts import (  # noqa: E402
+    ALLOWED_TRANSLATOR_OPS,
+    DIRECTION_BIASES,
+    FORBIDDEN_TRANSLATOR_KEYS,
+    NLRuleSpec,
+    RuleCondition,
+    validate_translator_payload,
+)
+
+__all__ = [
+    "ALLOWED_TRANSLATOR_OPS",
+    "DIRECTION_BIASES",
+    "EvidenceStatus",
+    "ExperimentRecord",
+    "FORBIDDEN_TRANSLATOR_KEYS",
+    "NLRuleSpec",
+    "RuleCondition",
+    "validate_translator_payload",
+]

@@ -18,6 +18,7 @@ build/
 .vault_cache/
 .vault_staging/
 .observe_out/
+.brain_memory.lock
 data/raw/
 data/cache/
 *.parquet
