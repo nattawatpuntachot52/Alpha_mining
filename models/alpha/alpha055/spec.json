@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha055",
+  "category": "alpha",
+  "display_name": "Alpha055 — H1 14-Bar Momentum (Preserved Separate Slot)",
+  "version": "1.0.0",
+  "evidence_status": "exploratory",
+  "drive_vault_folder_key": "models_alpha",
+  "mql5": {
+    "prefix": "Alpha055",
+    "magic_number": 5105055,
+    "module_file": "module.mqh",
+    "timeframe": "PERIOD_H1",
+    "direction": "long_only",
+    "default_lot": 0.10,
+    "hedging_required": true
+  },
+  "logic": {
+    "summary": "Long-only H1 momentum slot kept separate from alpha005 exactly as supplied (Close[1] > Close[15]).",
+    "parameters": {
+      "timeframe": "PERIOD_H1",
+      "fast_shift": 1,
+      "slow_shift": 15,
+      "min_bars_required": 100,
+      "deviation_points": 20
+    },
+    "economic_rationale": "Preserved as a distinct allocation/magic slot from supplied Portfolio C adaptation.",
+    "known_assumptions": [
+      "FACT: Binary signal condition Close[1] > Close[15] is identical to alpha005 in the supplied adaptation; separated only by Magic Number (5105055) and independent lot allocation.",
+      "No hard SL/TP; risk exit is signal reversal (Close[1] <= Close[15])."
+    ],
+    "rejection_criteria": [
+      "If owner confirms no distinct signal logic is planned for alpha055, consider consolidating allocation into alpha005 to eliminate duplicated orders and spread overhead."
+    ]
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0",
+  "model_id": "impulse_efficiency_s1",
+  "category": "alpha",
+  "display_name": "Impulse Efficiency S1 (H1 Z_t/ER_t | SL 0.75% / TP 0.50%)",
+  "version": "1.0.0",
+  "evidence_status": "exploratory",
+  "drive_vault_folder_key": "models_alpha",
+  "mql5": {
+    "prefix": "Impulse1",
+    "magic_number": 20261101,
+    "module_file": "module.mqh",
+    "timeframe": "PERIOD_H1",
+    "direction": "long_short",
+    "default_lot": 0.01,
+    "hedging_required": true
+  },
+  "logic": {
+    "summary": "H1 directional impulse continuation gate (|Z_t(3)| >= 2.0 vs pre-move 20-bar RMS volatility, ER_t(3) >= 0.75) with quick-harvest SL 0.75% / TP 0.50% of entry price.",
+    "parameters": {
+      "timeframe": "PERIOD_H1",
+      "enable_buy": true,
+      "enable_sell": true,
+      "move_window_k": 3,
+      "vol_baseline_w": 20,
+      "z_threshold": 2.0,
+      "er_threshold": 0.75,
+      "pct_basis": "PCT_OF_ENTRY_PRICE",
+      "sl_pct": 0.75,
+      "tp_pct": 0.50,
+      "max_spread_points": 50,
+      "deviation_points": 20
+    },
+    "economic_rationale": "Captures short-horizon continuation after forced directional order flow (stop cascades / split institutional orders) while filtering choppy whipsaws via Efficiency Ratio.",
+    "known_assumptions": [
+      "Pre-move volatility uses bars [k .. k+W] strictly before the impulse window to prevent self-scaling lookahead.",
+      "Requires independent Out-of-Sample verification once raw MT5 optimization XML is uploaded to Drive Vault."
+    ],
+    "rejection_criteria": [
+      "Conditional forward return after spread and slippage <= 0 (indicating exhaustion rather than continuation).",
+      "Parameter stability fails when Z_t or ER_t thresholds shift by +/-10%."
+    ]
+  }
+}

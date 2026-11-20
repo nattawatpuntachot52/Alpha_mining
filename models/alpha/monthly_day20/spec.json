@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "model_id": "monthly_day20",
+  "category": "alpha",
+  "display_name": "Monthly Day-20 Calendar Long (Open Day 20 -> After Close Day 21)",
+  "version": "1.0.0",
+  "evidence_status": "proposed",
+  "drive_vault_folder_key": "models_alpha",
+  "mql5": {
+    "prefix": "Day20",
+    "magic_number": 20261120,
+    "module_file": "module.mqh",
+    "timeframe": "PERIOD_D1",
+    "direction": "long_only",
+    "default_lot": 0.01,
+    "hedging_required": true
+  },
+  "logic": {
+    "summary": "Monthly calendar rule: buy at D1 open on calendar day 20 of each month and exit on the first trading D1 bar after calendar day 21 closes (day >= 22 or next month).",
+    "parameters": {
+      "timeframe": "PERIOD_D1",
+      "entry_day": 20,
+      "exit_day_min": 22,
+      "deviation_points": 20,
+      "retry_seconds": 15
+    },
+    "economic_rationale": "Hypothesis: recurring monthly institutional rebalancing, payroll/settlement, or options-expiry flows around the 20th-21st window create positive directional drift (requires statistical verification against multiple-testing calendar bias).",
+    "known_assumptions": [
+      "If calendar day 20 falls on a weekend/holiday with no D1 bar, that month is skipped.",
+      "Causal exit executes at the open of the first trading D1 bar after day 21 ends (day >= 22); if day 20 or 21 is Friday, position holds across the weekend to Monday open.",
+      "Includes 15-second retry throttling during midnight rollover windows."
+    ],
+    "rejection_criteria": [
+      "Mean return on day 20-21 fails to beat unconditional random 2-day holding windows (permutation / Bonferroni calendar test across 28 days).",
+      "Positive return vanishes after rollover spread and overnight swap costs."
+    ]
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha005",
+  "category": "alpha",
+  "display_name": "Alpha005 — H1 14-Bar Momentum",
+  "version": "1.0.0",
+  "evidence_status": "exploratory",
+  "drive_vault_folder_key": "models_alpha",
+  "mql5": {
+    "prefix": "Alpha005",
+    "magic_number": 5105005,
+    "module_file": "module.mqh",
+    "timeframe": "PERIOD_H1",
+    "direction": "long_only",
+    "default_lot": 0.10,
+    "hedging_required": true
+  },
+  "logic": {
+    "summary": "Long-only H1 momentum model: stay long while closed bar Close[1] > Close[15]; exit flat otherwise.",
+    "parameters": {
+      "timeframe": "PERIOD_H1",
+      "fast_shift": 1,
+      "slow_shift": 15,
+      "min_bars_required": 100,
+      "deviation_points": 20
+    },
+    "economic_rationale": "Short-horizon directional trend persistence over 14 H1 bars (~14 trading hours).",
+    "known_assumptions": [
+      "Evaluates strictly on closed H1 bars (shift 1 vs shift 15) at each new H1 bar open.",
+      "No hard SL/TP; risk exit is signal reversal (Close[1] <= Close[15])."
+    ],
+    "rejection_criteria": [
+      "Net Out-of-Sample expectancy after realistic spread, swap, and slippage <= 0.",
+      "Performance collapses under +/-2 bar lookback perturbation."
+    ]
+  }
+}

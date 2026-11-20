@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.0",
+  "model_id": "heiken_ma_12_26",
+  "category": "alpha",
+  "display_name": "Heiken Ashi MA Cross (M15 SMA 12/26)",
+  "version": "1.0.0",
+  "evidence_status": "exploratory",
+  "drive_vault_folder_key": "models_alpha",
+  "mql5": {
+    "prefix": "Heiken",
+    "magic_number": 20260616,
+    "module_file": "module.mqh",
+    "timeframe": "PERIOD_M15",
+    "direction": "long_only",
+    "default_lot": 0.01,
+    "hedging_required": true
+  },
+  "logic": {
+    "summary": "Long-only M15 Heiken Ashi Close SMA(12)/SMA(26) crossover with Thursday entry block and 1000-point spread guard.",
+    "parameters": {
+      "timeframe": "PERIOD_M15",
+      "ma_method": "MODE_SMA",
+      "applied_price": "PRICE_CLOSE",
+      "fast_ma": 12,
+      "slow_ma": 26,
+      "max_spread_points": 1000,
+      "stop_thursday": true,
+      "stop_sunday": false,
+      "deviation_points": 30
+    },
+    "economic_rationale": "Smoothed Heiken Ashi close reduces intraday noise while fast/slow SMA crossover captures M15 directional trend shifts.",
+    "known_assumptions": [
+      "Uses closed M15 candle (index copied - 2 vs copied - 3) to avoid intrabar lookahead.",
+      "Thursday filter blocks new entries only; cross-down exits remain active on all days."
+    ],
+    "rejection_criteria": [
+      "Net Out-of-Sample expectancy <= 0 after realistic M15 spread/slippage.",
+      "Thursday filter proves overfit when tested Out-of-Sample across distinct calendar years."
+    ]
+  }
+}
