@@ -1,9 +1,8 @@
 name: Daily Brain Memory Snapshot Sync
 
+# Authoritative daily schedule migrated to nattawatpuntachot52/Katherine-HQ.
+# Retain manual workflow_dispatch here aligned with 00_Katherine_Workspace/00_Katherine_Core/brain_memory.
 on:
-  schedule:
-    # Run daily at 18:00 UTC (01:00 Asia/Bangkok / UTC+7) after the day completes.
-    - cron: "0 18 * * *"
   workflow_dispatch:
     inputs:
       session_date:
@@ -119,23 +118,33 @@ jobs:
               cat "$RCLONE_ERR" >&2
               exit "$ROOT_RC"
             fi
-            if ! printf '%s\n' "$ROOT_DIRS" | grep -Fxq "Alpha_mining_Vault/"; then
+            if ! printf '%s\n' "$ROOT_DIRS" | grep -Fxq "00_Katherine_Workspace/"; then
               if printf '%s\n' "$ROOT_DIRS" | grep -Fxq "state_snapshots/"; then
-                echo "RCLONE_CONFIG_GDRIVE appears scoped inside Alpha_mining_Vault (found state_snapshots/ at gdrive: root); configure gdrive: at Drive root so gdrive:Alpha_mining_Vault/ matches vault_sync.py." >&2
+                echo "RCLONE_CONFIG_GDRIVE appears scoped inside brain_memory (found state_snapshots/ at gdrive: root); configure gdrive: at Drive root so gdrive:00_Katherine_Workspace/00_Katherine_Core/brain_memory/ matches Katherine-HQ workspace_registry.json." >&2
               else
-                echo "Alpha_mining_Vault/ folder not found at gdrive: root; verify RCLONE_CONFIG_GDRIVE account/root_folder_id." >&2
+                echo "00_Katherine_Workspace/ folder not found at gdrive: root; verify RCLONE_CONFIG_GDRIVE account/root_folder_id." >&2
               fi
               exit 1
             fi
 
             set +e
-            LS_DIRS=$(RCLONE_CONFIG="$RCLONE_TMP" rclone lsf --dirs-only "gdrive:Alpha_mining_Vault/state_snapshots/" </dev/null 2>"$RCLONE_ERR")
+            CORE_DIRS=$(RCLONE_CONFIG="$RCLONE_TMP" rclone lsf --dirs-only "gdrive:00_Katherine_Workspace/00_Katherine_Core/" </dev/null 2>"$RCLONE_ERR")
+            CORE_RC=$?
+            set -e
+            if [[ "$CORE_RC" -ne 0 ]] || ! printf '%s\n' "$CORE_DIRS" | grep -Fxq "brain_memory/"; then
+              cat "$RCLONE_ERR" >&2 || true
+              echo "00_Katherine_Workspace/00_Katherine_Core/brain_memory/ folder not found on Drive; verify Katherine-HQ workspace_registry.json." >&2
+              exit 1
+            fi
+
+            set +e
+            LS_DIRS=$(RCLONE_CONFIG="$RCLONE_TMP" rclone lsf --dirs-only "gdrive:00_Katherine_Workspace/00_Katherine_Core/brain_memory/state_snapshots/" </dev/null 2>"$RCLONE_ERR")
             LS_RC=$?
             set -e
             if [[ "$LS_RC" -eq 0 ]]; then
               if printf '%s\n' "$LS_DIRS" | grep -Fxq "manifests/"; then
                 RCLONE_CONFIG="$RCLONE_TMP" rclone copy \
-                  "gdrive:Alpha_mining_Vault/state_snapshots/manifests/" \
+                  "gdrive:00_Katherine_Workspace/00_Katherine_Core/brain_memory/state_snapshots/manifests/" \
                   "$DRIVE_MANIFEST_DIR/" \
                   --max-depth 1 \
                   --include "brain-daily-*.manifest.json" </dev/null
@@ -238,7 +247,7 @@ jobs:
                 --backend rclone
               RCLONE_CONFIG="$RCLONE_TMP" rclone copyto \
                 "$MANIFEST_PATH" \
-                "gdrive:Alpha_mining_Vault/state_snapshots/manifests/brain-daily-${SESSION_DATE}.manifest.json" </dev/null
+                "gdrive:00_Katherine_Workspace/00_Katherine_Core/brain_memory/state_snapshots/manifests/brain-daily-${SESSION_DATE}.manifest.json" </dev/null
               PUSH_STATUS="pushed to Drive"
             fi
 

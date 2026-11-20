@@ -1,0 +1,99 @@
+{
+  "schema_version": "1.0",
+  "ssot_repository": "nattawatpuntachot52/Katherine-HQ",
+  "owner_github": "nattawatpuntachot52",
+  "workspace_root": {
+    "name": "00_Katherine_Workspace",
+    "folder_id": "1cXxKkW1Mk4vPlQO49Mjv6aqfTp1i6Vf-",
+    "url": "https://drive.google.com/drive/folders/1cXxKkW1Mk4vPlQO49Mjv6aqfTp1i6Vf-",
+    "rclone_remote": "gdrive:00_Katherine_Workspace"
+  },
+  "core": {
+    "name": "00_Katherine_Core",
+    "folder_id": "1IAo_H5eNeWY8kmgX3693lubZ_Jo7Cb4Z",
+    "url": "https://drive.google.com/drive/folders/1IAo_H5eNeWY8kmgX3693lubZ_Jo7Cb4Z",
+    "rclone_remote": "gdrive:00_Katherine_Workspace/00_Katherine_Core",
+    "github_repo": "nattawatpuntachot52/Katherine-HQ",
+    "folders": {
+      "00_global_inbox": "1HEVH7Fab698vIiCsmUvYqL-yLFHyzKo5",
+      "01_needs_review": "1ViraZ0xNohbBmtv618PycpApdMBeOoNa",
+      "brain_memory": "1srf0bA_j_6JVJMGmc3VE6gCpU0iRu5Tv",
+      "brain_memory_state_snapshots": "11LgT2EI6OrjeBoF8y91Smz2wEfRwfxbt",
+      "governance": "1ooJLPXmVrvHF0yq4NouVIseLVdBVbzye"
+    },
+    "brain_memory_rclone_remote": "gdrive:00_Katherine_Workspace/00_Katherine_Core/brain_memory"
+  },
+  "projects": {
+    "alpha_mining": {
+      "slot": "01_Alpha_Mining",
+      "display_name": "Alpha Mining",
+      "workstream": "quant_research_and_ml_trading",
+      "folder_id": "1uB0PU8GvrCx5payhEufdkxFXuWf4RGFp",
+      "url": "https://drive.google.com/drive/folders/1uB0PU8GvrCx5payhEufdkxFXuWf4RGFp",
+      "rclone_remote": "gdrive:00_Katherine_Workspace/01_Alpha_Mining",
+      "github_repos": [
+        "nattawatpuntachot52/Alpha_mining"
+      ],
+      "folders": {
+        "00_inbox": "1omzdNDqvmWvpF3Vv6_fL_r53TuHCnuAA",
+        "01_needs_review": "10xaoOBV12HF-8Lk77EeXfQHhvk-dsnTj",
+        "datasets": "12q4OVX65a0R1fubWJuey5kqkXUNoDXsX",
+        "backtests": "1mSUfgnR4yNhSi3ggM_DYHMjP9ynB5Yxr",
+        "models": "1Gtuh6mtCvv7nFujg0ZkujcVgjO-habFc",
+        "models_alpha": "1BgIImsCOcUHHIxGiULkTa-DukQ2G9RrN",
+        "models_beta": "1Jh-ZnLZTJNNYRftv3z9KXCISouFEPbXs",
+        "models_omega": "1n6Z9-8fq6b-uNQidZPwveMAP9JpwxzEY",
+        "tools_rrg": "18r-yvaV6TY29uf9wYP0SBZXf4aVJtQg6"
+      }
+    },
+    "write_time": {
+      "slot": "02_Write_Time",
+      "display_name": "Write Time",
+      "workstream": "facebook_media_web_and_news_automation",
+      "folder_id": "12_4sukNTsooBU3BuIrzF_A151Vp6n0na",
+      "url": "https://drive.google.com/drive/folders/12_4sukNTsooBU3BuIrzF_A151Vp6n0na",
+      "rclone_remote": "gdrive:00_Katherine_Workspace/02_Write_Time",
+      "github_repos": [
+        "nattawatpuntachot52/factnews-automation"
+      ],
+      "live_urls": [
+        "https://writetime.pages.dev"
+      ],
+      "folders": {
+        "00_inbox": "1zKW-K4EceZMLt-bORicmkuNuImGseISX",
+        "01_needs_review": "1_GJO2wrHuWcj9tbV8w4UTLokEzf4DAXk",
+        "content": "1zd3LCn0wD63sTZB3LGnYX_EI1IDyfKYu",
+        "news_data": "1FmZHOpqvNMqukOCrjZzK0WP-kR1QcXFw",
+        "web_releases": "1dpL72vVdE8RqKhnba2yKV6AtkgKzIW4i"
+      }
+    },
+    "transisquant": {
+      "slot": "03_TransisQuant",
+      "display_name": "TransisQuant",
+      "workstream": "quant_brand_content_tools_and_operations",
+      "folder_id": "1mkoTYa8GXyPNIhYT_Jhs3-eFVaSY5vAU",
+      "url": "https://drive.google.com/drive/folders/1mkoTYa8GXyPNIhYT_Jhs3-eFVaSY5vAU",
+      "rclone_remote": "gdrive:00_Katherine_Workspace/03_TransisQuant",
+      "github_repos": [],
+      "folders": {
+        "00_inbox": "1liahrzteo9erwBjHX8ryZE9n_6Vq5YDy",
+        "01_needs_review": "1u9g33nWnp7rGusrU6r2THyZZ2aJfAMaX",
+        "content_and_blog": "1FPumVZZb77WlqQd_v7Ze0VL7FTuYaJwK",
+        "tools": "1F7HycG6YRpkyXpSuGHsnHZdy1aXTvNVQ",
+        "operations": "1nfEw3FYus0xWyogH50z0cLEIYv2f0hSK"
+      }
+    }
+  },
+  "reference_repositories": {
+    "ovca_reference": {
+      "github_repo": "nattawatpuntachot52/ovca-reference",
+      "status": "public_showcase_reference_only",
+      "drive_vault": null
+    },
+    "rrg": {
+      "github_repo": "nattawatpuntachot52/RRG",
+      "status": "paused_on_github_no_drive_vault",
+      "drive_vault": null
+    }
+  }
+}

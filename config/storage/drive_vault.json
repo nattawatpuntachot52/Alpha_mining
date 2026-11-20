@@ -1,6 +1,9 @@
 {
   "schema_version": "1.0",
-  "vault_name": "Alpha_mining_Vault",
+  "vault_name": "01_Alpha_Mining",
+  "workspace_path": "00_Katherine_Workspace/01_Alpha_Mining",
+  "rclone_remote": "gdrive:00_Katherine_Workspace/01_Alpha_Mining",
+  "ssot_registry_repo": "nattawatpuntachot52/Katherine-HQ",
   "root_folder_id": "1uB0PU8GvrCx5payhEufdkxFXuWf4RGFp",
   "root_url": "https://drive.google.com/drive/folders/1uB0PU8GvrCx5payhEufdkxFXuWf4RGFp",
   "categories": {
@@ -14,7 +17,17 @@
     },
     "state_snapshot": {
       "folder_name": "state_snapshots",
-      "folder_id": "11LgT2EI6OrjeBoF8y91Smz2wEfRwfxbt"
+      "folder_id": "11LgT2EI6OrjeBoF8y91Smz2wEfRwfxbt",
+      "rclone_remote_override": "gdrive:00_Katherine_Workspace/00_Katherine_Core/brain_memory"
     }
+  },
+  "project_folders": {
+    "00_inbox": "1omzdNDqvmWvpF3Vv6_fL_r53TuHCnuAA",
+    "01_needs_review": "10xaoOBV12HF-8Lk77EeXfQHhvk-dsnTj",
+    "models": "1Gtuh6mtCvv7nFujg0ZkujcVgjO-habFc",
+    "models_alpha": "1BgIImsCOcUHHIxGiULkTa-DukQ2G9RrN",
+    "models_beta": "1Jh-ZnLZTJNNYRftv3z9KXCISouFEPbXs",
+    "models_omega": "1n6Z9-8fq6b-uNQidZPwveMAP9JpwxzEY",
+    "tools_rrg": "18r-yvaV6TY29uf9wYP0SBZXf4aVJtQg6"
   }
 }
