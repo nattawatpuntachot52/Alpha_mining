@@ -385,7 +385,10 @@ class TestVaultStorage(unittest.TestCase):
             with mock.patch("alpha_mining.storage.vault.shutil.which", return_value="/usr/bin/tool"):
                 push_to_drive(manifest_path, archive_path, backend="rclone", runner=fake_rclone_push)
             self.assertEqual(rclone_cmds[0][0], "rclone")
-            self.assertIn("gdrive:Alpha_mining_Vault/state_snapshots/snap_01.tar.gz", rclone_cmds[0])
+            self.assertIn(
+                "gdrive:00_Katherine_Workspace/01_Alpha_Mining/state_snapshots/snap_01.tar.gz",
+                rclone_cmds[0],
+            )
 
             saved_bytes = archive_path.read_bytes()
             archive_path.unlink()

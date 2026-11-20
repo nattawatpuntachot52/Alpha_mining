@@ -81,7 +81,10 @@ def main(argv: list[str] | None = None) -> int:
     push_p.add_argument("--manifest", type=Path, required=True)
     push_p.add_argument("--archive", type=Path)
     push_p.add_argument("--backend", choices=("auto", "gdrive", "rclone"), default="auto")
-    push_p.add_argument("--rclone-remote", default="gdrive:Alpha_mining_Vault")
+    push_p.add_argument(
+        "--rclone-remote",
+        default="gdrive:00_Katherine_Workspace/00_Katherine_Core/brain_memory",
+    )
     push_p.add_argument("--dry-run", action="store_true")
 
     args = parser.parse_args(argv)

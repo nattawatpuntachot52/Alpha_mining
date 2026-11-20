@@ -63,7 +63,7 @@ def main(argv: list[str] | None = None) -> int:
     push_p.add_argument("--manifest", type=Path, required=True)
     push_p.add_argument("--archive", type=Path)
     push_p.add_argument("--backend", choices=("auto", "gdrive", "rclone"), default="auto")
-    push_p.add_argument("--rclone-remote", default="gdrive:Alpha_mining_Vault")
+    push_p.add_argument("--rclone-remote", default="gdrive:00_Katherine_Workspace/01_Alpha_Mining")
     push_p.add_argument("--dry-run", action="store_true")
 
     pull_p = sub.add_parser("pull-drive", help="Hydrate from hot cache or Drive Vault, verify, and extract")
@@ -71,7 +71,7 @@ def main(argv: list[str] | None = None) -> int:
     pull_p.add_argument("--dest", type=Path, required=True)
     pull_p.add_argument("--cache-dir", type=Path, default=REPO_ROOT / ".vault_cache")
     pull_p.add_argument("--backend", choices=("auto", "gdrive", "rclone"), default="auto")
-    pull_p.add_argument("--rclone-remote", default="gdrive:Alpha_mining_Vault")
+    pull_p.add_argument("--rclone-remote", default="gdrive:00_Katherine_Workspace/01_Alpha_Mining")
 
     args = parser.parse_args(argv)
     vault_cfg = default_vault_config_path(REPO_ROOT)

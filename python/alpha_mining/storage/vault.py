@@ -423,7 +423,7 @@ def push_to_drive(
     archive_path: Path,
     *,
     backend: Backend = "auto",
-    rclone_remote: str = "gdrive:Alpha_mining_Vault",
+    rclone_remote: str = "gdrive:00_Katherine_Workspace/01_Alpha_Mining",
     dry_run: bool = False,
     runner: CommandRunner = _default_runner,
 ) -> dict[str, Any]:
@@ -482,7 +482,7 @@ def pull_from_drive(
     *,
     cache_dir: Path,
     backend: Backend = "auto",
-    rclone_remote: str = "gdrive:Alpha_mining_Vault",
+    rclone_remote: str = "gdrive:00_Katherine_Workspace/01_Alpha_Mining",
     runner: CommandRunner = _default_runner,
 ) -> dict[str, Any]:
     """Hydrate from hot cache first; fallback to Google Drive Vault on miss, then verify and extract."""

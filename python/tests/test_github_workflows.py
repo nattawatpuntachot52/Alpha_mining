@@ -598,8 +598,8 @@ jobs:
 
     def test_brain_memory_cron_schedule_rclone_and_secret_hygiene(self) -> None:
         text = (WORKFLOWS_DIR / "brain-memory-cron.yml").read_text(encoding="utf-8")
-        self.assertIn("schedule:", text)
-        self.assertIn('cron: "0 18 * * *"', text)
+        # Authoritative daily schedule migrated to Katherine-HQ; Alpha_mining keeps manual dispatch only.
+        self.assertNotIn("schedule:", text)
         self.assertIn("workflow_dispatch:", text)
         self.assertIn("permissions:\n  contents: read", text)
         self.assertIn("group: alpha-brain-memory-sync", text)
@@ -617,6 +617,8 @@ jobs:
         self.assertIn("</dev/null", text)
         self.assertIn("--max-depth 1", text)
         self.assertIn('rclone lsf --dirs-only "gdrive:"', text)
+        self.assertIn("00_Katherine_Workspace/00_Katherine_Core/brain_memory/state_snapshots/", text)
+        self.assertNotIn("Alpha_mining_Vault", text)
         self.assertIn("elif [[ \"$LS_RC\" -eq 3 ]]; then", text)
 
         apt_pos = text.find("apt-get install -y -qq --no-install-recommends rclone zstd")
