@@ -82,6 +82,22 @@
         "tools": "1F7HycG6YRpkyXpSuGHsnHZdy1aXTvNVQ",
         "operations": "1nfEw3FYus0xWyogH50z0cLEIYv2f0hSK"
       }
+    },
+    "radio_music": {
+      "slot": "04_Radio_Music",
+      "display_name": "Radio Music",
+      "workstream": "music_cover_audio_and_video_production",
+      "folder_id": "1ZDU2fG413reXZXznkhpVfDNBNz0ztbDY",
+      "url": "https://drive.google.com/drive/folders/1ZDU2fG413reXZXznkhpVfDNBNz0ztbDY",
+      "rclone_remote": "gdrive:00_Katherine_Workspace/04_Radio_Music",
+      "github_repos": [],
+      "folders": {
+        "00_inbox": "1PbJxE3g5vxkhRyaxm69B5AJ8ov9yOwuU",
+        "01_needs_review": "1yIWp1gkz3oXQJ7hgP521US22b84jxvtw",
+        "songs_and_lyrics": "1t5fUtFZKcrxhfRL66RWrKjAhZIIoRgV_",
+        "audio_projects": "1ADku7EJ6nMlWAoswp1kiAPBxTYccnt3q",
+        "video_and_releases": "13TLaSdwjnN5pXWeUV-ZpVXoJAjhP4dRL"
+      }
     }
   },
   "reference_repositories": {
