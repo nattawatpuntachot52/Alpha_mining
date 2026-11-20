@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha010",
+  "category": "alpha",
+  "display_name": "Alpha010 — H1 90-Bar Momentum",
+  "version": "1.0.0",
+  "evidence_status": "exploratory",
+  "drive_vault_folder_key": "models_alpha",
+  "mql5": {
+    "prefix": "Alpha010",
+    "magic_number": 5105010,
+    "module_file": "module.mqh",
+    "timeframe": "PERIOD_H1",
+    "direction": "long_only",
+    "default_lot": 0.10,
+    "hedging_required": true
+  },
+  "logic": {
+    "summary": "Long-only H1 medium-horizon momentum model: stay long while closed bar Close[1] > Close[91]; exit flat otherwise.",
+    "parameters": {
+      "timeframe": "PERIOD_H1",
+      "fast_shift": 1,
+      "slow_shift": 91,
+      "min_bars_required": 100,
+      "deviation_points": 20
+    },
+    "economic_rationale": "Captures multi-day directional drift over ~90 H1 bars (~4 trading days).",
+    "known_assumptions": [
+      "Evaluates strictly on closed H1 bars (shift 1 vs shift 91) at each new H1 bar open.",
+      "No hard SL/TP; risk exit is signal reversal (Close[1] <= Close[91])."
+    ],
+    "rejection_criteria": [
+      "Net Out-of-Sample expectancy after spread, swap, and slippage <= 0.",
+      "High drawdown concentration during sideways/mean-reverting regimes without compensating trend payoff."
+    ]
+  }
+}

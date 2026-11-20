@@ -1,0 +1,79 @@
+{
+  "schema_version": "1.0",
+  "core_mql5_helpers": "models/mql5_core/execution_helpers.mqh",
+  "categories": {
+    "alpha": {
+      "status": "active",
+      "drive_folder_key": "models_alpha",
+      "description": "Active tactical and directional alpha models."
+    },
+    "beta": {
+      "status": "placeholder_tbd_by_owner",
+      "drive_folder_key": "models_beta",
+      "description": "Reserved for Beta models (final taxonomy definition TBD by Owner)."
+    },
+    "omega": {
+      "status": "placeholder_tbd_by_owner",
+      "drive_folder_key": "models_omega",
+      "description": "Reserved for Omega models (final taxonomy definition TBD by Owner)."
+    }
+  },
+  "models": [
+    {
+      "model_id": "alpha005",
+      "category": "alpha",
+      "spec_path": "models/alpha/alpha005/spec.json",
+      "magic_number": 5105005,
+      "mql5_prefix": "Alpha005",
+      "status": "active"
+    },
+    {
+      "model_id": "alpha055",
+      "category": "alpha",
+      "spec_path": "models/alpha/alpha055/spec.json",
+      "magic_number": 5105055,
+      "mql5_prefix": "Alpha055",
+      "status": "active"
+    },
+    {
+      "model_id": "alpha010",
+      "category": "alpha",
+      "spec_path": "models/alpha/alpha010/spec.json",
+      "magic_number": 5105010,
+      "mql5_prefix": "Alpha010",
+      "status": "active"
+    },
+    {
+      "model_id": "heiken_ma_12_26",
+      "category": "alpha",
+      "spec_path": "models/alpha/heiken_ma_12_26/spec.json",
+      "magic_number": 20260616,
+      "mql5_prefix": "Heiken",
+      "status": "active"
+    },
+    {
+      "model_id": "impulse_efficiency_s1",
+      "category": "alpha",
+      "spec_path": "models/alpha/impulse_efficiency_s1/spec.json",
+      "magic_number": 20261101,
+      "mql5_prefix": "Impulse1",
+      "status": "active"
+    },
+    {
+      "model_id": "impulse_efficiency_s2",
+      "category": "alpha",
+      "spec_path": "models/alpha/impulse_efficiency_s2/spec.json",
+      "magic_number": 20261102,
+      "mql5_prefix": "Impulse2",
+      "status": "active"
+    },
+    {
+      "model_id": "monthly_day20",
+      "category": "alpha",
+      "spec_path": "models/alpha/monthly_day20/spec.json",
+      "magic_number": 20261120,
+      "mql5_prefix": "Day20",
+      "status": "active"
+    }
+  ]
+}

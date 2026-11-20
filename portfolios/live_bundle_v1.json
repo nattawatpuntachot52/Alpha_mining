@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0",
+  "portfolio_id": "live_bundle_v1",
+  "ea_name": "AlphaMining_LiveBundle_v1",
+  "description": "Combined 7-model MT5 Hedging portfolio assembled deterministically from atomic models/alpha modules.",
+  "account_lock": 0,
+  "disable_check_interval_seconds": 60,
+  "output_path": "portfolios/assembled/live_bundle_v1.mq5",
+  "models": [
+    {
+      "model_id": "alpha005",
+      "enabled": true,
+      "default_lot": 0.10
+    },
+    {
+      "model_id": "alpha055",
+      "enabled": true,
+      "default_lot": 0.10
+    },
+    {
+      "model_id": "alpha010",
+      "enabled": true,
+      "default_lot": 0.10
+    },
+    {
+      "model_id": "heiken_ma_12_26",
+      "enabled": true,
+      "default_lot": 0.01
+    },
+    {
+      "model_id": "impulse_efficiency_s1",
+      "enabled": true,
+      "default_lot": 0.01
+    },
+    {
+      "model_id": "impulse_efficiency_s2",
+      "enabled": true,
+      "default_lot": 0.01
+    },
+    {
+      "model_id": "monthly_day20",
+      "enabled": true,
+      "default_lot": 0.01
+    }
+  ]
+}
