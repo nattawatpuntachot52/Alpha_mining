@@ -376,6 +376,47 @@ class TestLgb154StrategyAndBacktest(unittest.TestCase):
         self.assertGreater(res_clean.buy_fills, 0)
         self.assertEqual(res_legacy.buy_fills, 0)
 
+    def test_daily_weekly_series_conservation_volume_and_beta_corr(self) -> None:
+        # 10 days (14,400 bars) crossing ISO week boundary -> at least 2 consecutive ISO weeks
+        bars = _make_oscillating_bars(
+            count=14_400,
+            base_price=2250.0,
+            amp=75.0,
+            period_bars=180,
+            wick=6.0,
+            start_ms=1_760_000_000_000,
+        )
+        cfg = Lgb154Config.ethusdt_usdm_default()
+        res = run_lgb154_backtest(
+            bars,
+            cfg,
+            signal_provider=HeikinAshiSignal(),
+            options=BacktestOptions(initial_capital=Decimal("10000"), fill_mode="strict_cross", record_trades=False),
+        )
+        self.assertGreater(res.buy_volume_eth, 0.0)
+        self.assertGreater(res.sell_volume_eth, 0.0)
+        self.assertGreater(res.turnover_usd, 0.0)
+        self.assertGreater(res.max_utilization_pct, 0.0)
+        self.assertGreaterEqual(res.weekly_count, 2)
+        self.assertTrue(math.isfinite(res.beta_to_eth))
+        self.assertGreaterEqual(res.corr_to_eth, -1.0001)
+        self.assertLessEqual(res.corr_to_eth, 1.0001)
+
+        ds = res.daily_series
+        self.assertNotIn("daily_series", res.summary_dict())
+        self.assertEqual(len(ds["weeks"]), res.weekly_count)
+        self.assertEqual(len(ds["weekly"]), res.weekly_count)
+        self.assertAlmostEqual(sum(ds["weekly"]), res.realized_net_pnl, places=2)
+        self.assertAlmostEqual(res.avg_weekly_cf_usd, sum(ds["weekly"]) / len(ds["weeks"]), places=3)
+        self.assertEqual(len(ds["dates"]), len(ds["equity"]))
+        self.assertEqual(len(ds["dates"]), len(ds["eth_return"]))
+        self.assertEqual(len(ds["dates"]), len(ds["cf"]))
+        self.assertEqual(len(ds["dates"]), len(ds["dd"]))
+        self.assertEqual(len(ds["dates"]), len(ds["inventory"]))
+        self.assertEqual(len(ds["dates"]), len(ds["capital"]))
+        self.assertEqual(len(ds["daily_returns"]), len(ds["dates"]) - 1)
+        self.assertEqual(len(ds["eth_daily_returns"]), len(ds["dates"]) - 1)
+
 
 if __name__ == "__main__":
     unittest.main()

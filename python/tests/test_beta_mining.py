@@ -18,7 +18,11 @@ from alpha_mining.research.beta_dashboard import (  # noqa: E402
     render_daily_summary_markdown,
     render_dashboard_html,
 )
-from alpha_mining.research.beta_store import BetaModelStore, validate_model_id  # noqa: E402
+from alpha_mining.research.beta_store import (  # noqa: E402
+    BetaModelStore,
+    compute_return_correlation_matrix,
+    validate_model_id,
+)
 from alpha_mining.strategy.lgb154 import Bar  # noqa: E402
 
 
@@ -206,8 +210,36 @@ class TestBetaMiningStoreAndDashboard(unittest.TestCase):
             self.assertEqual(r1.returncode, 0, r1.stderr)
             self.assertTrue((store_dir / "catalog.json").is_file())
             self.assertTrue((store_dir / "ranking_top9.json").is_file())
-            self.assertTrue((store_dir / "daily" / "2026-11-23" / "dashboard.html").is_file())
+            dash_path = store_dir / "daily" / "2026-11-23" / "dashboard.html"
+            self.assertTrue(dash_path.is_file())
             self.assertTrue((store_dir / "daily" / "2026-11-23" / "daily_summary.md").is_file())
+
+            # Verify every model persisted latest_series.json and dashboard embeds all 9 panels with zero CDN links
+            store = BetaModelStore(store_dir)
+            mids = store.list_model_ids()
+            self.assertEqual(len(mids), 5)
+            batch_series = store.load_batch_series(mids)
+            self.assertEqual(len(batch_series), 5)
+            for mid in mids:
+                self.assertTrue((store_dir / "models" / mid / "latest_series.json").is_file())
+
+            dash_text = dash_path.read_text(encoding="utf-8")
+            self.assertNotIn("https://", dash_text)
+            self.assertNotIn("http://", dash_text)
+            for cid in (
+                "chart-weekly",
+                "chart-cumulative",
+                "chart-equity",
+                "chart-drawdown",
+                "chart-inventory",
+                "chart-utilization",
+                "chart-volume",
+                "chart-betacorr",
+                "chart-heatmap",
+                "daily-perf-table",
+                "daily-legend-pills",
+            ):
+                self.assertIn(f'id="{cid}"', dash_text)
 
             r_rank = subprocess.run(cli + ["rank", "--top", "9", "--max-dd", "40", "--json"], capture_output=True, text=True, check=False)
             self.assertEqual(r_rank.returncode, 0, r_rank.stderr)
@@ -225,6 +257,113 @@ class TestBetaMiningStoreAndDashboard(unittest.TestCase):
 
             r_reb = subprocess.run(cli + ["rebuild-dashboard", "--date", "2026-11-23"], capture_output=True, text=True, check=False)
             self.assertEqual(r_reb.returncode, 0, r_reb.stderr)
+
+    def test_correlation_matrix_symmetry_diagonal_and_eth_benchmark(self) -> None:
+        series_by_id = {
+            "beta_001_a": {
+                "daily_returns": [0.01, -0.02, 0.03, 0.01, -0.01],
+                "eth_daily_returns": [0.02, -0.04, 0.05, 0.02, -0.02],
+            },
+            "beta_002_b": {
+                "daily_returns": [-0.01, 0.02, -0.03, -0.01, 0.01],
+                "eth_daily_returns": [0.02, -0.04, 0.05, 0.02, -0.02],
+            },
+        }
+        cm = compute_return_correlation_matrix(["beta_001_a", "beta_002_b"], series_by_id)
+        self.assertEqual(cm["labels"], ["beta_001_a", "beta_002_b", "ETH"])
+        mat = cm["matrix"]
+        self.assertEqual(len(mat), 3)
+        for i in range(3):
+            self.assertEqual(mat[i][i], 1.0)
+            for j in range(3):
+                self.assertEqual(mat[i][j], mat[j][i])
+        self.assertAlmostEqual(mat[0][1], -1.0, places=3)
+        self.assertGreater(mat[0][2], 0.99)
+
+    def test_daily_queue_config_all_specs_parse_and_select_next_unmined_batch(self) -> None:
+        from alpha_mining.strategy.lgb154 import create_signal_provider
+
+        queue_path = REPO_ROOT / "config" / "beta_mining" / "daily_queue.json"
+        self.assertTrue(queue_path.is_file())
+        qdata = json.loads(queue_path.read_text(encoding="utf-8"))
+        candidates = qdata["candidates"]
+        self.assertGreaterEqual(len(candidates), 35)
+        seen_specs: set[str] = set()
+        for entry in candidates:
+            spec = entry["signal_spec"]
+            self.assertNotIn(spec, seen_specs, f"duplicate signal_spec in daily_queue.json: {spec}")
+            seen_specs.add(spec)
+            sp = create_signal_provider(spec)
+            self.assertTrue(sp.name)
+
+        # Against repo store (which has Day-1's 5 baseline models), next-batch must pick Day-2's 5 models
+        proc = subprocess.run(
+            [
+                sys.executable,
+                str(REPO_ROOT / "scripts" / "beta_mining.py"),
+                "--store-dir",
+                str(REPO_ROOT / "beta_mining"),
+                "next-batch",
+                "--queue-file",
+                str(queue_path),
+                "--batch-size",
+                "5",
+                "--json",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        nb = json.loads(proc.stdout)
+        self.assertEqual(nb["selection_mode"], "queue_unmined")
+        self.assertEqual(
+            [m["signal_spec"] for m in nb["models"]],
+            ["ema_5_15", "ema_8_21", "ema_13_34", "ema_20_50", "ema_30_90"],
+        )
+
+        # Exhausted queue gracefully switches to top_leaders_refresh
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            mini_q = tmp_path / "mini_q.json"
+            mini_q.write_text(
+                json.dumps({"models_per_day": 2, "candidates": [{"signal_spec": "ha_1m"}, {"signal_spec": "ema_9_21"}]}),
+                encoding="utf-8",
+            )
+            st = BetaModelStore(tmp_path / "store")
+            st.record_model_run(
+                model_id="beta_001_ha_1m",
+                batch_date="2026-11-23",
+                signal_spec="ha_1m",
+                result=_fake_result(signal_name="ha_1m", cashflow=3000.0, max_dd_pct=25.0),
+            )
+            st.record_model_run(
+                model_id="beta_002_ema_9_21",
+                batch_date="2026-11-23",
+                signal_spec="ema_9_21",
+                result=_fake_result(signal_name="ema_9_21", cashflow=2700.0, max_dd_pct=20.0),
+            )
+            proc2 = subprocess.run(
+                [
+                    sys.executable,
+                    str(REPO_ROOT / "scripts" / "beta_mining.py"),
+                    "--store-dir",
+                    str(tmp_path / "store"),
+                    "next-batch",
+                    "--queue-file",
+                    str(mini_q),
+                    "--batch-size",
+                    "2",
+                    "--json",
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(proc2.returncode, 0, proc2.stderr)
+            nb2 = json.loads(proc2.stdout)
+            self.assertEqual(nb2["selection_mode"], "top_leaders_refresh")
+            self.assertEqual([m["model_id"] for m in nb2["models"]], ["beta_001_ha_1m", "beta_002_ema_9_21"])
 
 
 if __name__ == "__main__":
