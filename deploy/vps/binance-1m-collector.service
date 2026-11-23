@@ -1,0 +1,25 @@
+[Unit]
+Description=Alpha_mining Binance 1m Collector (Options Chain, Spot, USD-M & COIN-M Delivery Futures)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=alpha
+Group=alpha
+WorkingDirectory=/opt/alpha_mining
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/alpha_mining/.venv-collector/bin/python /opt/alpha_mining/scripts/collect_binance_1m.py --config /opt/alpha_mining/config/collector/binance_1m_collector.json --base-dir /opt/alpha_mining run
+Restart=always
+RestartSec=10
+StartLimitIntervalSec=300
+StartLimitBurst=15
+Nice=5
+MemoryMax=768M
+NoNewPrivileges=true
+PrivateTmp=true
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

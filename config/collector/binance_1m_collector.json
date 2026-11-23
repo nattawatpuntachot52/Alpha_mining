@@ -1,0 +1,60 @@
+{
+  "schema_version": "1.0",
+  "collector_id": "binance_1m_sg_vps",
+  "interval_seconds": 60,
+  "tick_offset_seconds": 2,
+  "exchange_info_refresh_seconds": 600,
+  "http_timeout_seconds": 15.0,
+  "http_max_retries": 3,
+  "underlyings": [
+    "BTC",
+    "ETH"
+  ],
+  "spot_symbols": [
+    "BTCUSDT",
+    "ETHUSDT"
+  ],
+  "markets": {
+    "options": {
+      "enabled": true,
+      "base_url": "https://eapi.binance.com",
+      "collect_open_interest": true,
+      "max_dte_days": null
+    },
+    "spot": {
+      "enabled": true,
+      "base_url": "https://data-api.binance.vision",
+      "collect_closed_kline_1m": true
+    },
+    "futures_usdm": {
+      "enabled": true,
+      "base_url": "https://fapi.binance.com",
+      "contract_types": [
+        "CURRENT_QUARTER",
+        "NEXT_QUARTER",
+        "PERPETUAL"
+      ],
+      "collect_open_interest": true
+    },
+    "futures_coinm": {
+      "enabled": true,
+      "base_url": "https://dapi.binance.com",
+      "contract_types": [
+        "CURRENT_QUARTER",
+        "NEXT_QUARTER",
+        "PERPETUAL"
+      ],
+      "collect_open_interest": true
+    }
+  },
+  "storage": {
+    "spool_dir": "data/collector_spool",
+    "output_dir": "data/collector_parquet",
+    "parquet_compression": "zstd",
+    "parquet_compression_level": 6,
+    "rclone_remote": "gdrive:00_Katherine_Workspace/01_Alpha_Mining/datasets/binance_1m",
+    "upload_enabled": true,
+    "delete_spool_after_compact": true,
+    "retention_local_days": 3
+  }
+}

@@ -21,6 +21,8 @@ build/
 .brain_memory.lock
 data/raw/
 data/cache/
+data/collector_spool/
+data/collector_parquet/
 *.parquet
 *.tar.zst
 
