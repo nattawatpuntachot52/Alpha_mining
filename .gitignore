@@ -21,6 +21,7 @@ build/
 .brain_memory.lock
 data/raw/
 data/cache/
+data/backtest_artifacts/
 data/collector_spool/
 data/collector_parquet/
 *.parquet
