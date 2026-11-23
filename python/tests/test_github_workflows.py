@@ -778,6 +778,28 @@ jobs:
 """
         self.assertEqual(validate_workflow_text("ok-single-if.yml", ok_single_line_if), [])
 
+    def test_daily_beta_mining_workflow_schedule_pr_only_and_safety(self) -> None:
+        wf = WORKFLOWS_DIR / "daily-beta-mining.yml"
+        self.assertTrue(wf.is_file())
+        text = wf.read_text(encoding="utf-8")
+        self.assertEqual(validate_workflow_text(wf.name, text), [])
+        self.assertIn('cron: "30 0 * * *"', text)
+        self.assertIn("workflow_dispatch:", text)
+        self.assertIn("group: alpha-daily-beta-mining", text)
+        self.assertIn("cancel-in-progress: false", text)
+        self.assertIn("actions/cache/restore@v4", text)
+        self.assertIn("actions/cache/save@v4", text)
+        self.assertIn("path: data/cache/binance_vision", text)
+        self.assertIn("--queue-file config/beta_mining/daily_queue.json", text)
+        self.assertIn("actions/upload-artifact@v4", text)
+        self.assertIn('RCLONE_ASK_PASSWORD: "false"', text)
+        self.assertIn("AGENT_ACK", text)
+        self.assertIn("actual_model_id_version: UNKNOWN (not exposed by runtime)", text)
+        self.assertIn("HEAD:refs/heads/${BRANCH}", text)
+        self.assertNotIn("refs/heads/main", text)
+        self.assertNotIn("if: ${{ secrets.", text)
+        self.assertNotIn("| head -n 1", text)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -31,6 +31,7 @@ from alpha_mining.research.beta_store import (  # noqa: E402
     BetaModelStore,
     DEFAULT_MAX_DD_GATE_PCT,
     DEFAULT_TOP_N,
+    compute_return_correlation_matrix,
 )
 from alpha_mining.research.kline_loader import (  # noqa: E402
     fetch_binance_vision_funding_rates,
@@ -97,6 +98,79 @@ def _build_grid_cfg(
     )
 
 
+DEFAULT_SIGNALS = "ha_1m,ema_9_21,ema_12_26,supertrend_10_3,rsi_reversion_14_40_60"
+
+
+def select_next_queue_batch(
+    queue_path: Path,
+    store: BetaModelStore,
+    *,
+    batch_size: int | None = None,
+) -> tuple[list[dict[str, Any]], str]:
+    """Select the next `batch_size` unmined candidate specs from a daily queue JSON file.
+
+    Falls back to refreshing the current top `batch_size` models once all queued candidates
+    have been mined, so scheduled daily runs remain resilient without manual intervention.
+    """
+    raw = json.loads(queue_path.read_text(encoding="utf-8"))
+    candidates = raw.get("candidates")
+    if not isinstance(candidates, list) or not candidates:
+        raise SystemExit(f"queue-file {queue_path} must contain a non-empty 'candidates' list")
+    limit = int(batch_size or raw.get("models_per_day", 5))
+    if limit < 1:
+        raise SystemExit("batch-size must be >= 1")
+
+    catalog = store.load_catalog()
+    existing = catalog.get("models", {})
+    existing_specs = {str(info.get("signal_spec", "")).strip() for info in existing.values()}
+    next_idx = int(catalog.get("total_trials", 0))
+
+    unmined = [c for c in candidates if str(c.get("signal_spec", "")).strip() not in existing_specs]
+    if unmined:
+        picked = unmined[:limit]
+        out: list[dict[str, Any]] = []
+        for entry in picked:
+            sig = str(entry["signal_spec"]).strip()
+            slug = _slugify_signal(sig)
+            next_idx += 1
+            mid = f"beta_{next_idx:03d}_{slug}"[:64]
+            tags = ["beta_mining"]
+            if entry.get("theme"):
+                tags.append(str(entry["theme"]))
+            out.append(
+                {
+                    "model_id": mid,
+                    "signal_spec": sig,
+                    "hypothesis": str(entry.get("hypothesis", "")),
+                    "tags": tags,
+                }
+            )
+        return out, "queue_unmined"
+
+    # All queued candidates are already mined -> refresh current top leaders on the rolling window.
+    board = store.compute_ranking(top_n=max(limit, DEFAULT_TOP_N), max_dd_pct=DEFAULT_MAX_DD_GATE_PCT, write_file=False)
+    top_rows = board.get("top_ranked") or []
+    refresh_ids = [str(r["model_id"]) for r in top_rows[:limit]]
+    if not refresh_ids:
+        refresh_ids = list(existing.keys())[:limit]
+    out_refresh: list[dict[str, Any]] = []
+    for mid in refresh_ids:
+        info = existing.get(mid, {})
+        sig = str(info.get("signal_spec", "")).strip()
+        if sig:
+            out_refresh.append(
+                {
+                    "model_id": mid,
+                    "signal_spec": sig,
+                    "hypothesis": f"Rolling-window refresh of top-ranked model {mid}.",
+                    "tags": ["beta_mining", "rolling_refresh"],
+                }
+            )
+    if not out_refresh:
+        raise SystemExit("unable to resolve fallback refresh models from store")
+    return out_refresh, "top_leaders_refresh"
+
+
 def _load_batch_specs(args: argparse.Namespace, store: BetaModelStore) -> list[dict[str, Any]]:
     if args.batch_file is not None:
         raw = json.loads(args.batch_file.read_text(encoding="utf-8"))
@@ -105,9 +179,15 @@ def _load_batch_specs(args: argparse.Namespace, store: BetaModelStore) -> list[d
             raise SystemExit("batch-file must contain a non-empty list of model definitions")
         return [dict(e) for e in entries]
 
-    sig_specs = [s.strip() for s in args.signals.split(",") if s.strip()]
+    raw_signals = (args.signals or "").strip()
+    if not raw_signals and args.queue_file is not None:
+        specs, mode = select_next_queue_batch(args.queue_file, store, batch_size=args.batch_size)
+        print(f"Selected {len(specs)} models from {args.queue_file} (mode={mode}): {[s['signal_spec'] for s in specs]}")
+        return specs
+
+    sig_specs = [s.strip() for s in (raw_signals or DEFAULT_SIGNALS).split(",") if s.strip()]
     if not sig_specs:
-        raise SystemExit("provide --signals or --batch-file")
+        raise SystemExit("provide --signals, --queue-file, or --batch-file")
     catalog = store.load_catalog()
     existing = catalog.get("models", {})
     next_idx = int(catalog.get("total_trials", 0))
@@ -258,6 +338,9 @@ def _cmd_run_daily(args: argparse.Namespace) -> int:
         write_file=True,
     )
     all_metrics = [m.latest_metrics for m in store.load_all_models()]
+    batch_ids = [m["model_id"] for m in batch_metrics]
+    batch_series = store.load_batch_series(batch_ids)
+    corr_matrix = compute_return_correlation_matrix(batch_ids, batch_series)
     summary_md = render_daily_summary_markdown(
         batch_date=batch_date, batch_metrics=batch_metrics, ranking_board=board
     )
@@ -266,6 +349,8 @@ def _cmd_run_daily(args: argparse.Namespace) -> int:
         batch_metrics=batch_metrics,
         all_models_metrics=all_metrics,
         ranking_board=board,
+        batch_series=batch_series,
+        corr_matrix=corr_matrix,
     )
     ddir = store.save_daily_batch(
         batch_date=batch_date,
@@ -344,6 +429,9 @@ def _cmd_rebuild_dashboard(args: argparse.Namespace) -> int:
     board = store.compute_ranking(top_n=args.top_n, max_dd_pct=args.max_dd_gate, write_file=True)
     all_metrics = [m.latest_metrics for m in store.load_all_models()]
     batch_metrics = [m for m in all_metrics if m.get("batch_date") == bdate] or all_metrics
+    batch_ids = [m["model_id"] for m in batch_metrics]
+    batch_series = store.load_batch_series(batch_ids)
+    corr_matrix = compute_return_correlation_matrix(batch_ids, batch_series)
     summary_md = render_daily_summary_markdown(
         batch_date=bdate, batch_metrics=batch_metrics, ranking_board=board
     )
@@ -352,6 +440,8 @@ def _cmd_rebuild_dashboard(args: argparse.Namespace) -> int:
         batch_metrics=batch_metrics,
         all_models_metrics=all_metrics,
         ranking_board=board,
+        batch_series=batch_series,
+        corr_matrix=corr_matrix,
     )
     ddir = store.save_daily_batch(
         batch_date=bdate,
@@ -361,6 +451,24 @@ def _cmd_rebuild_dashboard(args: argparse.Namespace) -> int:
         dashboard_html=dash_html,
     )
     print(f"Rebuilt dashboard: {ddir / 'dashboard.html'}")
+    return 0
+
+
+def _cmd_next_batch(args: argparse.Namespace) -> int:
+    store = BetaModelStore(args.store_dir)
+    specs, mode = select_next_queue_batch(args.queue_file, store, batch_size=args.batch_size)
+    payload = {
+        "queue_file": str(args.queue_file),
+        "selection_mode": mode,
+        "count": len(specs),
+        "models": specs,
+    }
+    if args.json:
+        print(json.dumps(payload, indent=2, ensure_ascii=False))
+        return 0
+    print(f"Next batch ({mode}, {len(specs)} models):")
+    for idx, item in enumerate(specs, start=1):
+        print(f"  {idx}. {item['model_id']} ({item['signal_spec']}) — {item.get('hypothesis', '')}")
     return 0
 
 
@@ -374,10 +482,12 @@ def _build_parser() -> argparse.ArgumentParser:
     rd = sub.add_parser("run-daily", help="Run a daily batch of models, save isolated folders, update Top-9, build dashboard.html.")
     rd.add_argument("--date", default=None, help="Batch date YYYY-MM-DD (default: today UTC).")
     rd.add_argument("--batch-file", type=Path, default=None, help="Optional JSON batch spec file.")
+    rd.add_argument("--queue-file", type=Path, default=None, help="Optional daily mining queue JSON file (auto-selects next unmined models).")
+    rd.add_argument("--batch-size", type=int, default=5, help="Number of models to draw when using --queue-file (default: 5).")
     rd.add_argument(
         "--signals",
-        default="ha_1m,ema_9_21,ema_12_26,supertrend_10_3,rsi_reversion_14_40_60",
-        help="Comma-separated signal specs (default: 5 models).",
+        default=None,
+        help="Comma-separated signal specs (overrides --queue-file; defaults to 5 Day-1 baseline signals if neither is given).",
     )
     rd.add_argument("--profile", choices=["usdm", "coinm"], default="usdm")
     rd.add_argument("--symbol", default=None)
@@ -401,6 +511,11 @@ def _build_parser() -> argparse.ArgumentParser:
     rd.add_argument("--stress-crash-days", type=int, default=30)
     rd.add_argument("--top-n", type=int, default=DEFAULT_TOP_N)
     rd.add_argument("--max-dd-gate", type=float, default=DEFAULT_MAX_DD_GATE_PCT)
+
+    nb = sub.add_parser("next-batch", help="Preview the next N unmined models from a daily mining queue JSON.")
+    nb.add_argument("--queue-file", type=Path, default=REPO_ROOT / "config" / "beta_mining" / "daily_queue.json")
+    nb.add_argument("--batch-size", type=int, default=5)
+    nb.add_argument("--json", action="store_true")
 
     rk = sub.add_parser("rank", help="Display cumulative Top-N Ranking Board.")
     rk.add_argument("--top", type=int, default=DEFAULT_TOP_N)
@@ -426,6 +541,8 @@ def main(argv: list[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
     if args.command == "run-daily":
         return _cmd_run_daily(args)
+    if args.command == "next-batch":
+        return _cmd_next_batch(args)
     if args.command == "rank":
         return _cmd_rank(args)
     if args.command == "show":

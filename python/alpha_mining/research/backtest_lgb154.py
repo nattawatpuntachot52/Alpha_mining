@@ -21,7 +21,7 @@ from bisect import bisect_left, bisect_right
 import math
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any, Mapping, Sequence
 
@@ -166,16 +166,75 @@ class BacktestResult:
     emergency_stop_triggered: str | None
     funding_events_applied: int
     historical_funding_hits: int
+    buy_volume_eth: float = 0.0
+    sell_volume_eth: float = 0.0
+    turnover_usd: float = 0.0
+    max_utilization_pct: float = 0.0
+    avg_weekly_cf_usd: float = 0.0
+    weekly_count: int = 0
+    beta_to_eth: float = 0.0
+    corr_to_eth: float = 0.0
     trades: list[ClosedTrade] = field(default_factory=list)
+    daily_series: dict[str, Any] = field(default_factory=dict)
 
     def summary_dict(self) -> dict[str, Any]:
         d = dict(self.__dict__)
         d.pop("trades", None)
+        d.pop("daily_series", None)
         return d
 
 
 def _ms_to_iso(ts_ms: int) -> str:
     return datetime.fromtimestamp(ts_ms / 1000.0, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _ms_to_date_str(ts_ms: int) -> str:
+    return datetime.fromtimestamp(ts_ms / 1000.0, tz=timezone.utc).strftime("%Y-%m-%d")
+
+
+def _iso_week_key(date_str: str) -> str:
+    y, m, d = (int(x) for x in date_str.split("-"))
+    iso_y, iso_w, _ = datetime(y, m, d, tzinfo=timezone.utc).isocalendar()
+    return f"{iso_y:04d}-W{iso_w:02d}"
+
+
+def _consecutive_iso_weeks(start_date_str: str, end_date_str: str) -> list[str]:
+    sy, sm, sd = (int(x) for x in start_date_str.split("-"))
+    ey, em, ed = (int(x) for x in end_date_str.split("-"))
+    cur = datetime(sy, sm, sd, tzinfo=timezone.utc).date()
+    end = datetime(ey, em, ed, tzinfo=timezone.utc).date()
+    weeks: list[str] = []
+    seen: set[str] = set()
+    while cur <= end:
+        iso_y, iso_w, _ = cur.isocalendar()
+        wk = f"{iso_y:04d}-W{iso_w:02d}"
+        if wk not in seen:
+            seen.add(wk)
+            weeks.append(wk)
+        cur += timedelta(days=1)
+    return weeks
+
+
+def compute_beta_and_corr(series_y: Sequence[float], series_x: Sequence[float]) -> tuple[float, float]:
+    """Compute OLS Beta (Cov(y, x) / Var(x)) and Pearson Correlation between equal-length return series."""
+    n = min(len(series_y), len(series_x))
+    if n < 2:
+        return 0.0, 0.0
+    my = sum(series_y[:n]) / n
+    mx = sum(series_x[:n]) / n
+    cov = 0.0
+    vx = 0.0
+    vy = 0.0
+    for i in range(n):
+        dy = series_y[i] - my
+        dx = series_x[i] - mx
+        cov += dy * dx
+        vx += dx * dx
+        vy += dy * dy
+    beta = (cov / vx) if vx > 1e-18 else 0.0
+    denom = math.sqrt(vx * vy)
+    corr = (cov / denom) if denom > 1e-18 else 0.0
+    return beta, corr
 
 
 def _refresh_group_tp(group: _GroupState, cfg: Lgb154Config) -> None:
@@ -266,7 +325,12 @@ def run_lgb154_backtest(
 
     buy_fills = 0
     sell_fills = 0
+    buy_vol_f = 0.0
+    sell_vol_f = 0.0
+    turnover_usd_f = 0.0
+    max_util_usd_seen = 0.0
     closed_trades: list[ClosedTrade] = []
+    day_realized_cf: dict[int, float] = defaultdict(float)
     wins = 0
     total_hold_min = 0.0
     funding_events = 0
@@ -287,7 +351,15 @@ def run_lgb154_backtest(
     bars_below_low = 0
     bars_above_high = 0
 
+    first_open_f = bars[0].open if bars[0].open > 0.0 else max(bars[0].close, 1e-9)
+    first_date_str = _ms_to_date_str(bars[0].open_time_ms)
+    daily_dates: list[str] = [first_date_str]
     daily_equities: list[float] = [init_cap_f]
+    daily_eth_closes: list[float] = [bars[0].close]
+    daily_cf_series: list[float] = [0.0]
+    daily_dd_series: list[float] = [0.0]
+    daily_inv_series: list[float] = [0.0]
+    daily_cap_series: list[float] = [0.0]
     last_day_bucket = bars[0].open_time_ms // ONE_DAY_MS
     last_funding_bucket = bars[0].open_time_ms // EIGHT_HOURS_MS
 
@@ -331,10 +403,20 @@ def run_lgb154_backtest(
             return (open_qty_f * contract_size_f / mark_f) * maint_rate_f
         return (open_qty_f * mark_f) * maint_rate_f
 
+    def _utilized_capital_usd() -> float:
+        inv_usd = (open_qty_f * contract_size_f) if is_coinm else open_cost_f
+        if not pending_buys:
+            return inv_usd
+        if is_coinm:
+            pend_usd = sum(float(o.qty) * contract_size_f for o in pending_buys.values())
+        else:
+            pend_usd = sum(float(o.qty) * o.price_f for o in pending_buys.values())
+        return inv_usd + pend_usd
+
     def _force_market_close_all(close_price_d: Decimal, ts_ms: int) -> None:
         nonlocal open_qty_total, open_cost_total, open_qty_f, open_cost_f
         nonlocal realized_gross, realized_net, total_fees, open_entry_fees_total, open_funding_total
-        nonlocal sell_fills, wins, total_hold_min
+        nonlocal sell_fills, sell_vol_f, turnover_usd_f, wins, total_hold_min
         _cancel_all_buys()
         _cancel_all_sells()
         for gid in list(open_groups.keys()):
@@ -350,20 +432,24 @@ def run_lgb154_backtest(
                 gross = rel_cost - exit_basis
                 exit_fee = exit_basis * taker_fee
                 avg_entry_f = float(q * contract_size / rel_cost) if rel_cost > ZERO else float(g.price)
+                turnover_usd_f += float(q) * contract_size_f
             else:
                 gross = q * close_price_d - rel_cost
                 exit_fee = q * close_price_d * taker_fee
                 avg_entry_f = float(rel_cost / q)
+                turnover_usd_f += float(q * close_price_d)
             net = gross - rel_entry_fee - exit_fee + rel_fund
 
             realized_gross += gross
             realized_net += net
+            day_realized_cf[ts_ms // ONE_DAY_MS] += float(net)
             total_fees += exit_fee
             open_entry_fees_total -= rel_entry_fee
             open_funding_total -= rel_fund
             open_qty_total -= q
             open_cost_total -= rel_cost
             sell_fills += 1
+            sell_vol_f += float(q)
 
             hold_m = max(0.0, (ts_ms - g.first_fill_ms) / 60_000.0) if g.first_fill_ms else 0.0
             total_hold_min += hold_m
@@ -398,7 +484,7 @@ def run_lgb154_backtest(
         _recompute_tp_bound()
 
     def _place_buy_batch(ask_d: Decimal, ts_ms: int) -> None:
-        nonlocal next_group_num, next_order_id, max_pending_buy_f
+        nonlocal next_group_num, next_order_id, max_pending_buy_f, max_util_usd_seen
         if pending_buys:
             return  # WAIT_OLD_PENDING
 
@@ -543,6 +629,9 @@ def run_lgb154_backtest(
             )
         if plan:
             _recompute_order_bounds()
+            util_placed = _utilized_capital_usd()
+            if util_placed > max_util_usd_seen:
+                max_util_usd_seen = util_placed
 
     # Main strictly causal bar loop (decision on B_{i-1} at B_i open -> fill during B_i)
     for i in range(1, len(bars)):
@@ -700,8 +789,13 @@ def run_lgb154_backtest(
                         open_entry_fees_total += fee
                         total_fees += fee
                         buy_fills += 1
+                        buy_vol_f += float(q)
+                        turnover_usd_f += float(q) * contract_size_f if is_coinm else float(q * p)
                     open_qty_f = float(open_qty_total)
                     open_cost_f = float(open_cost_total)
+                    util_now = _utilized_capital_usd()
+                    if util_now > max_util_usd_seen:
+                        max_util_usd_seen = util_now
                     _recompute_order_bounds()
                     _recompute_tp_bound()
 
@@ -727,20 +821,24 @@ def run_lgb154_backtest(
                             gross = rel_cost - exit_basis
                             exit_fee = exit_basis * maker_fee
                             avg_entry_f = float(q * contract_size / rel_cost) if rel_cost > ZERO else g.price_f
+                            turnover_usd_f += float(q) * contract_size_f
                         else:
                             gross = q * osell.price - rel_cost
                             exit_fee = q * osell.price * maker_fee
                             avg_entry_f = float(rel_cost / q)
+                            turnover_usd_f += float(q * osell.price)
                         net = gross - rel_entry_fee - exit_fee + rel_fund
 
                         realized_gross += gross
                         realized_net += net
+                        day_realized_cf[ts_ms // ONE_DAY_MS] += float(net)
                         total_fees += exit_fee
                         open_entry_fees_total -= rel_entry_fee
                         open_funding_total -= rel_fund
                         open_qty_total -= q
                         open_cost_total -= rel_cost
                         sell_fills += 1
+                        sell_vol_f += float(q)
 
                         hold_m = max(0.0, (ts_ms - g.first_fill_ms) / 60_000.0) if g.first_fill_ms else 0.0
                         total_hold_min += hold_m
@@ -862,28 +960,70 @@ def run_lgb154_backtest(
             if dd_pct > max_dd_pct:
                 max_dd_pct = dd_pct
 
-        # Daily MTM equity snapshot for Sharpe / Sortino
+        # Daily MTM equity, drawdown, inventory, utilization & CF snapshot
         day_bucket = ts_ms // ONE_DAY_MS
         if day_bucket > last_day_bucket:
             _, eq_day = _mtm_unrealized_and_equity(close_f)
+            dd_day_neg = -((peak_equity - eq_day) / peak_equity * 100.0) if peak_equity > 0.0 and eq_day < peak_equity else 0.0
+            util_day = _utilized_capital_usd()
+            if util_day > max_util_usd_seen:
+                max_util_usd_seen = util_day
+            daily_dates.append(_ms_to_date_str(ts_ms))
             daily_equities.append(eq_day)
+            daily_eth_closes.append(close_f)
+            daily_cf_series.append(float(realized_net))
+            daily_dd_series.append(dd_day_neg)
+            daily_inv_series.append(open_qty_f)
+            daily_cap_series.append(util_day)
             last_day_bucket = day_bucket
 
     # Final mark-to-market snapshot at last bar close
     last_bar = bars[-1]
     unreal_end, eq_end = _mtm_unrealized_and_equity(last_bar.close)
-    if len(daily_equities) < 2 or daily_equities[-1] != eq_end:
+    last_date_str = _ms_to_date_str(last_bar.open_time_ms)
+    dd_end_neg = -((peak_equity - eq_end) / peak_equity * 100.0) if peak_equity > 0.0 and eq_end < peak_equity else 0.0
+    util_end = _utilized_capital_usd()
+    if util_end > max_util_usd_seen:
+        max_util_usd_seen = util_end
+    if daily_dates[-1] == last_date_str:
+        daily_equities[-1] = eq_end
+        daily_eth_closes[-1] = last_bar.close
+        daily_cf_series[-1] = float(realized_net)
+        daily_dd_series[-1] = dd_end_neg
+        daily_inv_series[-1] = open_qty_f
+        daily_cap_series[-1] = util_end
+    else:
+        daily_dates.append(last_date_str)
         daily_equities.append(eq_end)
+        daily_eth_closes.append(last_bar.close)
+        daily_cf_series.append(float(realized_net))
+        daily_dd_series.append(dd_end_neg)
+        daily_inv_series.append(open_qty_f)
+        daily_cap_series.append(util_end)
 
     total_mtm_pnl = eq_end - init_cap_f
     total_mtm_ret_pct = (total_mtm_pnl / init_cap_f * 100.0) if init_cap_f > 0.0 else 0.0
 
-    # Daily return risk-adjusted ratios (365d/yr for 24/7 crypto)
+    # Daily simple returns (strategy & ETH benchmark) for Sharpe, Sortino, Beta & Correlation
     daily_rets: list[float] = []
+    eth_daily_rets: list[float] = []
     for k in range(1, len(daily_equities)):
         prev_eq = daily_equities[k - 1]
-        if prev_eq > 0.0:
-            daily_rets.append((daily_equities[k] - prev_eq) / prev_eq)
+        prev_eth = daily_eth_closes[k - 1]
+        daily_rets.append(((daily_equities[k] - prev_eq) / prev_eq) if prev_eq > 0.0 else 0.0)
+        eth_daily_rets.append(((daily_eth_closes[k] - prev_eth) / prev_eth) if prev_eth > 0.0 else 0.0)
+
+    beta_to_eth, corr_to_eth = compute_beta_and_corr(daily_rets, eth_daily_rets)
+
+    # ISO-week realized cashflow aggregation (consecutive calendar weeks, zero-CF weeks included)
+    all_weeks = _consecutive_iso_weeks(daily_dates[0], daily_dates[-1])
+    week_cf_map: dict[str, float] = {w: 0.0 for w in all_weeks}
+    for day_b, cf_amt in day_realized_cf.items():
+        wk = _iso_week_key(_ms_to_date_str(day_b * ONE_DAY_MS))
+        if wk in week_cf_map:
+            week_cf_map[wk] += cf_amt
+    weekly_cf_vals = [round(week_cf_map[w], 4) for w in all_weeks]
+    avg_weekly_cf = (sum(weekly_cf_vals) / len(all_weeks)) if all_weeks else 0.0
 
     sharpe = 0.0
     sortino = 0.0
@@ -911,6 +1051,22 @@ def run_lgb154_backtest(
     win_rate = (wins / sell_fills * 100.0) if sell_fills > 0 else 0.0
     avg_net = (float(realized_net) / sell_fills) if sell_fills > 0 else 0.0
     avg_hold = (total_hold_min / sell_fills) if sell_fills > 0 else 0.0
+    denom_cap_usd = (init_cap_f * last_bar.close) if is_coinm else init_cap_f
+    max_util_pct = (max_util_usd_seen / denom_cap_usd * 100.0) if denom_cap_usd > 0.0 else 0.0
+
+    daily_series_payload: dict[str, Any] = {
+        "dates": daily_dates,
+        "eth_return": [round((c - first_open_f) / first_open_f * 100.0, 3) for c in daily_eth_closes],
+        "equity": [round((e - init_cap_f) / init_cap_f * 100.0, 3) for e in daily_equities],
+        "cf": [round(x, 2) for x in daily_cf_series],
+        "dd": [round(x, 3) for x in daily_dd_series],
+        "inventory": [round(x, 4) for x in daily_inv_series],
+        "capital": [round(x, 2) for x in daily_cap_series],
+        "weeks": all_weeks,
+        "weekly": weekly_cf_vals,
+        "daily_returns": [round(r, 6) for r in daily_rets],
+        "eth_daily_returns": [round(r, 6) for r in eth_daily_rets],
+    }
 
     return BacktestResult(
         symbol=cfg.symbol,
@@ -959,7 +1115,16 @@ def run_lgb154_backtest(
         emergency_stop_triggered=emergency_triggered,
         funding_events_applied=funding_events,
         historical_funding_hits=hist_funding_hits,
+        buy_volume_eth=round(buy_vol_f, 6),
+        sell_volume_eth=round(sell_vol_f, 6),
+        turnover_usd=round(turnover_usd_f, 2),
+        max_utilization_pct=round(max_util_pct, 2),
+        avg_weekly_cf_usd=round(avg_weekly_cf, 4),
+        weekly_count=len(all_weeks),
+        beta_to_eth=round(beta_to_eth, 4),
+        corr_to_eth=round(corr_to_eth, 4),
         trades=closed_trades,
+        daily_series=daily_series_payload,
     )
 
 

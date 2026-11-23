@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Any, Sequence
 
 from ..strategy.lgb154 import SignalProvider, create_signal_provider
-from .backtest_lgb154 import BacktestResult
+from .backtest_lgb154 import BacktestResult, compute_beta_and_corr
 
 SCHEMA_VERSION = "1.0"
 DEFAULT_MAX_DD_GATE_PCT = 40.0
@@ -230,6 +230,14 @@ class BetaModelStore:
             "max_open_qty": round(float(result.max_open_qty), 6),
             "ending_open_qty": round(float(result.ending_open_qty), 6),
             "max_open_notional": round(float(result.max_open_notional), 2),
+            "buy_volume_eth": round(float(result.buy_volume_eth), 6),
+            "sell_volume_eth": round(float(result.sell_volume_eth), 6),
+            "turnover_usd": round(float(result.turnover_usd), 2),
+            "max_utilization_pct": round(float(result.max_utilization_pct), 2),
+            "avg_weekly_cf_usd": round(float(result.avg_weekly_cf_usd), 4),
+            "weekly_count": int(result.weekly_count),
+            "beta_to_eth": round(float(result.beta_to_eth), 4),
+            "corr_to_eth": round(float(result.corr_to_eth), 4),
             "window_start_utc": result.start_utc,
             "window_end_utc": result.end_utc,
             "days_covered": float(result.days_covered),
@@ -274,6 +282,11 @@ class BetaModelStore:
 
         _atomic_write_json(mdir / "spec.json", spec_payload)
         _atomic_write_json(mdir / "latest_metrics.json", metrics_payload)
+        if result.daily_series:
+            _atomic_write_text(
+                mdir / "latest_series.json",
+                json.dumps(result.daily_series, separators=(",", ":"), ensure_ascii=False) + "\n",
+            )
         _atomic_write_json(runs_dir / f"{resolved_run_id}.json", run_record)
 
         catalog.setdefault("models", {})[mid] = {
@@ -323,6 +336,23 @@ class BetaModelStore:
 
     def load_all_models(self) -> list[LoadedBetaModel]:
         return [self.load_model(mid) for mid in self.list_model_ids()]
+
+    def load_series(self, model_id: str) -> dict[str, Any]:
+        """Load the isolated daily/weekly time series for a single model (empty dict if absent)."""
+        mdir = self._model_dir(model_id)
+        sp = mdir / "latest_series.json"
+        if not sp.is_file():
+            return {}
+        return json.loads(sp.read_text(encoding="utf-8"))
+
+    def load_batch_series(self, model_ids: Sequence[str]) -> dict[str, dict[str, Any]]:
+        """Load isolated time series for a set of models."""
+        out: dict[str, dict[str, Any]] = {}
+        for mid in model_ids:
+            s = self.load_series(mid)
+            if s:
+                out[mid] = s
+        return out
 
     def load_signal_provider(self, model_id: str) -> SignalProvider:
         """Load an isolated model's signal plugin (`models/<id>/signal.py` or built-in spec)."""
@@ -465,3 +495,33 @@ class BetaModelStore:
         _atomic_write_text(ddir / "daily_summary.md", summary_markdown)
         _atomic_write_text(ddir / "dashboard.html", dashboard_html)
         return ddir
+
+
+def compute_return_correlation_matrix(
+    model_ids: Sequence[str],
+    series_by_id: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    """Compute pairwise Pearson correlation matrix across all daily batch models + ETH benchmark."""
+    ordered_ids = [mid for mid in model_ids if mid in series_by_id and series_by_id[mid].get("daily_returns")]
+    if not ordered_ids:
+        return {"labels": [], "matrix": []}
+
+    vectors: list[tuple[str, list[float]]] = [
+        (mid, [float(x) for x in series_by_id[mid]["daily_returns"]]) for mid in ordered_ids
+    ]
+    eth_vec = [float(x) for x in (series_by_id[ordered_ids[0]].get("eth_daily_returns") or [])]
+    if eth_vec:
+        vectors.append(("ETH", eth_vec))
+
+    labels = [name for name, _ in vectors]
+    matrix: list[list[float]] = []
+    for i, (_, vi) in enumerate(vectors):
+        row: list[float] = []
+        for j, (_, vj) in enumerate(vectors):
+            if i == j:
+                row.append(1.0)
+            else:
+                _, corr = compute_beta_and_corr(vi, vj)
+                row.append(round(corr, 3))
+        matrix.append(row)
+    return {"labels": labels, "matrix": matrix}

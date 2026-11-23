@@ -1,0 +1,272 @@
+name: Daily Beta Mining Factory (5 Models + 9-Panel Dashboard)
+
+on:
+  schedule:
+    # Daily 07:30 ICT (00:30 UTC) — 30 min before Katherine-HQ 08:00 ICT Morning Digest
+    - cron: "30 0 * * *"
+  workflow_dispatch:
+    inputs:
+      signals:
+        description: "Optional comma-separated signal specs override (leave blank to auto-pick next 5 unmined models from daily_queue.json)"
+        required: false
+        default: ""
+        type: string
+      batch_size:
+        description: "Number of models to mine from daily_queue.json when signals is blank"
+        required: false
+        default: "5"
+        type: string
+      days:
+        description: "Backtest window in days (default: 1000)"
+        required: false
+        default: "1000"
+        type: string
+      batch_date:
+        description: "Optional batch date YYYY-MM-DD (default: today UTC)"
+        required: false
+        default: ""
+        type: string
+      open_pr:
+        description: "Open or update a PR on bot/daily-beta-mining-<date> (never pushes directly to main)"
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: alpha-daily-beta-mining
+  cancel-in-progress: false
+
+jobs:
+  daily-beta-mining:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Resolve and validate daily mining parameters
+        id: params
+        env:
+          INPUT_DATE: ${{ inputs.batch_date }}
+          INPUT_DAYS: ${{ inputs.days }}
+          INPUT_BATCH_SIZE: ${{ inputs.batch_size }}
+          INPUT_SIGNALS: ${{ inputs.signals }}
+          INPUT_OPEN_PR: ${{ inputs.open_pr }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          BATCH_DATE="${INPUT_DATE:-}"
+          if [[ -z "$BATCH_DATE" ]]; then
+            BATCH_DATE=$(date -u +%Y-%m-%d)
+          fi
+          if [[ ! "$BATCH_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+            echo "Invalid batch_date: $BATCH_DATE" >&2
+            exit 1
+          fi
+          DAYS="${INPUT_DAYS:-1000}"
+          if [[ ! "$DAYS" =~ ^[0-9]+$ ]] || [[ "$DAYS" -lt 2 ]] || [[ "$DAYS" -gt 3650 ]]; then
+            echo "Invalid days: $DAYS" >&2
+            exit 1
+          fi
+          BATCH_SIZE="${INPUT_BATCH_SIZE:-5}"
+          if [[ ! "$BATCH_SIZE" =~ ^[0-9]+$ ]] || [[ "$BATCH_SIZE" -lt 1 ]] || [[ "$BATCH_SIZE" -gt 15 ]]; then
+            echo "Invalid batch_size: $BATCH_SIZE" >&2
+            exit 1
+          fi
+          SIGNALS="${INPUT_SIGNALS:-}"
+          if [[ -n "$SIGNALS" ]] && [[ ! "$SIGNALS" =~ ^[A-Za-z0-9_.,[:space:]-]+$ ]]; then
+            echo "Invalid characters in signals override: $SIGNALS" >&2
+            exit 1
+          fi
+          OPEN_PR="true"
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]] && [[ "$INPUT_OPEN_PR" == "false" ]]; then
+            OPEN_PR="false"
+          fi
+          {
+            echo "batch_date=$BATCH_DATE"
+            echo "days=$DAYS"
+            echo "batch_size=$BATCH_SIZE"
+            echo "signals=$SIGNALS"
+            echo "open_pr=$OPEN_PR"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Restore Binance Vision 1m UM Data Cache
+        uses: actions/cache/restore@v4
+        with:
+          path: data/cache/binance_vision
+          key: alpha-binance-vision-1m-um-${{ steps.params.outputs.batch_date }}-${{ github.run_id }}
+          restore-keys: |
+            alpha-binance-vision-1m-um-
+
+      - name: Run Daily 5-Model Beta Mining Batch & Build 9-Panel Dashboard
+        env:
+          BATCH_DATE: ${{ steps.params.outputs.batch_date }}
+          DAYS: ${{ steps.params.outputs.days }}
+          BATCH_SIZE: ${{ steps.params.outputs.batch_size }}
+          SIGNALS: ${{ steps.params.outputs.signals }}
+        run: |
+          set -euo pipefail
+          CMD=(
+            python3 scripts/beta_mining.py run-daily
+            --date "$BATCH_DATE"
+            --queue-file config/beta_mining/daily_queue.json
+            --batch-size "$BATCH_SIZE"
+            --days "$DAYS"
+            --high 5000
+            --low 500
+            --spacing-pct 0.20
+            --max-position-qty 2.0
+            --max-notional 10000
+            --initial-capital 10000
+            --fill-mode strict_cross
+            --recovery-mode partial_only
+            --max-dd-gate 40
+            --top-n 9
+            --stress-crash-days 30
+          )
+          if [[ -n "$SIGNALS" ]]; then
+            CMD+=(--signals "$SIGNALS")
+          fi
+          PYTHONDONTWRITEBYTECODE=1 "${CMD[@]}"
+
+          DASH_PATH="beta_mining/daily/${BATCH_DATE}/dashboard.html"
+          SUMMARY_PATH="beta_mining/daily/${BATCH_DATE}/daily_summary.md"
+          test -f "$DASH_PATH"
+          test -f "$SUMMARY_PATH"
+          cat "$SUMMARY_PATH" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Save Refreshed Binance Vision 1m UM Data Cache
+        if: success()
+        uses: actions/cache/save@v4
+        with:
+          path: data/cache/binance_vision
+          key: alpha-binance-vision-1m-um-${{ steps.params.outputs.batch_date }}-${{ github.run_id }}
+
+      - name: Upload Daily 9-Panel Dashboard & Ranking Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: daily-beta-mining-${{ steps.params.outputs.batch_date }}
+          path: |
+            beta_mining/daily/${{ steps.params.outputs.batch_date }}/
+            beta_mining/ranking_top9.json
+            beta_mining/catalog.json
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Optional Sync Daily Dashboard & Summary to Google Drive Reports Folder
+        if: success()
+        env:
+          BATCH_DATE: ${{ steps.params.outputs.batch_date }}
+          RCLONE_CONFIG_GDRIVE_DATA: ${{ secrets.RCLONE_CONFIG_GDRIVE }}
+          RCLONE_ASK_PASSWORD: "false"
+        run: |
+          set -euo pipefail
+          RCLONE_TRIMMED="${RCLONE_CONFIG_GDRIVE_DATA:-}"
+          if [[ -z "${RCLONE_TRIMMED//[[:space:]]/}" ]]; then
+            echo "RCLONE_CONFIG_GDRIVE secret not configured; skipping optional Google Drive report copy."
+            exit 0
+          fi
+          if ! command -v rclone >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends rclone
+          fi
+          RCLONE_TMP=$(mktemp)
+          trap 'rm -f "$RCLONE_TMP"' EXIT
+          chmod 600 "$RCLONE_TMP"
+          printf '%s\n' "$RCLONE_CONFIG_GDRIVE_DATA" | tr -d '\r' > "$RCLONE_TMP"
+          if ! grep -Eq '^[[:space:]]*\[gdrive\][[:space:]]*$' "$RCLONE_TMP"; then
+            echo "RCLONE_CONFIG_GDRIVE secret missing [gdrive] section header." >&2
+            exit 1
+          fi
+          REMOTE_DIR="gdrive:00_Katherine_Workspace/01_Alpha_Mining/04_reports/beta_mining/${BATCH_DATE}"
+          RCLONE_CONFIG="$RCLONE_TMP" rclone copy \
+            "beta_mining/daily/${BATCH_DATE}" \
+            "$REMOTE_DIR" </dev/null
+          RCLONE_CONFIG="$RCLONE_TMP" rclone copyto \
+            "beta_mining/ranking_top9.json" \
+            "gdrive:00_Katherine_Workspace/01_Alpha_Mining/04_reports/beta_mining/ranking_top9.json" </dev/null
+          echo "Synced daily 9-panel dashboard & ranking_top9.json to $REMOTE_DIR"
+
+      - name: Commit Isolated Models & Open PR-Only Proposal (Never Push to main)
+        if: ${{ success() && steps.params.outputs.open_pr == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BATCH_DATE: ${{ steps.params.outputs.batch_date }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$(git status --porcelain -- beta_mining/)" ]]; then
+            echo "No changes under beta_mining/ to commit."
+            exit 0
+          fi
+          BRANCH="bot/daily-beta-mining-${BATCH_DATE}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$BRANCH"
+          git add beta_mining/
+          git commit -m "chore(beta-mining): daily 5-model batch & 9-panel dashboard (${BATCH_DATE})"
+          git push --force-with-lease origin "HEAD:refs/heads/${BRANCH}"
+
+          EXISTING_PR=$(gh pr list -R "$REPO" --head "$BRANCH" --state open --json number,url --jq '.[0].url // ""')
+          if [[ -n "$EXISTING_PR" ]]; then
+            echo "Updated existing Daily Beta Mining PR: $EXISTING_PR"
+            echo "### Daily Beta Mining PR" >> "$GITHUB_STEP_SUMMARY"
+            echo "Updated existing PR: $EXISTING_PR" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          PY_VER=$(python3 --version 2>&1)
+          GIT_VER=$(git --version 2>&1)
+          GH_VER=$(gh --version | sed -n '1p')
+          PR_BODY_FILE=$(mktemp)
+          trap 'rm -f "$PR_BODY_FILE"' EXIT
+          {
+            cat "beta_mining/daily/${BATCH_DATE}/daily_summary.md"
+            echo ""
+            echo "---"
+            echo ""
+            echo '```text'
+            echo "AGENT_ACK"
+            echo "mission_id: alpha-mining-daily-beta-factory"
+            echo "task_id: daily-beta-mining-${BATCH_DATE}"
+            echo "assignment_id: ${BRANCH}"
+            echo "phase_id: scheduled-daily-5model-batch"
+            echo "agent_id: github-actions-daily-beta-mining"
+            echo "ovca_role: engineer"
+            echo "actual_provider_runtime: GitHub Actions ubuntu-latest (Linux)"
+            echo "actual_model_id_version: UNKNOWN (not exposed by runtime)"
+            echo "tools_environment:"
+            echo "  host: github-actions-runner"
+            echo "  secondary_nodes: UNKNOWN / NOT_CONNECTED"
+            echo "  python: ${PY_VER}"
+            echo "  rust: UNKNOWN / NOT_CONNECTED"
+            echo "  git: ${GIT_VER}"
+            echo "  gh: ${GH_VER}"
+            echo "mutation_boundary: beta_mining/ on ${BRANCH} (PR-only; main protected)"
+            echo "verification_summary: scripts/beta_mining.py run-daily exited 0; dashboard.html and daily_summary.md generated"
+            echo '```'
+          } > "$PR_BODY_FILE"
+
+          if PR_URL=$(gh pr create -R "$REPO" \
+            --base main \
+            --head "$BRANCH" \
+            --title "chore(beta-mining): daily 5-model batch & 9-panel dashboard (${BATCH_DATE})" \
+            --body-file "$PR_BODY_FILE" 2>&1); then
+            echo "Created Daily Beta Mining PR: $PR_URL"
+            echo "### Daily Beta Mining PR" >> "$GITHUB_STEP_SUMMARY"
+            echo "Opened PR for owner review: $PR_URL" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::Pushed branch ${BRANCH} cleanly, but gh pr create returned: ${PR_URL}"
+            echo "### Daily Beta Mining Branch Ready" >> "$GITHUB_STEP_SUMMARY"
+            echo "Branch \`${BRANCH}\` pushed cleanly. Enable 'Allow GitHub Actions to create and approve pull requests' in Repo Settings or open PR manually." >> "$GITHUB_STEP_SUMMARY"
+          fi

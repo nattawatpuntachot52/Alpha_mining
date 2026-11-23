@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "updated_at_utc": "2026-11-23T03:56:29Z",
+  "updated_at_utc": "2026-11-23T04:19:02Z",
   "total_trials": 5,
   "models": {
     "beta_001_ha_1m": {
@@ -13,10 +13,10 @@
       "product_type": "USD_M",
       "created_batch_date": "2026-11-23",
       "latest_batch_date": "2026-11-23",
-      "latest_run_id": "2026-11-23_run01",
+      "latest_run_id": "2026-11-23_run02",
       "evidence_status": "reproducible",
-      "spec_sha256": "sha256:555b96268351597fe03ea9efc08ab913ca18995d20c9e489aa154af0974274b2",
-      "updated_at_utc": "2026-11-23T03:55:56Z"
+      "spec_sha256": "sha256:7c6526f6f99ac6e655db6542bf4d625237e05f208035e2cde75c927389cae430",
+      "updated_at_utc": "2026-11-23T04:18:29Z"
     },
     "beta_002_ema_9_21": {
       "model_id": "beta_002_ema_9_21",
@@ -28,10 +28,10 @@
       "product_type": "USD_M",
       "created_batch_date": "2026-11-23",
       "latest_batch_date": "2026-11-23",
-      "latest_run_id": "2026-11-23_run01",
+      "latest_run_id": "2026-11-23_run02",
       "evidence_status": "reproducible",
-      "spec_sha256": "sha256:296fe73c85849b566df77827f7b06702c72e837a5527f358dbab5e8aad8bd99c",
-      "updated_at_utc": "2026-11-23T03:56:04Z"
+      "spec_sha256": "sha256:fa2f325561012ba40eee13b0d2f9bb2299f72d8fe671350f77b3c8e3421212fb",
+      "updated_at_utc": "2026-11-23T04:18:37Z"
     },
     "beta_003_ema_12_26": {
       "model_id": "beta_003_ema_12_26",
@@ -43,10 +43,10 @@
       "product_type": "USD_M",
       "created_batch_date": "2026-11-23",
       "latest_batch_date": "2026-11-23",
-      "latest_run_id": "2026-11-23_run01",
+      "latest_run_id": "2026-11-23_run02",
       "evidence_status": "reproducible",
-      "spec_sha256": "sha256:0d31b7c64b8d6f72742c24cffb5ba27f1e6c4867509215c374d9d66aae0d45b9",
-      "updated_at_utc": "2026-11-23T03:56:11Z"
+      "spec_sha256": "sha256:3b7a488c3fb7df2308c56fea701c8e2dc23cc701ca180a00712c8dd46c8032d8",
+      "updated_at_utc": "2026-11-23T04:18:44Z"
     },
     "beta_004_supertrend_10_3": {
       "model_id": "beta_004_supertrend_10_3",
@@ -58,10 +58,10 @@
       "product_type": "USD_M",
       "created_batch_date": "2026-11-23",
       "latest_batch_date": "2026-11-23",
-      "latest_run_id": "2026-11-23_run01",
+      "latest_run_id": "2026-11-23_run02",
       "evidence_status": "reproducible",
-      "spec_sha256": "sha256:2fb81f2c5515eb41f1add50ab90a84ae7f3e6b23cf4683f651945cc9db6c3545",
-      "updated_at_utc": "2026-11-23T03:56:19Z"
+      "spec_sha256": "sha256:418824e3332ad73a6c298d81d64c25059944d3938048090562327c1ef3c9b8a9",
+      "updated_at_utc": "2026-11-23T04:18:51Z"
     },
     "beta_005_rsi_reversion_14_40_60": {
       "model_id": "beta_005_rsi_reversion_14_40_60",
@@ -73,10 +73,10 @@
       "product_type": "USD_M",
       "created_batch_date": "2026-11-23",
       "latest_batch_date": "2026-11-23",
-      "latest_run_id": "2026-11-23_run01",
+      "latest_run_id": "2026-11-23_run02",
       "evidence_status": "reproducible",
-      "spec_sha256": "sha256:ebe1401224d228c280f07ffb22b75f60535be5d73d8ff56ed632793729a7c19f",
-      "updated_at_utc": "2026-11-23T03:56:29Z"
+      "spec_sha256": "sha256:5b14ee564a2d1fac1a1ba9636f463a13486107ec4efa6799ccf3d4d8de840308",
+      "updated_at_utc": "2026-11-23T04:19:02Z"
     }
   }
 }
