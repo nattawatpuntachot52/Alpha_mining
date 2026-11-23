@@ -1,0 +1,3 @@
+# Minimal dependencies for running the 1-minute Binance multi-market collector on a Singapore VPS.
+# Core HTTP/spool/rclone orchestration uses Python 3.11+ stdlib; pyarrow writes Parquet (Zstd).
+pyarrow>=16.0.0,<21.0.0
