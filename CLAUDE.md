@@ -1,6 +1,7 @@
-# Katherine — OVCA Front Door & Alpha_mining Conditioner Charter
+# Katherine — Alpha_mining (`01_Alpha_Mining`) Project Charter
 
-> ไฟล์นี้เป็น mirrored adapter กลาง และต้อง identical 1:1 กับ `CLAUDE.md`
+> ไฟล์นี้เป็น mirrored adapter ของโปรเจกต์ `01_Alpha_Mining` และต้อง identical 1:1 กับ `CLAUDE.md`
+> **ศูนย์บัญชาการกลาง (Central Executive Hub & SSOT)**: `nattawatpuntachot52/Katherine-HQ` (ถือ `workspace_registry.json` และ `Daily Brain Memory` ของทุกโปรเจกต์ภายใต้ `00_Katherine_Workspace/`)
 
 ---
 
@@ -15,15 +16,17 @@
 
 ---
 
-## 1. Hub Architecture & Bootstrap
+## 1. Project Scope & Cross-Chat Bootstrap
 
-`Alpha_mining` เป็นศูนย์กลาง Quant Research, Trading Systems Engineering, และ Agent Governance Hub ที่เชื่อมกับ **OVCA v1.0** (`nattawatpuntachot52/ovca-reference`)
+`Alpha_mining` คือโปรเจกต์ลูก **`01_Alpha_Mining`** (Quant Research, Trading Systems Engineering, และ Teacher-Guided ML Trading) ภายใต้การกำกับของศูนย์กลาง **`Katherine-HQ`** (`nattawatpuntachot52/Katherine-HQ`) และมาตรฐาน **OVCA v1.0** (`nattawatpuntachot52/ovca-reference`)
 
-ไฟล์อ้างอิงหลักใน repository นี้:
-- [roles/conditioner.md](roles/conditioner.md) — นิยามบทบาท Katherine (Conditioner), Quant Research Gates, Learning Loop และ Owner Profile ฉบับเต็ม
-- [roles/ovca-roles.md](roles/ovca-roles.md) — การจับคู่ Katherine / Conditioner กับบทบาท OVCA v1.0 (`Owner`, `Coordinator`, `Engineer`, `Reviewer`, `Auditor`)
-- [docs/architecture.md](docs/architecture.md) — ขอบเขตระบบและ Rust/Python control plane (`alpha-ovca`)
-- [docs/research-gates.md](docs/research-gates.md) — Epistemic claims, evidence status ladder และเกณฑ์ตรวจงานวิจัย Quant
+- **Cross-Chat Bootstrap**: เมื่อเริ่มแชตใหม่หรือทำงานข้ามโปรเจกต์ ให้ตรวจอ่าน `Katherine-HQ/config/storage/workspace_registry.json` (แผนที่กลาง 4 โปรเจกต์: `01_Alpha_Mining`, `02_Write_Time`, `03_TransisQuant`, `04_Radio_Music`) และไฟล์ความจำล่าสุดใน `Katherine-HQ/workflows/memory/YYYY-MM-DD.jsonl` ก่อนเสมอ
+- ไฟล์อ้างอิงหลักใน repository นี้:
+  - [config/storage/drive_vault.json](config/storage/drive_vault.json) — แผนที่ Drive Vault ของ `01_Alpha_Mining` (`00_Katherine_Workspace/01_Alpha_Mining/`)
+  - [roles/conditioner.md](roles/conditioner.md) — นิยามบทบาท Katherine (Conditioner), Quant Research Gates, Learning Loop และ Owner Profile ฉบับเต็ม
+  - [roles/ovca-roles.md](roles/ovca-roles.md) — การจับคู่ Katherine / Conditioner กับบทบาท OVCA v1.0 (`Owner`, `Coordinator`, `Engineer`, `Reviewer`, `Auditor`)
+  - [docs/architecture.md](docs/architecture.md) — ขอบเขตระบบและ Rust/Python control plane (`alpha-ovca`)
+  - [docs/research-gates.md](docs/research-gates.md) — Epistemic claims, evidence status ladder และเกณฑ์ตรวจงานวิจัย Quant
 
 ### Optional External Context & Tools (ใช้เมื่อมีอยู่จริงเท่านั้น)
 - หากมีไฟล์ `logs/katherine_active_context.md` หรือ `memory/oracle_katherine_front_door_constitution.md` ในโปรเจ็กต์/สภาพแวดล้อมปัจจุบัน → **อ่านก่อนตอบ** และถือว่ามีผลร่วมด้วย
