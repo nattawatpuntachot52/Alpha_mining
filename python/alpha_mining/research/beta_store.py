@@ -19,7 +19,7 @@ import importlib.util
 import json
 import re
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Sequence
 
@@ -64,6 +64,10 @@ def validate_model_id(model_id: str) -> str:
 def validate_date_str(date_str: str) -> str:
     if not isinstance(date_str, str) or not _DATE_RE.fullmatch(date_str):
         raise ValueError(f"invalid date {date_str!r}: expected YYYY-MM-DD")
+    try:
+        date.fromisoformat(date_str)
+    except ValueError as exc:
+        raise ValueError(f"invalid calendar date {date_str!r}: expected valid YYYY-MM-DD") from exc
     return date_str
 
 
@@ -88,6 +92,8 @@ class BetaModelStore:
         self.daily_dir = self.root_dir / "daily"
         self.catalog_path = self.root_dir / "catalog.json"
         self.ranking_path = self.root_dir / "ranking_top9.json"
+        self.daily_index_path = self.daily_dir / "index.json"
+        self.portal_index_path = self.root_dir / "index.html"
 
     def _model_dir(self, model_id: str) -> Path:
         mid = validate_model_id(model_id)
@@ -460,6 +466,105 @@ class BetaModelStore:
             _atomic_write_json(self.ranking_path, board)
         return board
 
+    def _daily_date_dir(self, batch_date: str) -> Path:
+        bdate = validate_date_str(batch_date)
+        candidate = (self.daily_dir / bdate).resolve()
+        try:
+            candidate.relative_to(self.daily_dir.resolve())
+        except ValueError as exc:
+            raise ValueError(f"batch_date escapes daily directory: {batch_date!r}") from exc
+        return candidate
+
+    def list_daily_dates(self) -> list[str]:
+        """Return chronological (ascending) valid YYYY-MM-DD dates with saved daily batch artifacts."""
+        if not self.daily_dir.is_dir():
+            return []
+        valid: list[str] = []
+        for p in self.daily_dir.iterdir():
+            if not p.is_dir() or not _DATE_RE.fullmatch(p.name):
+                continue
+            try:
+                validate_date_str(p.name)
+            except ValueError:
+                continue
+            if (p / "batch.json").is_file() or (p / "dashboard.html").is_file():
+                valid.append(p.name)
+        return sorted(valid)
+
+    def load_daily_batch(self, batch_date: str) -> dict[str, Any] | None:
+        """Load `daily/<YYYY-MM-DD>/batch.json` if present."""
+        bp = self._daily_date_dir(batch_date) / "batch.json"
+        if not bp.is_file():
+            return None
+        return json.loads(bp.read_text(encoding="utf-8"))
+
+    def load_daily_batches_summary(self, *, max_dd_pct: float = DEFAULT_MAX_DD_GATE_PCT) -> list[dict[str, Any]]:
+        """Summarize every saved daily batch (sorted newest-first) for archive indexes and date switchers."""
+        summaries: list[dict[str, Any]] = []
+        for bdate in reversed(self.list_daily_dates()):
+            ddir = self._daily_date_dir(bdate)
+            batch = self.load_daily_batch(bdate) or {}
+            raw_models = batch.get("models") if isinstance(batch, dict) else []
+            models = [m for m in (raw_models or []) if isinstance(m, dict)]
+            model_ids = [str(m["model_id"]) for m in models if m.get("model_id")]
+            qualified_count = sum(
+                1
+                for m in models
+                if not bool(m.get("would_liquidate"))
+                and float(m.get("max_drawdown_pct", 0.0)) <= max_dd_pct
+            )
+            best_cf = max(models, key=lambda m: float(m.get("cashflow_net_usd", float("-inf")))) if models else None
+            low_dd = min(models, key=lambda m: float(m.get("max_drawdown_pct", float("inf")))) if models else None
+            first_m = models[0] if models else {}
+            summaries.append(
+                {
+                    "batch_date": bdate,
+                    "generated_at_utc": str(batch.get("generated_at_utc", "")) if isinstance(batch, dict) else "",
+                    "model_count": len(models),
+                    "qualified_count": qualified_count,
+                    "model_ids": model_ids,
+                    "best_cashflow_model_id": str(best_cf.get("model_id", "")) if best_cf else "",
+                    "best_cashflow_usd": round(float(best_cf.get("cashflow_net_usd", 0.0)), 2) if best_cf else 0.0,
+                    "lowest_dd_model_id": str(low_dd.get("model_id", "")) if low_dd else "",
+                    "lowest_dd_pct": round(float(low_dd.get("max_drawdown_pct", 0.0)), 2) if low_dd else 0.0,
+                    "window_start_utc": str(first_m.get("window_start_utc", "")),
+                    "window_end_utc": str(first_m.get("window_end_utc", "")),
+                    "days_covered": float(first_m.get("days_covered", 0.0)),
+                    "has_dashboard": (ddir / "dashboard.html").is_file(),
+                    "has_summary": (ddir / "daily_summary.md").is_file(),
+                    "dashboard_rel_path": f"daily/{bdate}/dashboard.html",
+                    "summary_rel_path": f"daily/{bdate}/daily_summary.md",
+                }
+            )
+        return summaries
+
+    def write_daily_index(
+        self,
+        *,
+        latest_date: str | None = None,
+        max_dd_pct: float = DEFAULT_MAX_DD_GATE_PCT,
+    ) -> dict[str, Any]:
+        """Write `beta_mining/daily/index.json` listing all historical daily batches (newest-first)."""
+        self.ensure_initialized()
+        days = self.load_daily_batches_summary(max_dd_pct=max_dd_pct)
+        resolved_latest = validate_date_str(latest_date) if latest_date else (days[0]["batch_date"] if days else "")
+        payload: dict[str, Any] = {
+            "schema_version": SCHEMA_VERSION,
+            "generated_at_utc": _now_utc_iso(),
+            "latest_date": resolved_latest,
+            "total_days": len(days),
+            "dates": [d["batch_date"] for d in days],
+            "days": days,
+        }
+        _atomic_write_json(self.daily_index_path, payload)
+        return payload
+
+    def write_portal_index(self, portal_html: str) -> Path:
+        """Write the zero-CDN landing hub `beta_mining/index.html` linking to all daily dashboards."""
+        self.ensure_initialized()
+        _atomic_write_text(self.portal_index_path, portal_html)
+        return self.portal_index_path
+
     def save_daily_batch(
         self,
         *,
@@ -469,10 +574,11 @@ class BetaModelStore:
         summary_markdown: str,
         dashboard_html: str,
         loader_meta: dict[str, Any] | None = None,
+        portal_html: str | None = None,
     ) -> Path:
-        """Write immutable daily comparison JSON, Markdown summary, and interactive HTML dashboard."""
+        """Write immutable daily comparison JSON, Markdown summary, interactive HTML dashboard, and refresh daily index."""
         bdate = validate_date_str(batch_date)
-        ddir = self.daily_dir / bdate
+        ddir = self._daily_date_dir(bdate)
         ddir.mkdir(parents=True, exist_ok=True)
 
         top_rank_map = {r["model_id"]: r["rank"] for r in ranking_board.get("top_ranked", [])}
@@ -494,6 +600,10 @@ class BetaModelStore:
         _atomic_write_json(ddir / "batch.json", batch_payload)
         _atomic_write_text(ddir / "daily_summary.md", summary_markdown)
         _atomic_write_text(ddir / "dashboard.html", dashboard_html)
+        dd_cap = float(ranking_board.get("ranking_rule", {}).get("hard_gates", {}).get("max_drawdown_pct_limit", DEFAULT_MAX_DD_GATE_PCT))
+        self.write_daily_index(max_dd_pct=dd_cap)
+        if portal_html is not None:
+            self.write_portal_index(portal_html)
         return ddir
 
 

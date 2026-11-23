@@ -64,12 +64,15 @@ python3 scripts/beta_mining.py run-daily \
   --signals ha_1m,ema_9_21,ema_12_26,supertrend_10_3,rsi_reversion_14_40_60 \
   --days 1000 --high 5000 --low 500 --max-position-qty 2.0 --max-notional 10000 --initial-capital 10000
 
-# Inspect Top-9 Ranking Board, individual isolated model, or custom subset comparison
+# Inspect Top-9 Ranking Board, individual isolated model, archived daily batches, or rebuild dashboards
 python3 scripts/beta_mining.py rank --top 9 --max-dd 40
 python3 scripts/beta_mining.py show beta_002_ema_9_21
 python3 scripts/beta_mining.py compare --models beta_001_ha_1m,beta_002_ema_9_21
+python3 scripts/beta_mining.py list-dates --json
 python3 scripts/beta_mining.py rebuild-dashboard --date 2026-11-23
+python3 scripts/beta_mining.py rebuild-dashboard --all-dates
 ```
 
-To plug a brand-new standalone custom signal into any model folder, drop a `signal.py` file inside `beta_mining/models/<model_id>/signal.py` defining `build_signal(spec: dict) -> SignalProvider` and load it via `BetaModelStore(Path("beta_mining")).load_signal_provider("<model_id>")`.
+Every `run-daily` and `rebuild-dashboard` call also updates the zero-CDN **Daily Archive Hub** (`beta_mining/index.html`) and manifest (`beta_mining/daily/index.json`). Inside each daily 9-panel dashboard (`beta_mining/daily/<YYYY-MM-DD>/dashboard.html`), use the header **Batch Date Switcher** (`◀ Prev` / Dropdown / `Next ▶` / `All Days`) to jump across historical mining days, and the Tab-1 **Lookback Window Selector** (`30D` / `90D` / `180D` / `365D` / `ALL` or custom `From`–`To` dates) to dynamically re-slice Panels 01–06, Panel 08 (window OLS Beta/Corr vs ETH), Panel 09 (window Return Correlation Matrix), and summary tables.
 
+To plug a brand-new standalone custom signal into any model folder, drop a `signal.py` file inside `beta_mining/models/<model_id>/signal.py` defining `build_signal(spec: dict) -> SignalProvider` and load it via `BetaModelStore(Path("beta_mining")).load_signal_provider("<model_id>")`.

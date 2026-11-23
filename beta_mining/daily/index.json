@@ -1,0 +1,35 @@
+{
+  "schema_version": "1.0",
+  "generated_at_utc": "2026-11-23T07:41:12Z",
+  "latest_date": "2026-11-23",
+  "total_days": 1,
+  "dates": [
+    "2026-11-23"
+  ],
+  "days": [
+    {
+      "batch_date": "2026-11-23",
+      "generated_at_utc": "2026-11-23T07:41:12Z",
+      "model_count": 5,
+      "qualified_count": 5,
+      "model_ids": [
+        "beta_001_ha_1m",
+        "beta_002_ema_9_21",
+        "beta_003_ema_12_26",
+        "beta_004_supertrend_10_3",
+        "beta_005_rsi_reversion_14_40_60"
+      ],
+      "best_cashflow_model_id": "beta_005_rsi_reversion_14_40_60",
+      "best_cashflow_usd": 3282.71,
+      "lowest_dd_model_id": "beta_003_ema_12_26",
+      "lowest_dd_pct": 19.82,
+      "window_start_utc": "2024-02-27T00:00:00Z",
+      "window_end_utc": "2026-11-21T23:59:00Z",
+      "days_covered": 999.0,
+      "has_dashboard": true,
+      "has_summary": true,
+      "dashboard_rel_path": "daily/2026-11-23/dashboard.html",
+      "summary_rel_path": "daily/2026-11-23/daily_summary.md"
+    }
+  ]
+}

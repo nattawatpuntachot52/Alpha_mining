@@ -26,6 +26,7 @@ from alpha_mining.research.backtest_lgb154 import (  # noqa: E402
 from alpha_mining.research.beta_dashboard import (  # noqa: E402
     render_daily_summary_markdown,
     render_dashboard_html,
+    render_portal_index_html,
 )
 from alpha_mining.research.beta_store import (  # noqa: E402
     BetaModelStore,
@@ -341,6 +342,7 @@ def _cmd_run_daily(args: argparse.Namespace) -> int:
     batch_ids = [m["model_id"] for m in batch_metrics]
     batch_series = store.load_batch_series(batch_ids)
     corr_matrix = compute_return_correlation_matrix(batch_ids, batch_series)
+    existing_days = store.load_daily_batches_summary(max_dd_pct=args.max_dd_gate)
     summary_md = render_daily_summary_markdown(
         batch_date=batch_date, batch_metrics=batch_metrics, ranking_board=board
     )
@@ -351,6 +353,7 @@ def _cmd_run_daily(args: argparse.Namespace) -> int:
         ranking_board=board,
         batch_series=batch_series,
         corr_matrix=corr_matrix,
+        available_dates=existing_days,
     )
     ddir = store.save_daily_batch(
         batch_date=batch_date,
@@ -360,10 +363,19 @@ def _cmd_run_daily(args: argparse.Namespace) -> int:
         dashboard_html=dash_html,
         loader_meta=loader_meta,
     )
+    daily_days = store.load_daily_batches_summary(max_dd_pct=args.max_dd_gate)
+    portal_html = render_portal_index_html(
+        daily_days=daily_days,
+        ranking_board=board,
+        latest_date=daily_days[0]["batch_date"] if daily_days else batch_date,
+    )
+    portal_path = store.write_portal_index(portal_html)
     print(summary_md)
     print(f"Saved isolated models under: {store.models_dir}")
     print(f"Saved Top-{args.top_n} Ranking Board: {store.ranking_path}")
     print(f"Saved Daily Dashboard HTML: {ddir / 'dashboard.html'}")
+    print(f"Saved Daily Index JSON: {store.daily_index_path}")
+    print(f"Saved Archive Hub HTML: {portal_path}")
     return 0
 
 
@@ -423,12 +435,21 @@ def _cmd_compare(args: argparse.Namespace) -> int:
     return 0
 
 
-def _cmd_rebuild_dashboard(args: argparse.Namespace) -> int:
-    store = BetaModelStore(args.store_dir)
-    bdate = args.date or datetime.now(timezone.utc).date().isoformat()
-    board = store.compute_ranking(top_n=args.top_n, max_dd_pct=args.max_dd_gate, write_file=True)
-    all_metrics = [m.latest_metrics for m in store.load_all_models()]
-    batch_metrics = [m for m in all_metrics if m.get("batch_date") == bdate] or all_metrics
+def _rebuild_one_daily_date(
+    store: BetaModelStore,
+    *,
+    bdate: str,
+    all_metrics: list[dict[str, Any]],
+    board: dict[str, Any],
+    available_dates: list[dict[str, Any]],
+) -> Path:
+    existing_batch = store.load_daily_batch(bdate)
+    if existing_batch and isinstance(existing_batch.get("models"), list) and existing_batch["models"]:
+        batch_metrics = [dict(m) for m in existing_batch["models"]]
+        loader_meta = existing_batch.get("loader") if isinstance(existing_batch.get("loader"), dict) else None
+    else:
+        batch_metrics = [m for m in all_metrics if m.get("batch_date") == bdate] or all_metrics
+        loader_meta = None
     batch_ids = [m["model_id"] for m in batch_metrics]
     batch_series = store.load_batch_series(batch_ids)
     corr_matrix = compute_return_correlation_matrix(batch_ids, batch_series)
@@ -442,15 +463,79 @@ def _cmd_rebuild_dashboard(args: argparse.Namespace) -> int:
         ranking_board=board,
         batch_series=batch_series,
         corr_matrix=corr_matrix,
+        available_dates=available_dates,
     )
-    ddir = store.save_daily_batch(
+    return store.save_daily_batch(
         batch_date=bdate,
         batch_metrics=batch_metrics,
         ranking_board=board,
         summary_markdown=summary_md,
         dashboard_html=dash_html,
+        loader_meta=loader_meta,
     )
-    print(f"Rebuilt dashboard: {ddir / 'dashboard.html'}")
+
+
+def _cmd_rebuild_dashboard(args: argparse.Namespace) -> int:
+    store = BetaModelStore(args.store_dir)
+    board = store.compute_ranking(top_n=args.top_n, max_dd_pct=args.max_dd_gate, write_file=True)
+    all_metrics = [m.latest_metrics for m in store.load_all_models()]
+    available_dates = store.load_daily_batches_summary(max_dd_pct=args.max_dd_gate)
+
+    if args.all_dates:
+        target_dates = store.list_daily_dates()
+        if not target_dates:
+            target_dates = [args.date or datetime.now(timezone.utc).date().isoformat()]
+    else:
+        target_dates = [args.date or (available_dates[0]["batch_date"] if available_dates else datetime.now(timezone.utc).date().isoformat())]
+
+    rebuilt_paths: list[Path] = []
+    for bdate in target_dates:
+        ddir = _rebuild_one_daily_date(
+            store,
+            bdate=bdate,
+            all_metrics=all_metrics,
+            board=board,
+            available_dates=available_dates,
+        )
+        rebuilt_paths.append(ddir / "dashboard.html")
+
+    daily_days = store.load_daily_batches_summary(max_dd_pct=args.max_dd_gate)
+    portal_html = render_portal_index_html(
+        daily_days=daily_days,
+        ranking_board=board,
+        latest_date=daily_days[0]["batch_date"] if daily_days else target_dates[-1],
+    )
+    portal_path = store.write_portal_index(portal_html)
+    for p in rebuilt_paths:
+        print(f"Rebuilt dashboard: {p}")
+    print(f"Rebuilt daily index: {store.daily_index_path}")
+    print(f"Rebuilt archive hub: {portal_path}")
+    return 0
+
+
+def _cmd_list_dates(args: argparse.Namespace) -> int:
+    store = BetaModelStore(args.store_dir)
+    days = store.load_daily_batches_summary(max_dd_pct=args.max_dd_gate)
+    payload = {
+        "total_days": len(days),
+        "latest_date": days[0]["batch_date"] if days else "",
+        "dates": [d["batch_date"] for d in days],
+        "days": days,
+    }
+    if args.json:
+        print(json.dumps(payload, indent=2, ensure_ascii=False))
+        return 0
+    if not days:
+        print("No archived daily batches found.")
+        return 0
+    print(f"Archived daily batches ({len(days)} days, newest-first):")
+    for d in days:
+        print(
+            f"  - {d['batch_date']}: {d['model_count']} models "
+            f"(pass {d['qualified_count']}/{d['model_count']}) | "
+            f"best CF {d['best_cashflow_usd']:+.2f} ({d['best_cashflow_model_id']}) | "
+            f"low DD {d['lowest_dd_pct']:.2f}% -> {d['dashboard_rel_path']}"
+        )
     return 0
 
 
@@ -530,10 +615,15 @@ def _build_parser() -> argparse.ArgumentParser:
     cp = sub.add_parser("compare", help="Compare specified or all isolated models.")
     cp.add_argument("--models", default=None, help="Comma-separated model_ids (default: all).")
 
-    rb = sub.add_parser("rebuild-dashboard", help="Rebuild dashboard.html from existing isolated model folders.")
+    rb = sub.add_parser("rebuild-dashboard", help="Rebuild dashboard.html, daily/index.json, and beta_mining/index.html.")
     rb.add_argument("--date", default=None)
+    rb.add_argument("--all-dates", action="store_true", help="Rebuild every historical daily dashboard with updated date switcher index.")
     rb.add_argument("--top-n", type=int, default=DEFAULT_TOP_N)
     rb.add_argument("--max-dd-gate", type=float, default=DEFAULT_MAX_DD_GATE_PCT)
+
+    ld = sub.add_parser("list-dates", help="List archived historical daily mining batches (newest-first).")
+    ld.add_argument("--max-dd-gate", type=float, default=DEFAULT_MAX_DD_GATE_PCT)
+    ld.add_argument("--json", action="store_true")
     return parser
 
 
@@ -551,6 +641,8 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_compare(args)
     if args.command == "rebuild-dashboard":
         return _cmd_rebuild_dashboard(args)
+    if args.command == "list-dates":
+        return _cmd_list_dates(args)
     return 2
 
 
