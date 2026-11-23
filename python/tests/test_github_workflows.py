@@ -802,6 +802,30 @@ jobs:
         self.assertNotIn("if: ${{ secrets.", text)
         self.assertNotIn("| head -n 1", text)
 
+    def test_deploy_beta_pages_workflow_safety_and_scope(self) -> None:
+        wf = WORKFLOWS_DIR / "deploy-beta-pages.yml"
+        self.assertTrue(wf.is_file())
+        text = wf.read_text(encoding="utf-8")
+        self.assertEqual(validate_workflow_text(wf.name, text), [])
+        self.assertIn("branches:\n      - main", text)
+        self.assertIn('- "beta_mining/**"', text)
+        self.assertIn("workflow_dispatch:", text)
+        self.assertIn("contents: read", text)
+        self.assertIn("pages: write", text)
+        self.assertIn("id-token: write", text)
+        self.assertIn("group: pages", text)
+        self.assertIn("cancel-in-progress: false", text)
+        self.assertIn("actions/configure-pages@v5", text)
+        self.assertIn("actions/upload-pages-artifact@v3", text)
+        self.assertIn("actions/deploy-pages@v4", text)
+        self.assertIn("name: github-pages", text)
+        self.assertIn("test -f beta_mining/index.html", text)
+        self.assertIn("test -f beta_mining/daily/index.json", text)
+        self.assertIn("touch pages_site/.nojekyll", text)
+        self.assertNotIn("contents: write", text)
+        self.assertNotIn("beta_mining/models", text)
+        self.assertNotIn("if: ${{ secrets.", text)
+
 
 if __name__ == "__main__":
     unittest.main()

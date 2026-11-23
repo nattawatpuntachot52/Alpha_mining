@@ -75,4 +75,9 @@ python3 scripts/beta_mining.py rebuild-dashboard --all-dates
 
 Every `run-daily` and `rebuild-dashboard` call also updates the zero-CDN **Daily Archive Hub** (`beta_mining/index.html`) and manifest (`beta_mining/daily/index.json`). Inside each daily 9-panel dashboard (`beta_mining/daily/<YYYY-MM-DD>/dashboard.html`), use the header **Batch Date Switcher** (`◀ Prev` / Dropdown / `Next ▶` / `All Days`) to jump across historical mining days, and the Tab-1 **Lookback Window Selector** (`30D` / `90D` / `180D` / `365D` / `ALL` or custom `From`–`To` dates) to dynamically re-slice Panels 01–06, Panel 08 (window OLS Beta/Corr vs ETH), Panel 09 (window Return Correlation Matrix), and summary tables.
 
+### Online GitHub Pages Deployment (Automatic on `main`)
+Merging any `beta_mining/**` update into `main` (or triggering `Deploy Beta Mining Dashboard (GitHub Pages)` via `workflow_dispatch`) automatically publishes `beta_mining/index.html`, `beta_mining/daily/index.json`, `beta_mining/ranking_top9.json`, and all `beta_mining/daily/<YYYY-MM-DD>/` dashboards to:
+- **Archive Hub:** `https://nattawatpuntachot52.github.io/Alpha_mining/`
+- **Daily 9-Panel Example:** `https://nattawatpuntachot52.github.io/Alpha_mining/daily/2026-11-23/dashboard.html`
+
 To plug a brand-new standalone custom signal into any model folder, drop a `signal.py` file inside `beta_mining/models/<model_id>/signal.py` defining `build_signal(spec: dict) -> SignalProvider` and load it via `BetaModelStore(Path("beta_mining")).load_signal_provider("<model_id>")`.
