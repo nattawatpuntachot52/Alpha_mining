@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import math
+import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -17,6 +19,7 @@ from alpha_mining.research.backtest_lgb154 import BacktestResult  # noqa: E402
 from alpha_mining.research.beta_dashboard import (  # noqa: E402
     render_daily_summary_markdown,
     render_dashboard_html,
+    render_portal_index_html,
 )
 from alpha_mining.research.beta_store import (  # noqa: E402
     BetaModelStore,
@@ -227,6 +230,16 @@ class TestBetaMiningStoreAndDashboard(unittest.TestCase):
             self.assertNotIn("https://", dash_text)
             self.assertNotIn("http://", dash_text)
             for cid in (
+                "batch-date-select",
+                "btn-prev-day",
+                "btn-next-day",
+                "btn-all-days",
+                "lookback-bar",
+                "lookback-presets",
+                "range-start",
+                "range-end",
+                "btn-range-reset",
+                "range-badge",
                 "chart-weekly",
                 "chart-cumulative",
                 "chart-equity",
@@ -240,6 +253,17 @@ class TestBetaMiningStoreAndDashboard(unittest.TestCase):
                 "daily-legend-pills",
             ):
                 self.assertIn(f'id="{cid}"', dash_text)
+
+            index_json_path = store_dir / "daily" / "index.json"
+            portal_html_path = store_dir / "index.html"
+            self.assertTrue(index_json_path.is_file())
+            self.assertTrue(portal_html_path.is_file())
+            idx_data = json.loads(index_json_path.read_text(encoding="utf-8"))
+            self.assertEqual(idx_data["dates"], ["2026-11-23"])
+            portal_text = portal_html_path.read_text(encoding="utf-8")
+            self.assertNotIn("https://", portal_text)
+            self.assertNotIn("http://", portal_text)
+            self.assertIn("daily/2026-11-23/dashboard.html", portal_text)
 
             r_rank = subprocess.run(cli + ["rank", "--top", "9", "--max-dd", "40", "--json"], capture_output=True, text=True, check=False)
             self.assertEqual(r_rank.returncode, 0, r_rank.stderr)
@@ -364,6 +388,200 @@ class TestBetaMiningStoreAndDashboard(unittest.TestCase):
             nb2 = json.loads(proc2.stdout)
             self.assertEqual(nb2["selection_mode"], "top_leaders_refresh")
             self.assertEqual([m["model_id"] for m in nb2["models"]], ["beta_001_ha_1m", "beta_002_ema_9_21"])
+
+    def test_multi_day_archive_date_switcher_list_dates_and_rebuild_all_dates(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            csv_path = tmp_path / "sample_1m.csv"
+            start_ms = 1_760_000_000_000
+            lines = ["open_time_ms,open,high,low,close,volume"]
+            prev = 2500.0
+            for i in range(180):
+                nxt = 2500.0 + 40.0 * math.sin(2.0 * math.pi * i / 30.0)
+                hi = max(prev, nxt) + 3.0
+                lo = min(prev, nxt) - 3.0
+                lines.append(f"{start_ms + i * 60_000},{prev:.4f},{hi:.4f},{lo:.4f},{nxt:.4f},50.0")
+                prev = nxt
+            csv_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+            store_dir = tmp_path / "beta_mining"
+            cli = [sys.executable, str(REPO_ROOT / "scripts" / "beta_mining.py"), "--store-dir", str(store_dir)]
+
+            for bdate, sigs in (("2026-11-22", "ha_1m,ema_9_21"), ("2026-11-23", "ema_12_26,supertrend_10_3")):
+                proc = subprocess.run(
+                    cli
+                    + [
+                        "run-daily",
+                        "--date",
+                        bdate,
+                        "--source",
+                        "local",
+                        "--local-path",
+                        str(csv_path),
+                        "--signals",
+                        sigs,
+                        "--stress-crash-days",
+                        "0",
+                    ],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                self.assertEqual(proc.returncode, 0, proc.stderr)
+
+            # Verify daily/index.json and beta_mining/index.html track both historical dates newest-first
+            idx = json.loads((store_dir / "daily" / "index.json").read_text(encoding="utf-8"))
+            self.assertEqual(idx["total_days"], 2)
+            self.assertEqual(idx["latest_date"], "2026-11-23")
+            self.assertEqual(idx["dates"], ["2026-11-23", "2026-11-22"])
+
+            portal_html = (store_dir / "index.html").read_text(encoding="utf-8")
+            self.assertNotIn("https://", portal_html)
+            self.assertNotIn("http://", portal_html)
+            self.assertIn("daily/2026-11-23/dashboard.html", portal_html)
+            self.assertIn("daily/2026-11-22/dashboard.html", portal_html)
+
+            # Verify list-dates CLI
+            r_ld = subprocess.run(cli + ["list-dates", "--json"], capture_output=True, text=True, check=False)
+            self.assertEqual(r_ld.returncode, 0, r_ld.stderr)
+            ld = json.loads(r_ld.stdout)
+            self.assertEqual(ld["dates"], ["2026-11-23", "2026-11-22"])
+            self.assertEqual([d["model_count"] for d in ld["days"]], [2, 2])
+
+            # Rebuild all dates so earlier 2026-11-22 dashboard also embeds 2026-11-23 while preserving its own batch_ids
+            r_all = subprocess.run(cli + ["rebuild-dashboard", "--all-dates"], capture_output=True, text=True, check=False)
+            self.assertEqual(r_all.returncode, 0, r_all.stderr)
+
+            for bdate, expected_prefix in (("2026-11-22", "beta_001_ha_1m"), ("2026-11-23", "beta_003_ema_12_26")):
+                dtext = (store_dir / "daily" / bdate / "dashboard.html").read_text(encoding="utf-8")
+                m = re.search(r"const PAYLOAD = (\{.*?\});", dtext)
+                self.assertIsNotNone(m, f"PAYLOAD not found in {bdate}/dashboard.html")
+                payload = json.loads(m.group(1))
+                self.assertEqual(payload["batch_date"], bdate)
+                self.assertIn(expected_prefix, payload["batch_ids"])
+                self.assertEqual(len(payload["batch_models"]), 2)
+                self.assertEqual(
+                    [entry["batch_date"] for entry in payload["available_dates"]],
+                    ["2026-11-23", "2026-11-22"],
+                )
+
+            # Security & edge-case regressions: invalid calendar date, latest_date traversal, XSS script breakouts, same-day metadata refresh
+            from alpha_mining.research.beta_store import validate_date_str
+
+            with self.assertRaises(ValueError):
+                validate_date_str("2026-02-31")
+            with self.assertRaises(ValueError):
+                validate_date_str("../2026-11-23")
+
+            evil_portal = render_portal_index_html(
+                daily_days=[{"batch_date": "2026-11-23", "model_count": 2, "has_dashboard": True}],
+                ranking_board={"top_ranked": []},
+                latest_date="../../evil",
+            )
+            self.assertNotIn("daily/../../evil", evil_portal)
+            self.assertIn("daily/2026-11-23/dashboard.html", evil_portal)
+
+            xss_metric = {
+                "model_id": "beta_001_test",
+                "signal_name": "RSI < 40 </script><!-- xss -->",
+                "batch_date": "2026-11-23",
+                "cashflow_net_usd": 100.0,
+                "max_drawdown_pct": 5.0,
+                "mtm_return_pct": 1.0,
+                "mtm_pnl_usd": 100.0,
+                "unrealized_end_usd": 0.0,
+                "initial_capital": 10000.0,
+                "would_liquidate": False,
+            }
+            xss_html = render_dashboard_html(
+                batch_date="2026-11-23",
+                batch_metrics=[xss_metric],
+                all_models_metrics=[xss_metric],
+                ranking_board={"top_ranked": []},
+                available_dates=[{"batch_date": "2026-11-23", "model_count": 99}],
+            )
+            self.assertNotIn("RSI < 40 </script>", xss_html)
+            self.assertNotIn("<!-- xss -->", xss_html)
+            m_xss = re.search(r"const PAYLOAD = (\{.*?\});", xss_html)
+            self.assertIsNotNone(m_xss)
+            p_xss = json.loads(m_xss.group(1))
+            self.assertEqual(p_xss["available_dates"][0]["model_count"], 1)
+
+            # Direct render_portal_index_html smoke check (empty & populated)
+            empty_portal = render_portal_index_html(daily_days=[], ranking_board={"top_ranked": []})
+            self.assertNotIn("https://", empty_portal)
+            self.assertNotIn("http://", empty_portal)
+
+    def test_repo_dashboard_and_portal_js_syntax_and_lookback_math(self) -> None:
+        dash_path = REPO_ROOT / "beta_mining" / "daily" / "2026-11-23" / "dashboard.html"
+        portal_path = REPO_ROOT / "beta_mining" / "index.html"
+        index_json_path = REPO_ROOT / "beta_mining" / "daily" / "index.json"
+        self.assertTrue(dash_path.is_file())
+        self.assertTrue(portal_path.is_file())
+        self.assertTrue(index_json_path.is_file())
+
+        for html_p in (dash_path, portal_path):
+            txt = html_p.read_text(encoding="utf-8")
+            self.assertNotIn("https://", txt)
+            self.assertNotIn("http://", txt)
+
+        node_bin = shutil.which("node")
+        if not node_bin:
+            self.skipTest("node not installed")
+
+        js_verify = r"""
+const fs = require("fs");
+for (const path of process.argv.slice(1)) {
+  const html = fs.readFileSync(path, "utf8");
+  const m = html.match(/<script>([\s\S]*?)<\/script>/);
+  if (!m) throw new Error(`Missing <script> in ${path}`);
+  new Function(m[1]);
+}
+const dashHtml = fs.readFileSync(process.argv[1], "utf8");
+const script = dashHtml.match(/<script>([\s\S]*?)<\/script>/)[1];
+const fnChunk = script.split("function getThemeColors()")[0];
+const noop = () => {};
+const stubEl = () => ({
+  textContent: "", value: "", innerHTML: "", min: "", max: "", disabled: false,
+  classList: { toggle: noop, add: noop, remove: noop },
+  appendChild: noop, addEventListener: noop, style: {}
+});
+const stubDoc = {
+  getElementById: stubEl, querySelectorAll: () => [], createElement: stubEl,
+  body: { classList: { contains: () => false, toggle: noop, add: noop } },
+  documentElement: { classList: { contains: () => false } },
+};
+const runner = new Function(
+  "document", "window",
+  fnChunk + "; return { PAYLOAD, ALL_DATES, toIsoWeekKey, computeBetaAndCorr, getWindowData, setRange(s,e){ rangeStartIdx=s; rangeEndIdx=e; cachedWindowData=null; cachedWindowKey=''; } };"
+);
+const api = runner(stubDoc, { location: { protocol: "file:" } });
+if (api.toIsoWeekKey("2024-12-30") !== "2025-W01") throw new Error("ISO week 2024-12-30 failed");
+if (api.toIsoWeekKey("2026-11-21") !== "2026-W47") throw new Error("ISO week 2026-11-21 failed");
+const full = api.getWindowData();
+if (!full.isFull || full.daysCount < 30) throw new Error("Unexpected full window");
+api.setRange(full.daysCount - 90, full.daysCount - 1);
+const w90 = api.getWindowData();
+if (w90.isFull || w90.daysCount !== 90) throw new Error("90D window slice mismatch");
+const mid = api.PAYLOAD.batch_ids[0];
+const st = w90.stats[mid];
+if (!isFinite(st.cashflow) || !isFinite(st.beta) || !isFinite(st.corr) || st.maxDdPct < 0) {
+  throw new Error("Invalid 90D metrics");
+}
+if (w90.corrMatrix.labels.length < 2) throw new Error("Window corr matrix missing");
+api.setRange(full.daysCount - 1, full.daysCount - 1);
+const w1 = api.getWindowData();
+if (w1.daysCount !== 1 || w1.stats[mid].beta !== 0 || w1.stats[mid].corr !== 0) {
+  throw new Error("1D edge case failed");
+}
+"""
+        proc = subprocess.run(
+            [node_bin, "-e", js_verify, str(dash_path), str(portal_path)],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr or proc.stdout)
 
 
 if __name__ == "__main__":

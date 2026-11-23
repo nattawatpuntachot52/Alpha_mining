@@ -142,6 +142,8 @@ jobs:
           SUMMARY_PATH="beta_mining/daily/${BATCH_DATE}/daily_summary.md"
           test -f "$DASH_PATH"
           test -f "$SUMMARY_PATH"
+          test -f "beta_mining/daily/index.json"
+          test -f "beta_mining/index.html"
           cat "$SUMMARY_PATH" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Save Refreshed Binance Vision 1m UM Data Cache
@@ -157,7 +159,9 @@ jobs:
         with:
           name: daily-beta-mining-${{ steps.params.outputs.batch_date }}
           path: |
-            beta_mining/daily/${{ steps.params.outputs.batch_date }}/
+            beta_mining/index.html
+            beta_mining/daily/index.json
+            beta_mining/daily/
             beta_mining/ranking_top9.json
             beta_mining/catalog.json
           retention-days: 30
@@ -188,14 +192,20 @@ jobs:
             echo "RCLONE_CONFIG_GDRIVE secret missing [gdrive] section header." >&2
             exit 1
           fi
-          REMOTE_DIR="gdrive:00_Katherine_Workspace/01_Alpha_Mining/04_reports/beta_mining/${BATCH_DATE}"
+          REMOTE_DIR="gdrive:00_Katherine_Workspace/01_Alpha_Mining/04_reports/beta_mining/daily/${BATCH_DATE}"
           RCLONE_CONFIG="$RCLONE_TMP" rclone copy \
             "beta_mining/daily/${BATCH_DATE}" \
             "$REMOTE_DIR" </dev/null
           RCLONE_CONFIG="$RCLONE_TMP" rclone copyto \
+            "beta_mining/daily/index.json" \
+            "gdrive:00_Katherine_Workspace/01_Alpha_Mining/04_reports/beta_mining/daily/index.json" </dev/null
+          RCLONE_CONFIG="$RCLONE_TMP" rclone copyto \
+            "beta_mining/index.html" \
+            "gdrive:00_Katherine_Workspace/01_Alpha_Mining/04_reports/beta_mining/index.html" </dev/null
+          RCLONE_CONFIG="$RCLONE_TMP" rclone copyto \
             "beta_mining/ranking_top9.json" \
             "gdrive:00_Katherine_Workspace/01_Alpha_Mining/04_reports/beta_mining/ranking_top9.json" </dev/null
-          echo "Synced daily 9-panel dashboard & ranking_top9.json to $REMOTE_DIR"
+          echo "Synced daily 9-panel dashboard, archive hub index.html & ranking_top9.json to $REMOTE_DIR"
 
       - name: Commit Isolated Models & Open PR-Only Proposal (Never Push to main)
         if: ${{ success() && steps.params.outputs.open_pr == 'true' }}

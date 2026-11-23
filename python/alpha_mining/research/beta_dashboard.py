@@ -26,9 +26,12 @@ from __future__ import annotations
 
 import html
 import json
+import re
 from typing import Any, Sequence
 
 from .beta_store import compute_return_correlation_matrix
+
+_SAFE_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
 def render_daily_summary_markdown(
@@ -151,6 +154,57 @@ def _compact_series_for_html(
     }
 
 
+def _safe_inline_json(payload: Any) -> str:
+    """Serialize JSON safely for embedding inside HTML <script> tags (escapes < to neutralize </script> and <!--)."""
+    return json.dumps(payload, separators=(",", ":"), ensure_ascii=False).replace("<", "\\u003c")
+
+
+def _normalize_available_dates(
+    batch_date: str,
+    available_dates: Sequence[Any] | None,
+    *,
+    current_batch_metrics: Sequence[dict[str, Any]] = (),
+) -> list[dict[str, Any]]:
+    """Normalize available historical daily batch metadata (deduplicated, strict YYYY-MM-DD, sorted newest-first)."""
+    by_date: dict[str, dict[str, Any]] = {}
+    for entry in available_dates or ():
+        if isinstance(entry, str):
+            d = entry.strip()
+            if _SAFE_DATE_RE.fullmatch(d):
+                by_date[d] = {"batch_date": d, "has_dashboard": True}
+        elif isinstance(entry, dict):
+            d = str(entry.get("batch_date", "")).strip()
+            has_dash = entry.get("has_dashboard", True) is not False
+            if _SAFE_DATE_RE.fullmatch(d) and (has_dash or d == batch_date):
+                by_date[d] = {
+                    "batch_date": d,
+                    "model_count": int(entry.get("model_count", 0)),
+                    "qualified_count": int(entry.get("qualified_count", 0)),
+                    "best_cashflow_usd": round(float(entry.get("best_cashflow_usd", 0.0)), 2),
+                    "lowest_dd_pct": round(float(entry.get("lowest_dd_pct", 0.0)), 2),
+                    "has_dashboard": has_dash,
+                }
+    if _SAFE_DATE_RE.fullmatch(batch_date) and (batch_date not in by_date or current_batch_metrics):
+        best_cf = (
+            max(float(m.get("cashflow_net_usd", 0.0)) for m in current_batch_metrics)
+            if current_batch_metrics
+            else 0.0
+        )
+        low_dd = (
+            min(float(m.get("max_drawdown_pct", 0.0)) for m in current_batch_metrics)
+            if current_batch_metrics
+            else 0.0
+        )
+        by_date[batch_date] = {
+            "batch_date": batch_date,
+            "model_count": len(current_batch_metrics),
+            "best_cashflow_usd": round(best_cf, 2),
+            "lowest_dd_pct": round(low_dd, 2),
+            "has_dashboard": True,
+        }
+    return [by_date[d] for d in sorted(by_date.keys(), reverse=True)]
+
+
 def render_dashboard_html(
     *,
     batch_date: str,
@@ -160,6 +214,7 @@ def render_dashboard_html(
     batch_series: dict[str, dict[str, Any]] | None = None,
     corr_matrix: dict[str, Any] | None = None,
     default_tab: str = "daily",
+    available_dates: Sequence[Any] | None = None,
 ) -> str:
     """Render a 100% self-contained offline-ready 9-panel interactive HTML Dashboard (zero CDN dependencies)."""
     rule = ranking_board.get("ranking_rule", {})
@@ -174,6 +229,12 @@ def render_dashboard_html(
     if resolved_corr is None:
         resolved_corr = {"labels": [], "matrix": []}
 
+    normalized_dates = _normalize_available_dates(
+        batch_date,
+        available_dates,
+        current_batch_metrics=batch_metrics,
+    )
+
     embedded_data = {
         "batch_date": batch_date,
         "generated_at_utc": ranking_board.get("generated_at_utc", ""),
@@ -182,11 +243,13 @@ def render_dashboard_html(
         "default_dd_cap": default_dd_cap,
         "default_tab": active_tab,
         "batch_ids": batch_ids,
+        "batch_models": list(batch_metrics),
+        "available_dates": normalized_dates,
         "models": list(all_models_metrics),
         "series": _compact_series_for_html(batch_ids, batch_series),
         "corr_matrix": resolved_corr,
     }
-    safe_json = json.dumps(embedded_data, separators=(",", ":"), ensure_ascii=False).replace("</", "<\\/")
+    safe_json = _safe_inline_json(embedded_data)
     safe_date = html.escape(batch_date)
 
     daily_active = " active" if active_tab == "daily" else ""
@@ -272,10 +335,29 @@ def render_dashboard_html(
       display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px;
       background: var(--bm-card); border: 1px solid var(--bm-border); border-radius: 12px; padding: 11px 14px;
     }}
-    select, input[type="range"] {{
+    select, input[type="range"], input[type="date"] {{
       background: var(--bm-surface); color: var(--bm-fg); border: 1px solid var(--bm-border);
-      border-radius: 6px; padding: 5px 8px; font-size: 12px;
+      border-radius: 6px; padding: 5px 8px; font-size: 12px; font-family: inherit;
     }}
+    .date-nav {{
+      display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px;
+      padding: 4px 8px; border-radius: 10px; background: var(--bm-card); border: 1px solid var(--bm-border);
+    }}
+    .nav-btn {{
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 5px 9px; border-radius: 7px; border: 1px solid var(--bm-border);
+      background: var(--bm-surface); color: var(--bm-fg); text-decoration: none;
+      font-size: 11px; font-weight: 600; transition: border-color 0.15s, background 0.15s;
+    }}
+    .nav-btn:hover {{ border-color: var(--bm-primary); }}
+    .nav-btn.disabled {{ opacity: 0.4; pointer-events: none; }}
+    .range-bar {{
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px;
+      background: var(--bm-card); border: 1px solid var(--bm-border); border-radius: 12px; padding: 10px 14px;
+    }}
+    .range-group {{ display: flex; flex-wrap: wrap; align-items: center; gap: 7px; }}
+    .preset-group {{ display: inline-flex; flex-wrap: wrap; gap: 5px; }}
+    .range-lbl {{ display: inline-flex; align-items: center; gap: 5px; font-size: 12px; }}
     .split {{ display: grid; grid-template-columns: 2fr 1fr; gap: 14px; align-items: start; }}
     .dash-grid {{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }}
     .panel-wide {{ grid-column: 1 / -1; }}
@@ -313,6 +395,7 @@ def render_dashboard_html(
       border: 1px solid var(--bm-border); color: var(--bm-muted); font-weight: 600;
     }}
     .pill-mini:hover {{ color: var(--bm-fg); border-color: var(--bm-primary); }}
+    .pill-mini.active {{ background: var(--bm-primary); color: var(--bm-primary-fg); border-color: var(--bm-primary); }}
     .batch-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 10px; }}
     .table-wrap {{ overflow-x: auto; }}
     table {{ width: 100%; border-collapse: collapse; font-size: 12px; }}
@@ -367,6 +450,12 @@ def render_dashboard_html(
         <p id="hdr-sub" class="subtitle"></p>
       </div>
       <div class="tabs">
+        <div class="date-nav" aria-label="Historical Batch Date Switcher">
+          <a id="btn-prev-day" class="nav-btn disabled" href="#" title="วัน Mine ก่อนหน้า">◀ Prev</a>
+          <select id="batch-date-select" aria-label="Select Daily Mining Batch Date" class="mono"></select>
+          <a id="btn-next-day" class="nav-btn disabled" href="#" title="วัน Mine ถัดไป">Next ▶</a>
+          <a id="btn-all-days" class="nav-btn" href="../../index.html" title="หน้ารวมผล Mine ทุกวันย้อนหลัง">All Days</a>
+        </div>
         <button data-tab="daily" class="tab-btn{daily_active}">Daily Batch — 9 Panels</button>
         <button data-tab="ranking" class="tab-btn{ranking_active}">Top-{top_n} Ranking Board</button>
         <button data-tab="all" class="tab-btn{all_active}">All Isolated Models</button>
@@ -399,6 +488,25 @@ def render_dashboard_html(
 
     <!-- TAB 1: DAILY BATCH 9-PANEL MULTI-MODEL RESEARCH DASHBOARD -->
     <section id="view-daily" class="{daily_cls}">
+      <div class="range-bar" id="lookback-bar">
+        <div class="range-group">
+          <span class="muted" style="font-weight:700;">ช่วงวันย้อนหลัง (Lookback):</span>
+          <div id="lookback-presets" class="preset-group">
+            <button type="button" class="pill-mini range-preset" data-days="30">30D</button>
+            <button type="button" class="pill-mini range-preset" data-days="90">90D</button>
+            <button type="button" class="pill-mini range-preset" data-days="180">180D</button>
+            <button type="button" class="pill-mini range-preset" data-days="365">365D</button>
+            <button type="button" class="pill-mini range-preset active" data-days="0">ALL</button>
+          </div>
+        </div>
+        <div class="range-group">
+          <label class="range-lbl"><span class="muted">From</span><input id="range-start" type="date" aria-label="Lookback Start Date" /></label>
+          <label class="range-lbl"><span class="muted">To</span><input id="range-end" type="date" aria-label="Lookback End Date" /></label>
+          <button id="btn-range-reset" type="button" class="pill-mini">Reset</button>
+          <span id="range-badge" class="badge badge-today">Full Window</span>
+        </div>
+      </div>
+
       <div class="legend-bar">
         <span class="muted" style="font-weight:700;margin-right:4px;">Models ({safe_date}):</span>
         <div id="daily-legend-pills" style="display:flex;flex-wrap:wrap;gap:7px;flex:1;"></div>
@@ -415,7 +523,7 @@ def render_dashboard_html(
         <div class="panel">
           <div class="panel-hdr">
             <span class="panel-title">01 / Weekly Realized CF</span>
-            <span class="panel-sub">USDT · Grouped Bars + Dashed Mean</span>
+            <span id="sub-weekly" class="panel-sub">USDT · Grouped Bars + Dashed Mean</span>
           </div>
           <div class="canvas-box"><canvas id="chart-weekly"></canvas></div>
         </div>
@@ -423,7 +531,7 @@ def render_dashboard_html(
         <div class="panel">
           <div class="panel-hdr">
             <span class="panel-title">02 / Accumulated Realized CF</span>
-            <span class="panel-sub">USDT · Realized Profit Only</span>
+            <span id="sub-cumulative" class="panel-sub">USDT · Realized Profit Only</span>
           </div>
           <div class="canvas-box"><canvas id="chart-cumulative"></canvas></div>
         </div>
@@ -431,7 +539,7 @@ def render_dashboard_html(
         <div class="panel">
           <div class="panel-hdr">
             <span class="panel-title">03 / Equity Returns vs ETH Benchmark</span>
-            <span class="panel-sub">% · Daily MTM + Dashed ETH Buy &amp; Hold</span>
+            <span id="sub-equity" class="panel-sub">% · Daily MTM + Dashed ETH Buy &amp; Hold</span>
           </div>
           <div class="canvas-box"><canvas id="chart-equity"></canvas></div>
         </div>
@@ -439,7 +547,7 @@ def render_dashboard_html(
         <div class="panel">
           <div class="panel-hdr">
             <span class="panel-title">04 / Equity Drawdown</span>
-            <span class="panel-sub">% · 1m Running Peak, Daily Snapshots</span>
+            <span id="sub-drawdown" class="panel-sub">% · 1m Running Peak, Daily Snapshots</span>
           </div>
           <div class="canvas-box"><canvas id="chart-drawdown"></canvas></div>
         </div>
@@ -463,7 +571,7 @@ def render_dashboard_html(
         <div class="panel">
           <div class="panel-hdr">
             <span class="panel-title">07 / Executed Trading Volume</span>
-            <span class="panel-sub">ETH · Total BUY (Green) &amp; SELL (Blue)</span>
+            <span id="sub-volume" class="panel-sub">ETH · Total BUY (Green) &amp; SELL (Blue)</span>
           </div>
           <div class="canvas-box"><canvas id="chart-volume"></canvas></div>
         </div>
@@ -471,7 +579,7 @@ def render_dashboard_html(
         <div class="panel">
           <div class="panel-hdr">
             <span class="panel-title">08 / Beta &amp; Correlation vs ETH</span>
-            <span class="panel-sub">Daily Simple Returns · Beta (Amber) &amp; Corr (Violet)</span>
+            <span id="sub-betacorr" class="panel-sub">Daily Simple Returns · Beta (Amber) &amp; Corr (Violet)</span>
           </div>
           <div class="canvas-box"><canvas id="chart-betacorr"></canvas></div>
         </div>
@@ -479,7 +587,7 @@ def render_dashboard_html(
         <div class="panel panel-wide">
           <div class="panel-hdr">
             <span class="panel-title">09 / Return Correlation Matrix</span>
-            <span class="panel-sub">All Active Daily Models + ETH · RdBu Diverging [-1.0 .. +1.0]</span>
+            <span id="sub-heatmap" class="panel-sub">All Active Daily Models + ETH · RdBu Diverging [-1.0 .. +1.0]</span>
           </div>
           <div class="canvas-box tall"><canvas id="chart-heatmap"></canvas></div>
         </div>
@@ -487,7 +595,7 @@ def render_dashboard_html(
 
       <div class="card" style="padding:0;overflow:hidden;">
         <div style="padding:10px 14px;border-bottom:1px solid var(--bm-border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-          <strong>Full Performance Summary — Daily Batch ({safe_date})</strong>
+          <strong id="perf-table-title">Full Performance Summary — Daily Batch ({safe_date})</strong>
           <span class="muted">คลิกแถวเพื่อเปิดดูรายละเอียดโมเดลในแท็บ Top-{top_n} Inspector</span>
         </div>
         <div class="table-wrap">
@@ -498,14 +606,14 @@ def render_dashboard_html(
                 <th>Signal</th>
                 <th class="num">Final Equity</th>
                 <th class="num">Return %</th>
-                <th class="num">Max DD %</th>
+                <th id="th-dd" class="num">Max DD %</th>
                 <th class="num">Realized CF</th>
                 <th class="num">Unrealized</th>
                 <th class="num">AVG Weekly</th>
                 <th class="num">Buy / Sell Fills</th>
                 <th class="num">Buy / Sell ETH</th>
                 <th class="num">End ETH</th>
-                <th class="num">Max Util %</th>
+                <th id="th-util" class="num">Max Util %</th>
                 <th class="num">Beta / Corr</th>
                 <th style="text-align:center;">Gate</th>
               </tr>
@@ -632,7 +740,9 @@ def render_dashboard_html(
     ];
 
     const MODEL_MAP = new Map((PAYLOAD.models || []).map(m => [m.model_id, m]));
-    const DAILY_MODELS = BATCH_IDS.map(id => MODEL_MAP.get(id)).filter(Boolean);
+    const DAILY_MODELS = (Array.isArray(PAYLOAD.batch_models) && PAYLOAD.batch_models.length)
+      ? PAYLOAD.batch_models
+      : BATCH_IDS.map(id => MODEL_MAP.get(id)).filter(Boolean);
     const MODEL_COLOR = new Map();
     DAILY_MODELS.forEach((m, idx) => MODEL_COLOR.set(m.model_id, PALETTE[idx % PALETTE.length]));
 
@@ -640,8 +750,21 @@ def render_dashboard_html(
     let selectedId = (DAILY_MODELS[0] && DAILY_MODELS[0].model_id) || (PAYLOAD.models[0] && PAYLOAD.models[0].model_id) || "";
     let currentTab = PAYLOAD.default_tab || "daily";
 
+    const RAW_SERIES = PAYLOAD.series || {{}};
+    const ALL_DATES = RAW_SERIES.dates || [];
+    const ALL_WEEKS = RAW_SERIES.weeks || [];
+    let rangeStartIdx = 0;
+    let rangeEndIdx = Math.max(0, ALL_DATES.length - 1);
+    let activePresetDays = 0; // 0 = ALL, >0 = preset N days, -1 = custom date range
+    let cachedWindowKey = "";
+    let cachedWindowData = null;
+
     const hoverState = {{}};
     const tooltipEl = document.getElementById("chart-tooltip");
+
+    function escHtml(v) {{
+      return String(v ?? "").replace(/[&<>"']/g, ch => ({{ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }}[ch]));
+    }}
 
     function shortLabel(modelId) {{
       return String(modelId || "").replace(/^beta_\\d+_/, "");
@@ -663,6 +786,388 @@ def render_dashboard_html(
 
     function fmtNum(v, digits = 2) {{
       return Number(v || 0).toLocaleString("en-US", {{ minimumFractionDigits: digits, maximumFractionDigits: digits }});
+    }}
+
+    function toIsoWeekKey(ymd) {{
+      const parts = String(ymd || "").split("-").map(Number);
+      if (parts.length !== 3 || parts.some(isNaN)) return "";
+      const d = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
+      const dayNum = d.getUTCDay() || 7;
+      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+      const wkNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+      return `${{d.getUTCFullYear()}}-W${{String(wkNo).padStart(2, "0")}}`;
+    }}
+
+    function computeBetaAndCorr(seriesY, seriesX) {{
+      const n = Math.min(seriesY.length, seriesX.length);
+      if (n < 2) return {{ beta: 0, corr: 0 }};
+      let sy = 0, sx = 0;
+      for (let i = 0; i < n; i++) {{
+        sy += seriesY[i];
+        sx += seriesX[i];
+      }}
+      const my = sy / n;
+      const mx = sx / n;
+      let cov = 0, vx = 0, vy = 0;
+      for (let i = 0; i < n; i++) {{
+        const dy = seriesY[i] - my;
+        const dx = seriesX[i] - mx;
+        cov += dy * dx;
+        vx += dx * dx;
+        vy += dy * dy;
+      }}
+      const beta = vx > 1e-18 ? cov / vx : 0;
+      const denom = Math.sqrt(vx * vy);
+      const corr = denom > 1e-18 ? cov / denom : 0;
+      return {{ beta, corr }};
+    }}
+
+    function deriveSimpleReturns(pctSeries, startIdx, endIdx) {{
+      const out = [];
+      const rStart = startIdx > 0 ? startIdx : 1;
+      for (let i = rStart; i <= endIdx; i++) {{
+        if (i - 1 < 0 || i >= pctSeries.length) continue;
+        const prev = 1 + Number(pctSeries[i - 1] || 0) / 100;
+        const curr = 1 + Number(pctSeries[i] || 0) / 100;
+        out.push(prev > 1e-9 ? (curr / prev - 1) : 0);
+      }}
+      return out;
+    }}
+
+    function getWindowData() {{
+      const nAll = ALL_DATES.length;
+      const s = nAll ? Math.max(0, Math.min(rangeStartIdx, nAll - 1)) : 0;
+      const e = nAll ? Math.max(s, Math.min(rangeEndIdx, nAll - 1)) : -1;
+      const key = `${{s}}:${{e}}`;
+      if (cachedWindowData && cachedWindowKey === key) return cachedWindowData;
+
+      const byMRaw = RAW_SERIES.by_model || {{}};
+      const isFull = nAll === 0 || (s === 0 && e === nAll - 1);
+      const dates = nAll ? ALL_DATES.slice(s, e + 1) : [];
+
+      let ethReturn = [];
+      let ethRets = [];
+      const rawEth = RAW_SERIES.eth_return || [];
+      if (isFull) {{
+        ethReturn = rawEth;
+      }} else if (rawEth.length) {{
+        const baseEth = s > 0 && rawEth[s - 1] !== undefined ? (1 + Number(rawEth[s - 1]) / 100) : 1;
+        for (let i = s; i <= e; i++) {{
+          const f = 1 + Number(rawEth[i] || 0) / 100;
+          ethReturn.push(baseEth > 1e-9 ? ((f / baseEth - 1) * 100) : 0);
+        }}
+        ethRets = deriveSimpleReturns(rawEth, s, e);
+      }}
+
+      let weeks = ALL_WEEKS;
+      let wkIndices = null;
+      if (!isFull && dates.length && ALL_WEEKS.length) {{
+        const startWk = toIsoWeekKey(dates[0]);
+        const endWk = toIsoWeekKey(dates[dates.length - 1]);
+        wkIndices = [];
+        for (let w = 0; w < ALL_WEEKS.length; w++) {{
+          if (ALL_WEEKS[w] >= startWk && ALL_WEEKS[w] <= endWk) wkIndices.push(w);
+        }}
+        weeks = wkIndices.map(w => ALL_WEEKS[w]);
+      }}
+
+      const byModel = {{}};
+      const stats = {{}};
+      const modelRetsMap = {{}};
+
+      DAILY_MODELS.forEach(m => {{
+        const mid = m.model_id;
+        const initCap = Number(m.initial_capital || 10000);
+        const ms = byMRaw[mid];
+        if (isFull || !ms || !nAll) {{
+          if (ms) {{
+            byModel[mid] = {{
+              cf: ms.cf || [],
+              equity: ms.equity || [],
+              dd: ms.dd || [],
+              inventory: ms.inventory || [],
+              capital: ms.capital || [],
+              weekly: ms.weekly || []
+            }};
+          }}
+          stats[mid] = {{
+            isFull: true,
+            cashflow: Number(m.cashflow_net_usd || 0),
+            avgWeekly: Number(m.avg_weekly_cf_usd || 0),
+            maxDdPct: Number(m.max_drawdown_pct || 0),
+            returnPct: Number(m.mtm_return_pct || 0),
+            finalEquity: initCap + Number(m.mtm_pnl_usd || 0),
+            endEth: Number(m.ending_open_qty || 0),
+            maxUtilPct: Number(m.max_utilization_pct || 0),
+            beta: Number(m.beta_to_eth || 0),
+            corr: Number(m.corr_to_eth || 0)
+          }};
+          return;
+        }}
+
+        const rawCf = ms.cf || [];
+        const baseCf = s > 0 && rawCf[s - 1] !== undefined ? Number(rawCf[s - 1]) : 0;
+        const cfSlice = [];
+        for (let i = s; i <= e; i++) cfSlice.push(Number(rawCf[i] || 0) - baseCf);
+
+        const rawEq = ms.equity || [];
+        const baseEq = s > 0 && rawEq[s - 1] !== undefined ? (1 + Number(rawEq[s - 1]) / 100) : 1;
+        const eqSlice = [];
+        const ddSlice = [];
+        let runPeak = baseEq;
+        let maxWinDd = 0;
+        for (let i = s; i <= e; i++) {{
+          const f = 1 + Number(rawEq[i] || 0) / 100;
+          eqSlice.push(baseEq > 1e-9 ? ((f / baseEq - 1) * 100) : 0);
+          if (f > runPeak) runPeak = f;
+          const ddVal = runPeak > 1e-9 ? Math.min(0, (f / runPeak - 1) * 100) : 0;
+          ddSlice.push(ddVal);
+          if (-ddVal > maxWinDd) maxWinDd = -ddVal;
+        }}
+
+        const invSlice = (ms.inventory || []).slice(s, e + 1);
+        const capSlice = (ms.capital || []).slice(s, e + 1);
+        const rawWk = ms.weekly || [];
+        const wkSlice = wkIndices ? wkIndices.map(w => Number(rawWk[w] || 0)) : rawWk;
+        const avgWk = wkSlice.length ? (wkSlice.reduce((a, b) => a + b, 0) / wkSlice.length) : 0;
+
+        const mRets = deriveSimpleReturns(rawEq, s, e);
+        modelRetsMap[mid] = mRets;
+        const bc = computeBetaAndCorr(mRets, ethRets);
+        const maxUtilUsd = capSlice.length ? Math.max(...capSlice.map(Number)) : 0;
+        const endEqFactor = 1 + Number(rawEq[e] || 0) / 100;
+
+        byModel[mid] = {{
+          cf: cfSlice,
+          equity: eqSlice,
+          dd: ddSlice,
+          inventory: invSlice,
+          capital: capSlice,
+          weekly: wkSlice
+        }};
+        stats[mid] = {{
+          isFull: false,
+          cashflow: cfSlice.length ? cfSlice[cfSlice.length - 1] : 0,
+          avgWeekly: avgWk,
+          maxDdPct: maxWinDd,
+          returnPct: eqSlice.length ? eqSlice[eqSlice.length - 1] : 0,
+          finalEquity: initCap * endEqFactor,
+          endEth: invSlice.length ? Number(invSlice[invSlice.length - 1]) : 0,
+          maxUtilPct: initCap > 0 ? (maxUtilUsd / initCap * 100) : 0,
+          beta: bc.beta,
+          corr: bc.corr
+        }};
+      }});
+
+      let corrMatrix = PAYLOAD.corr_matrix || {{ labels: [], matrix: [] }};
+      if (!isFull) {{
+        const vecs = [];
+        DAILY_MODELS.forEach(m => {{
+          const r = modelRetsMap[m.model_id];
+          if (r && r.length >= 2) vecs.push([m.model_id, r]);
+        }});
+        if (ethRets.length >= 2) vecs.push(["ETH", ethRets]);
+        const labels = vecs.map(v => v[0]);
+        const matrix = vecs.map((vi, r) => vecs.map((vj, c) => (
+          r === c ? 1.0 : Number(computeBetaAndCorr(vi[1], vj[1]).corr.toFixed(3))
+        )));
+        corrMatrix = {{ labels, matrix }};
+      }}
+
+      cachedWindowKey = key;
+      cachedWindowData = {{
+        isFull,
+        startIdx: s,
+        endIdx: e,
+        daysCount: dates.length,
+        startDate: dates.length ? dates[0] : "",
+        endDate: dates.length ? dates[dates.length - 1] : "",
+        dates,
+        ethReturn,
+        weeks,
+        byModel,
+        stats,
+        corrMatrix
+      }};
+      return cachedWindowData;
+    }}
+
+    function findStartIndexForDate(ymd) {{
+      if (!ALL_DATES.length || !ymd) return 0;
+      for (let i = 0; i < ALL_DATES.length; i++) {{
+        if (ALL_DATES[i] >= ymd) return i;
+      }}
+      return ALL_DATES.length - 1;
+    }}
+
+    function findEndIndexForDate(ymd) {{
+      if (!ALL_DATES.length || !ymd) return Math.max(0, ALL_DATES.length - 1);
+      for (let i = ALL_DATES.length - 1; i >= 0; i--) {{
+        if (ALL_DATES[i] <= ymd) return i;
+      }}
+      return 0;
+    }}
+
+    function updateLookbackUi() {{
+      const startInput = document.getElementById("range-start");
+      const endInput = document.getElementById("range-end");
+      const badge = document.getElementById("range-badge");
+      const resetBtn = document.getElementById("btn-range-reset");
+      const presetBtns = document.querySelectorAll(".range-preset");
+
+      if (!ALL_DATES.length) {{
+        if (startInput) startInput.disabled = true;
+        if (endInput) endInput.disabled = true;
+        if (resetBtn) resetBtn.disabled = true;
+        presetBtns.forEach(b => {{ b.disabled = true; }});
+        if (badge) badge.textContent = "No Daily Series";
+        return;
+      }}
+
+      const win = getWindowData();
+      startInput.min = ALL_DATES[0];
+      startInput.max = ALL_DATES[ALL_DATES.length - 1];
+      endInput.min = ALL_DATES[0];
+      endInput.max = ALL_DATES[ALL_DATES.length - 1];
+      startInput.value = win.startDate;
+      endInput.value = win.endDate;
+
+      presetBtns.forEach(b => {{
+        const d = Number(b.dataset.days || 0);
+        const isAct = (activePresetDays === d) || (win.isFull && d === 0);
+        b.classList.toggle("active", isAct);
+      }});
+
+      if (badge) {{
+        badge.textContent = win.isFull
+          ? `${{win.startDate}} → ${{win.endDate}} (${{win.daysCount}}d · Full)`
+          : `${{win.startDate}} → ${{win.endDate}} (${{win.daysCount}}d · Window)`;
+      }}
+
+      const setSub = (id, txt) => {{
+        const el = document.getElementById(id);
+        if (el) el.textContent = txt;
+      }};
+      setSub(
+        "sub-weekly",
+        win.isFull
+          ? `USDT · Grouped Bars + Dashed Mean (${{win.weeks.length}} wks)`
+          : `USDT · Overlapping ISO Weeks + Dashed Mean (${{win.weeks.length}} wks)`
+      );
+      setSub("sub-cumulative", win.isFull ? "USDT · Realized Profit Only" : "USDT · Window Realized CF (Rebased to $0)");
+      setSub("sub-equity", win.isFull ? "% · Daily MTM + Dashed ETH Buy & Hold" : "% · Window Rebased to 0% + Dashed ETH");
+      setSub("sub-drawdown", win.isFull ? "% · 1m Running Peak, Daily Snapshots" : "% · Window Peak-to-Trough (Daily-Close Snapshots)");
+      setSub("sub-volume", win.isFull ? "ETH · Total BUY (Green) & SELL (Blue)" : "ETH · Full-Run Totals (per-day fills not stored)");
+      setSub("sub-betacorr", win.isFull ? "Daily Simple Returns · Beta (Amber) & Corr (Violet)" : "Window Daily Returns · Beta (Amber) & Corr (Violet)");
+      setSub("sub-heatmap", win.isFull ? "All Active Daily Models + ETH · RdBu Diverging [-1.0 .. +1.0]" : "Window Daily Returns (Active Models + ETH) · RdBu [-1.0 .. +1.0]");
+      setSub("th-dd", win.isFull ? "Max DD %" : "Win DD % (Daily)");
+      setSub("th-util", win.isFull ? "Max Util %" : "Win Util % (Daily)");
+      const tblTitle = document.getElementById("perf-table-title");
+      if (tblTitle) {{
+        tblTitle.textContent = win.isFull
+          ? `Full Performance Summary — Daily Batch (${{PAYLOAD.batch_date}})`
+          : `Window Performance Summary (${{win.startDate}} → ${{win.endDate}} · ${{win.daysCount}}d) — Batch ${{PAYLOAD.batch_date}}`;
+      }}
+    }}
+
+    function applyDateRange(sIdx, eIdx, presetDays) {{
+      if (!ALL_DATES.length) return;
+      const maxIdx = ALL_DATES.length - 1;
+      rangeStartIdx = Math.max(0, Math.min(sIdx, maxIdx));
+      rangeEndIdx = Math.max(rangeStartIdx, Math.min(eIdx, maxIdx));
+      activePresetDays = (rangeStartIdx === 0 && rangeEndIdx === maxIdx) ? 0 : presetDays;
+      cachedWindowData = null;
+      cachedWindowKey = "";
+      Object.keys(hoverState).forEach(k => delete hoverState[k]);
+      hideTooltip();
+      updateLookbackUi();
+      renderDailyPillsAndTables();
+      drawAllDailyCharts();
+    }}
+
+    function isSafeDate(d) {{
+      return /^\\d{{4}}-\\d{{2}}-\\d{{2}}$/.test(String(d || ""));
+    }}
+
+    function renderBatchDateSwitcher(entries) {{
+      const sel = document.getElementById("batch-date-select");
+      const prevBtn = document.getElementById("btn-prev-day");
+      const nextBtn = document.getElementById("btn-next-day");
+      if (!sel) return;
+
+      const byDate = new Map();
+      (entries || []).forEach(it => {{
+        const d = typeof it === "string" ? it : (it && it.batch_date);
+        const hasDash = typeof it === "string" || !it || it.has_dashboard !== false;
+        if (isSafeDate(d) && (hasDash || d === PAYLOAD.batch_date)) {{
+          byDate.set(String(d), typeof it === "object" ? it : {{ batch_date: String(d) }});
+        }}
+      }});
+      if (isSafeDate(PAYLOAD.batch_date) && !byDate.has(PAYLOAD.batch_date)) {{
+        byDate.set(PAYLOAD.batch_date, {{ batch_date: PAYLOAD.batch_date, model_count: DAILY_MODELS.length }});
+      }}
+      const sortedDates = [...byDate.keys()].sort((a, b) => b.localeCompare(a));
+      sel.innerHTML = "";
+      sortedDates.forEach(d => {{
+        const meta = byDate.get(d) || {{}};
+        const opt = document.createElement("option");
+        opt.value = d;
+        const cnt = Number(meta.model_count || 0);
+        opt.textContent = cnt > 0 ? `${{d}} (${{cnt}}m)` : d;
+        if (d === PAYLOAD.batch_date) opt.selected = true;
+        sel.appendChild(opt);
+      }});
+
+      const curIdx = sortedDates.indexOf(PAYLOAD.batch_date);
+      const olderDate = curIdx >= 0 && curIdx + 1 < sortedDates.length ? sortedDates[curIdx + 1] : "";
+      const newerDate = curIdx > 0 ? sortedDates[curIdx - 1] : "";
+
+      if (prevBtn) {{
+        if (olderDate) {{
+          prevBtn.href = `../${{olderDate}}/dashboard.html`;
+          prevBtn.classList.remove("disabled");
+          prevBtn.title = `ย้อนกลับไปวันก่อนหน้า (${{olderDate}})`;
+        }} else {{
+          prevBtn.href = "#";
+          prevBtn.classList.add("disabled");
+          prevBtn.title = "ไม่มีวัน Mine ก่อนหน้า";
+        }}
+      }}
+      if (nextBtn) {{
+        if (newerDate) {{
+          nextBtn.href = `../${{newerDate}}/dashboard.html`;
+          nextBtn.classList.remove("disabled");
+          nextBtn.title = `ไปวันถัดไป (${{newerDate}})`;
+        }} else {{
+          nextBtn.href = "#";
+          nextBtn.classList.add("disabled");
+          nextBtn.title = "อยู่ที่วันล่าสุดแล้ว";
+        }}
+      }}
+    }}
+
+    function initBatchDateSwitcher() {{
+      renderBatchDateSwitcher(PAYLOAD.available_dates || []);
+      const sel = document.getElementById("batch-date-select");
+      if (sel) {{
+        sel.addEventListener("change", () => {{
+          const target = sel.value;
+          if (isSafeDate(target) && target !== PAYLOAD.batch_date) {{
+            window.location.href = `../${{target}}/dashboard.html`;
+          }}
+        }});
+      }}
+      if (window.location && window.location.protocol !== "file:" && typeof fetch === "function") {{
+        fetch("../index.json", {{ cache: "no-cache" }})
+          .then(r => (r.ok ? r.json() : null))
+          .then(idx => {{
+            if (idx && Array.isArray(idx.days) && idx.days.length) {{
+              renderBatchDateSwitcher(idx.days);
+            }}
+          }})
+          .catch(() => {{}});
+      }}
     }}
 
     function getThemeColors() {{
@@ -689,13 +1194,13 @@ def render_dashboard_html(
       let htmlRows = rows.map(r => `
         <div class="tt-row">
           <span class="tt-lbl">
-            ${{r.color ? `<span class="tt-dot" style="background:${{r.color}}"></span>` : ""}}
-            <span>${{r.label}}</span>
+            ${{r.color ? `<span class="tt-dot" style="background:${{escHtml(r.color)}}"></span>` : ""}}
+            <span>${{escHtml(r.label)}}</span>
           </span>
-          <strong style="color:${{r.valColor || "inherit"}}">${{r.value}}</strong>
+          <strong style="color:${{escHtml(r.valColor || "inherit")}}">${{escHtml(r.value)}}</strong>
         </div>
       `).join("");
-      tooltipEl.innerHTML = `<div class="tt-title">${{title}}</div>${{htmlRows}}`;
+      tooltipEl.innerHTML = `<div class="tt-title">${{escHtml(title)}}</div>${{htmlRows}}`;
       tooltipEl.style.display = "block";
       const pad = 14;
       const rect = tooltipEl.getBoundingClientRect();
@@ -926,15 +1431,15 @@ def render_dashboard_html(
       if (!setup) return;
       const {{ ctx, w, h }} = setup;
       const theme = getThemeColors();
-      const sBundle = PAYLOAD.series || {{}};
-      const weeks = sBundle.weeks || [];
+      const win = getWindowData();
+      const weeks = win.weeks || [];
       const active = getActiveModels();
       const seriesList = active.map(m => ({{
         id: m.model_id,
         label: shortLabel(m.model_id),
         color: MODEL_COLOR.get(m.model_id) || "#22c55e",
-        values: (sBundle.by_model && sBundle.by_model[m.model_id] && sBundle.by_model[m.model_id].weekly) || [],
-        mean: Number(m.avg_weekly_cf_usd || 0)
+        values: (win.byModel[m.model_id] && win.byModel[m.model_id].weekly) || [],
+        mean: Number((win.stats[m.model_id] && win.stats[m.model_id].avgWeekly) ?? m.avg_weekly_cf_usd ?? 0)
       }})).filter(s => s.values.length > 0);
 
       if (!weeks.length || !seriesList.length) {{
@@ -1151,7 +1656,8 @@ def render_dashboard_html(
       if (!setup) return;
       const {{ ctx, w, h }} = setup;
       const theme = getThemeColors();
-      const raw = PAYLOAD.corr_matrix || {{ labels: [], matrix: [] }};
+      const win = getWindowData();
+      const raw = win.corrMatrix || PAYLOAD.corr_matrix || {{ labels: [], matrix: [] }};
       const allLabels = raw.labels || [];
       const allMat = raw.matrix || [];
 
@@ -1160,7 +1666,7 @@ def render_dashboard_html(
         if (lbl === "ETH" || visibleIds.has(lbl)) keepIdx.push(idx);
       }});
       if (keepIdx.length < 2) {{
-        drawEmptyMsg(ctx, w, h, "Correlation matrix requires at least 2 daily series (models + ETH)", theme);
+        drawEmptyMsg(ctx, w, h, "Correlation matrix requires >= 2 daily return points across >= 2 series (models + ETH)", theme);
         canvas._hitMeta = null;
         return;
       }}
@@ -1242,9 +1748,9 @@ def render_dashboard_html(
 
     function drawAllDailyCharts() {{
       if (currentTab !== "daily") return;
-      const sBundle = PAYLOAD.series || {{}};
-      const byM = sBundle.by_model || {{}};
-      const dates = sBundle.dates || [];
+      const win = getWindowData();
+      const byM = win.byModel || {{}};
+      const dates = win.dates || [];
       const active = getActiveModels();
       const theme = getThemeColors();
       const ddCap = Number(PAYLOAD.default_dd_cap || 40);
@@ -1272,12 +1778,12 @@ def render_dashboard_html(
         color: MODEL_COLOR.get(m.model_id),
         values: byM[m.model_id].equity || []
       }}));
-      if ((sBundle.eth_return || []).length) {{
+      if ((win.ethReturn || []).length) {{
         eqLines.push({{
           label: "ETH Benchmark",
           color: theme.eth,
           dashed: true,
-          values: sBundle.eth_return
+          values: win.ethReturn
         }});
       }}
       drawLineChart("chart-equity", {{
@@ -1334,7 +1840,7 @@ def render_dashboard_html(
         valFmt: v => fmtUsd(v, false)
       }});
 
-      // 07 / Executed Trading Volume
+      // 07 / Executed Trading Volume (Full-Run Totals)
       drawCategoryGroupedBars("chart-volume", {{
         k1: "BUY ETH",
         k2: "SELL ETH",
@@ -1352,7 +1858,7 @@ def render_dashboard_html(
         }}))
       }});
 
-      // 08 / Beta & Correlation vs ETH
+      // 08 / Beta & Correlation vs ETH (Window-Scoped)
       drawCategoryGroupedBars("chart-betacorr", {{
         k1: "Beta to ETH",
         k2: "Corr to ETH",
@@ -1361,17 +1867,21 @@ def render_dashboard_html(
         maxCap: 1.0,
         yFmt: v => v.toFixed(2),
         lblFmt: v => v.toFixed(2),
-        items: active.map(m => ({{
-          id: m.model_id,
-          short: shortLabel(m.model_id),
-          modelColor: MODEL_COLOR.get(m.model_id),
-          v1: Number(m.beta_to_eth || 0),
-          v2: Number(m.corr_to_eth || 0),
-          meta: m
-        }}))
+        items: active.map(m => {{
+          const st = win.stats[m.model_id] || {{}};
+          return {{
+            id: m.model_id,
+            short: shortLabel(m.model_id),
+            modelColor: MODEL_COLOR.get(m.model_id),
+            v1: Number(st.beta ?? m.beta_to_eth ?? 0),
+            v2: Number(st.corr ?? m.corr_to_eth ?? 0),
+            meta: m,
+            winStats: st
+          }};
+        }})
       }});
 
-      // 09 / Return Correlation Matrix
+      // 09 / Return Correlation Matrix (Window-Scoped)
       drawCorrelationHeatmap("chart-heatmap");
     }}
 
@@ -1450,15 +1960,18 @@ def render_dashboard_html(
           const m = it.meta;
           if (canvasId === "chart-volume") {{
             showTooltip(ev.clientX, ev.clientY, it.id, [
-              {{ label: "BUY Volume", color: "#22c55e", value: `${{fmtNum(it.v1, 3)}} ETH (${{Number(m.buy_fills || 0).toLocaleString()}} fills)` }},
-              {{ label: "SELL Volume", color: "#3b82f6", value: `${{fmtNum(it.v2, 3)}} ETH (${{Number(m.sell_fills || 0).toLocaleString()}} fills)` }},
+              {{ label: "BUY Volume (Full)", color: "#22c55e", value: `${{fmtNum(it.v1, 3)}} ETH (${{Number(m.buy_fills || 0).toLocaleString()}} fills)` }},
+              {{ label: "SELL Volume (Full)", color: "#3b82f6", value: `${{fmtNum(it.v2, 3)}} ETH (${{Number(m.sell_fills || 0).toLocaleString()}} fills)` }},
               {{ label: "Total Turnover", color: it.modelColor, value: fmtUsd(m.turnover_usd || 0, false) }}
             ]);
           }} else {{
+            const ws = it.winStats || {{}};
+            const retLabel = ws.isFull === false ? "Window Return" : "MTM Return";
+            const retVal = ws.returnPct !== undefined ? ws.returnPct : (m.mtm_return_pct || 0);
             showTooltip(ev.clientX, ev.clientY, it.id, [
               {{ label: "Beta to ETH", color: "#f59e0b", value: Number(it.v1).toFixed(4) }},
               {{ label: "Corr to ETH", color: "#a855f7", value: Number(it.v2).toFixed(4) }},
-              {{ label: "MTM Return", color: it.modelColor, value: fmtPct(m.mtm_return_pct || 0) }}
+              {{ label: retLabel, color: it.modelColor, value: fmtPct(retVal) }}
             ]);
           }}
           return;
@@ -1510,6 +2023,7 @@ def render_dashboard_html(
     }}
 
     function renderDailyPillsAndTables() {{
+      const win = getWindowData();
       const pillHost = document.getElementById("daily-legend-pills");
       pillHost.innerHTML = "";
       DAILY_MODELS.forEach(m => {{
@@ -1517,7 +2031,7 @@ def render_dashboard_html(
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "pill" + (visibleIds.has(m.model_id) ? "" : " off");
-        btn.innerHTML = `<span class="dot" style="background:${{color}}"></span><span>${{shortLabel(m.model_id)}}</span>`;
+        btn.innerHTML = `<span class="dot" style="background:${{escHtml(color)}}"></span><span>${{escHtml(shortLabel(m.model_id))}}</span>`;
         btn.title = `${{m.model_id}} (${{m.signal_name}}) — คลิกสลับ / ดับเบิลคลิกดูเดี่ยว`;
         btn.addEventListener("click", () => {{
           if (visibleIds.has(m.model_id)) {{
@@ -1547,6 +2061,18 @@ def render_dashboard_html(
         const color = MODEL_COLOR.get(m.model_id);
         const isOn = visibleIds.has(m.model_id);
         const pass = !m.would_liquidate && Number(m.max_drawdown_pct) <= Number(PAYLOAD.default_dd_cap || 40);
+        const st = win.stats[m.model_id] || {{
+          isFull: true,
+          cashflow: Number(m.cashflow_net_usd || 0),
+          avgWeekly: Number(m.avg_weekly_cf_usd || 0),
+          maxDdPct: Number(m.max_drawdown_pct || 0),
+          returnPct: Number(m.mtm_return_pct || 0),
+          beta: Number(m.beta_to_eth || 0),
+          corr: Number(m.corr_to_eth || 0)
+        }};
+        const cfLbl = win.isFull ? "Realized CF" : "Win CF";
+        const ddLbl = win.isFull ? "Max DD" : "Win DD (Daily)";
+        const retLbl = win.isFull ? "MTM Return" : "Win Return";
         const el = document.createElement("div");
         el.className = "kv-box";
         el.style.borderTop = `3px solid ${{color}}`;
@@ -1561,16 +2087,16 @@ def render_dashboard_html(
         el.innerHTML = `
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
             <span class="muted mono">Model ${{i + 1}}/${{DAILY_MODELS.length}}</span>
-            <span class="badge ${{pass ? 'badge-pass' : 'badge-fail'}}">${{pass ? 'PASS' : 'FAIL'}}</span>
+            <span class="badge ${{pass ? 'badge-pass' : 'badge-fail'}}" title="Full-run Hard Gate (No Liq + Max DD ≤ ${{Number(PAYLOAD.default_dd_cap || 40)}}%)">${{pass ? 'PASS' : 'FAIL'}}</span>
           </div>
-          <div class="mono" style="font-weight:700;margin-bottom:1px;">${{m.model_id}}</div>
-          <div class="muted" style="font-size:11px;margin-bottom:6px;">${{m.signal_name}}</div>
+          <div class="mono" style="font-weight:700;margin-bottom:1px;">${{escHtml(m.model_id)}}</div>
+          <div class="muted" style="font-size:11px;margin-bottom:6px;">${{escHtml(m.signal_name)}}</div>
           <div class="mono" style="font-size:12px;display:flex;flex-direction:column;gap:2px;">
-            <div style="display:flex;justify-content:space-between;"><span>Realized CF</span><strong class="pos">${{fmtUsd(m.cashflow_net_usd)}}</strong></div>
-            <div style="display:flex;justify-content:space-between;"><span>AVG Weekly</span><span class="pos">${{fmtUsd(m.avg_weekly_cf_usd || 0)}}</span></div>
-            <div style="display:flex;justify-content:space-between;"><span>Max DD</span><strong class="warn">${{Number(m.max_drawdown_pct).toFixed(2)}}%</strong></div>
-            <div style="display:flex;justify-content:space-between;"><span>MTM Return</span><span class="${{m.mtm_return_pct >= 0 ? 'pos' : 'neg'}}">${{fmtPct(m.mtm_return_pct)}}</span></div>
-            <div style="display:flex;justify-content:space-between;"><span>Beta / Corr</span><span>${{Number(m.beta_to_eth || 0).toFixed(2)}} / ${{Number(m.corr_to_eth || 0).toFixed(2)}}</span></div>
+            <div style="display:flex;justify-content:space-between;"><span>${{cfLbl}}</span><strong class="${{st.cashflow >= 0 ? 'pos' : 'neg'}}">${{fmtUsd(st.cashflow)}}</strong></div>
+            <div style="display:flex;justify-content:space-between;"><span>AVG Weekly</span><span class="${{st.avgWeekly >= 0 ? 'pos' : 'neg'}}">${{fmtUsd(st.avgWeekly)}}</span></div>
+            <div style="display:flex;justify-content:space-between;"><span>${{ddLbl}}</span><strong class="warn">${{Number(st.maxDdPct).toFixed(2)}}%</strong></div>
+            <div style="display:flex;justify-content:space-between;"><span>${{retLbl}}</span><span class="${{st.returnPct >= 0 ? 'pos' : 'neg'}}">${{fmtPct(st.returnPct)}}</span></div>
+            <div style="display:flex;justify-content:space-between;"><span>Beta / Corr</span><span>${{Number(st.beta).toFixed(2)}} / ${{Number(st.corr).toFixed(2)}}</span></div>
           </div>
         `;
         cards.appendChild(el);
@@ -1581,7 +2107,22 @@ def render_dashboard_html(
       DAILY_MODELS.forEach(m => {{
         const color = MODEL_COLOR.get(m.model_id);
         const pass = !m.would_liquidate && Number(m.max_drawdown_pct) <= Number(PAYLOAD.default_dd_cap || 40);
-        const finEq = Number(m.initial_capital || 10000) + Number(m.mtm_pnl_usd || 0);
+        const st = win.stats[m.model_id] || {{
+          isFull: true,
+          cashflow: Number(m.cashflow_net_usd || 0),
+          avgWeekly: Number(m.avg_weekly_cf_usd || 0),
+          maxDdPct: Number(m.max_drawdown_pct || 0),
+          returnPct: Number(m.mtm_return_pct || 0),
+          finalEquity: Number(m.initial_capital || 10000) + Number(m.mtm_pnl_usd || 0),
+          endEth: Number(m.ending_open_qty || 0),
+          maxUtilPct: Number(m.max_utilization_pct || 0),
+          beta: Number(m.beta_to_eth || 0),
+          corr: Number(m.corr_to_eth || 0)
+        }};
+        const fullNote = win.isFull ? "" : ' title="Full-run total (per-day breakdown not stored)"';
+        const ddNote = win.isFull ? "" : ' title="Window peak-to-trough DD computed from daily-close snapshots (lower bound vs 1m intra-bar DD)"';
+        const utilNote = win.isFull ? "" : ' title="Window peak capital utilization from daily-close snapshots"';
+        const gateTitle = `Full-run Hard Gate (No Liq + Max DD ≤ ${{Number(PAYLOAD.default_dd_cap || 40)}}%)`;
         const tr = document.createElement("tr");
         tr.className = "data-row";
         if (!visibleIds.has(m.model_id)) tr.style.opacity = "0.45";
@@ -1591,20 +2132,20 @@ def render_dashboard_html(
           switchTab("ranking");
         }});
         tr.innerHTML = `
-          <td class="mono" style="font-weight:700;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${{color}};margin-right:7px;"></span>${{m.model_id}}</td>
-          <td class="mono muted">${{m.signal_name}}</td>
-          <td class="num">${{fmtUsd(finEq, false)}}</td>
-          <td class="num ${{m.mtm_return_pct >= 0 ? 'pos' : 'neg'}}">${{fmtPct(m.mtm_return_pct)}}</td>
-          <td class="num warn" style="font-weight:700;">-${{Number(m.max_drawdown_pct).toFixed(2)}}%</td>
-          <td class="num pos" style="font-weight:700;">${{fmtUsd(m.cashflow_net_usd)}}</td>
-          <td class="num ${{m.unrealized_end_usd >= 0 ? 'pos' : 'neg'}}">${{fmtUsd(m.unrealized_end_usd)}}</td>
-          <td class="num pos">${{fmtUsd(m.avg_weekly_cf_usd || 0)}}</td>
-          <td class="num">${{Number(m.buy_fills || 0).toLocaleString()}} / ${{Number(m.sell_fills || 0).toLocaleString()}}</td>
-          <td class="num">${{fmtNum(m.buy_volume_eth || 0, 2)}} / ${{fmtNum(m.sell_volume_eth || 0, 2)}}</td>
-          <td class="num">${{fmtNum(m.ending_open_qty || 0, 3)}}</td>
-          <td class="num">${{Number(m.max_utilization_pct || 0).toFixed(1)}}%</td>
-          <td class="num">${{Number(m.beta_to_eth || 0).toFixed(2)}} / ${{Number(m.corr_to_eth || 0).toFixed(2)}}</td>
-          <td style="text-align:center;"><span class="badge ${{pass ? 'badge-pass' : 'badge-fail'}}">${{pass ? 'PASS' : 'FAIL'}}</span></td>
+          <td class="mono" style="font-weight:700;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${{escHtml(color)}};margin-right:7px;"></span>${{escHtml(m.model_id)}}</td>
+          <td class="mono muted">${{escHtml(m.signal_name)}}</td>
+          <td class="num">${{fmtUsd(st.finalEquity, false)}}</td>
+          <td class="num ${{st.returnPct >= 0 ? 'pos' : 'neg'}}">${{fmtPct(st.returnPct)}}</td>
+          <td class="num warn" style="font-weight:700;"${{ddNote}}>-${{Number(st.maxDdPct).toFixed(2)}}%</td>
+          <td class="num ${{st.cashflow >= 0 ? 'pos' : 'neg'}}" style="font-weight:700;">${{fmtUsd(st.cashflow)}}</td>
+          <td class="num ${{m.unrealized_end_usd >= 0 ? 'pos' : 'neg'}}"${{fullNote}}>${{fmtUsd(m.unrealized_end_usd)}}</td>
+          <td class="num ${{st.avgWeekly >= 0 ? 'pos' : 'neg'}}">${{fmtUsd(st.avgWeekly)}}</td>
+          <td class="num"${{fullNote}}>${{Number(m.buy_fills || 0).toLocaleString()}} / ${{Number(m.sell_fills || 0).toLocaleString()}}</td>
+          <td class="num"${{fullNote}}>${{fmtNum(m.buy_volume_eth || 0, 2)}} / ${{fmtNum(m.sell_volume_eth || 0, 2)}}</td>
+          <td class="num">${{fmtNum(st.endEth, 3)}}</td>
+          <td class="num"${{utilNote}}>${{Number(st.maxUtilPct).toFixed(1)}}%</td>
+          <td class="num">${{Number(st.beta).toFixed(2)}} / ${{Number(st.corr).toFixed(2)}}</td>
+          <td style="text-align:center;"><span class="badge ${{pass ? 'badge-pass' : 'badge-fail'}}" title="${{escHtml(gateTitle)}}">${{pass ? 'PASS' : 'FAIL'}}</span></td>
         `;
         perfBody.appendChild(tr);
       }});
@@ -1690,8 +2231,8 @@ def render_dashboard_html(
         tr.innerHTML = `
           <td class="mono" style="font-weight:700;">${{m.passGate ? "#" + rk : "—"}}</td>
           <td>
-            <div class="mono" style="font-weight:700;">${{m.model_id}}${{todayTag}}</div>
-            <div class="muted" style="font-size:11px;">${{m.signal_name}} · Trial #${{m.trial_number}}</div>
+            <div class="mono" style="font-weight:700;">${{escHtml(m.model_id)}}${{todayTag}}</div>
+            <div class="muted" style="font-size:11px;">${{escHtml(m.signal_name)}} · Trial #${{Number(m.trial_number || 0)}}</div>
           </td>
           <td class="num pos" style="font-weight:700;">${{fmtUsd(m.cashflow_net_usd)}}</td>
           <td class="num pos">${{fmtUsd(m.avg_weekly_cf_usd || 0)}}</td>
@@ -1720,11 +2261,11 @@ def render_dashboard_html(
           switchTab("ranking");
         }});
         tr.innerHTML = `
-          <td class="mono">#${{m.trial_number}}</td>
-          <td class="mono" style="font-weight:700;">${{m.model_id}}</td>
-          <td class="mono">${{m.signal_name}}</td>
-          <td class="mono">${{m.batch_date}}</td>
-          <td class="mono">${{m.zone_high}}→${{m.zone_low}}</td>
+          <td class="mono">#${{Number(m.trial_number || 0)}}</td>
+          <td class="mono" style="font-weight:700;">${{escHtml(m.model_id)}}</td>
+          <td class="mono">${{escHtml(m.signal_name)}}</td>
+          <td class="mono">${{escHtml(m.batch_date)}}</td>
+          <td class="mono">${{escHtml(m.zone_high)}}→${{escHtml(m.zone_low)}}</td>
           <td class="num pos">${{fmtUsd(m.cashflow_net_usd)}}</td>
           <td class="num pos">${{fmtUsd(m.avg_weekly_cf_usd || 0)}}</td>
           <td class="num warn">${{Number(m.max_drawdown_pct).toFixed(2)}}%</td>
@@ -1743,6 +2284,38 @@ def render_dashboard_html(
       btn.addEventListener("click", () => switchTab(btn.dataset.tab));
     }});
 
+    document.querySelectorAll(".range-preset").forEach(btn => {{
+      btn.addEventListener("click", () => {{
+        if (!ALL_DATES.length) return;
+        const days = Number(btn.dataset.days || 0);
+        const last = ALL_DATES.length - 1;
+        if (days <= 0) {{
+          applyDateRange(0, last, 0);
+        }} else {{
+          applyDateRange(Math.max(0, ALL_DATES.length - days), last, days);
+        }}
+      }});
+    }});
+
+    document.getElementById("range-start").addEventListener("change", ev => {{
+      if (!ALL_DATES.length) return;
+      const sIdx = findStartIndexForDate(ev.target.value);
+      const eIdx = Math.max(sIdx, rangeEndIdx);
+      applyDateRange(sIdx, eIdx, -1);
+    }});
+
+    document.getElementById("range-end").addEventListener("change", ev => {{
+      if (!ALL_DATES.length) return;
+      const eIdx = findEndIndexForDate(ev.target.value);
+      const sIdx = Math.min(rangeStartIdx, eIdx);
+      applyDateRange(sIdx, eIdx, -1);
+    }});
+
+    document.getElementById("btn-range-reset").addEventListener("click", () => {{
+      if (!ALL_DATES.length) return;
+      applyDateRange(0, ALL_DATES.length - 1, 0);
+    }});
+
     document.getElementById("btn-show-all").addEventListener("click", () => {{
       DAILY_MODELS.forEach(m => visibleIds.add(m.model_id));
       renderDailyPillsAndTables();
@@ -1750,8 +2323,9 @@ def render_dashboard_html(
     }});
 
     document.getElementById("btn-top3").addEventListener("click", () => {{
+      const win = getWindowData();
       const top3 = [...DAILY_MODELS]
-        .sort((a, b) => Number(b.cashflow_net_usd) - Number(a.cashflow_net_usd))
+        .sort((a, b) => Number((win.stats[b.model_id] && win.stats[b.model_id].cashflow) ?? b.cashflow_net_usd) - Number((win.stats[a.model_id] && win.stats[a.model_id].cashflow) ?? a.cashflow_net_usd))
         .slice(0, 3);
       visibleIds.clear();
       top3.forEach(m => visibleIds.add(m.model_id));
@@ -1787,10 +2361,395 @@ def render_dashboard_html(
     if (document.documentElement.classList.contains("light")) {{
       document.body.classList.add("light");
     }}
+    initBatchDateSwitcher();
+    updateLookbackUi();
     renderRanking();
     renderAllModelsTable();
     renderDailyPillsAndTables();
     requestAnimationFrame(drawAllDailyCharts);
+  </script>
+</body>
+</html>
+"""
+
+
+def render_portal_index_html(
+    *,
+    daily_days: Sequence[dict[str, Any]],
+    ranking_board: dict[str, Any],
+    latest_date: str | None = None,
+) -> str:
+    """Render 100% self-contained zero-CDN archive hub `beta_mining/index.html` linking all historical daily batches."""
+    valid_days = [
+        d for d in daily_days if isinstance(d, dict) and _SAFE_DATE_RE.fullmatch(str(d.get("batch_date", "")).strip())
+    ]
+    sorted_days = sorted(valid_days, key=lambda d: str(d.get("batch_date", "")), reverse=True)
+    dash_days = [d for d in sorted_days if d.get("has_dashboard", True) is not False]
+    cand_latest = str(latest_date or "").strip()
+    if cand_latest and _SAFE_DATE_RE.fullmatch(cand_latest):
+        resolved_latest = cand_latest
+    elif dash_days:
+        resolved_latest = str(dash_days[0]["batch_date"])
+    elif sorted_days:
+        resolved_latest = str(sorted_days[0]["batch_date"])
+    else:
+        resolved_latest = ""
+    top_ranked = list(ranking_board.get("top_ranked") or [])
+    rule = ranking_board.get("ranking_rule", {})
+    top_n = int(rule.get("top_n", 9))
+    dd_cap = float(rule.get("hard_gates", {}).get("max_drawdown_pct_limit", 40.0))
+
+    portal_payload = {
+        "generated_at_utc": str(ranking_board.get("generated_at_utc", "")),
+        "latest_date": resolved_latest,
+        "total_days": len(sorted_days),
+        "total_trials": int(ranking_board.get("total_trials", 0)),
+        "total_models": int(ranking_board.get("total_models", 0)),
+        "qualified_count": int(ranking_board.get("qualified_count", 0)),
+        "top_n": top_n,
+        "dd_cap": dd_cap,
+        "days": sorted_days,
+        "top_ranked": top_ranked,
+    }
+    safe_json = _safe_inline_json(portal_payload)
+    has_latest_dash = bool(resolved_latest) and (
+        not sorted_days
+        or any(str(d.get("batch_date")) == resolved_latest and d.get("has_dashboard", True) is not False for d in sorted_days)
+    )
+    latest_href = f"daily/{resolved_latest}/dashboard.html" if has_latest_dash else "#"
+    latest_btn_label = (
+        f"Open Latest 9-Panel Dashboard ({resolved_latest})"
+        if has_latest_dash
+        else "No Daily Batch Available Yet"
+    )
+    latest_btn_cls = "btn-primary" if has_latest_dash else "btn-primary disabled"
+
+    return f"""<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Alpha_mining — Beta Mining Daily Archive Hub</title>
+  <style>
+    :root {{
+      --bm-bg: #0b1017;
+      --bm-card: #121923;
+      --bm-surface: #192331;
+      --bm-border: #263244;
+      --bm-fg: #e6edf6;
+      --bm-muted: #8ea0b8;
+      --bm-primary: #3b82f6;
+      --bm-primary-fg: #ffffff;
+      --bm-success: #22c55e;
+      --bm-warning: #f59e0b;
+      --bm-error: #ef4444;
+      --bm-code-fg: #93c5fd;
+    }}
+    body.light {{
+      --bm-bg: #f4f7fb;
+      --bm-card: #ffffff;
+      --bm-surface: #eef2f7;
+      --bm-border: #d7e0eb;
+      --bm-fg: #0f172a;
+      --bm-muted: #526277;
+      --bm-primary: #2563eb;
+      --bm-primary-fg: #ffffff;
+      --bm-success: #16a34a;
+      --bm-warning: #d97706;
+      --bm-error: #dc2626;
+      --bm-code-fg: #1d4ed8;
+    }}
+    * {{ box-sizing: border-box; }}
+    body {{
+      margin: 0; padding: 20px 22px 40px;
+      background: var(--bm-bg); color: var(--bm-fg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 13px; line-height: 1.45;
+    }}
+    .wrap {{ max-width: 1380px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }}
+    .header {{
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
+      gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--bm-border);
+    }}
+    .title {{ margin: 0; font-size: 20px; font-weight: 700; }}
+    .subtitle {{ margin: 3px 0 0; color: var(--bm-muted); font-size: 12px; }}
+    .actions {{ display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }}
+    .btn-primary, .btn-ghost {{
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 8px 13px; border-radius: 8px; font-size: 12px; font-weight: 600;
+      text-decoration: none; cursor: pointer; border: 1px solid var(--bm-border);
+    }}
+    .btn-primary {{ background: var(--bm-primary); color: var(--bm-primary-fg); border-color: var(--bm-primary); }}
+    .btn-primary.disabled {{ opacity: 0.45; pointer-events: none; }}
+    .btn-ghost {{ background: var(--bm-card); color: var(--bm-fg); }}
+    .btn-ghost:hover {{ border-color: var(--bm-primary); }}
+    .grid-4 {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }}
+    .card {{ background: var(--bm-card); border: 1px solid var(--bm-border); border-radius: 12px; padding: 14px; }}
+    .kpi-label {{ font-size: 12px; color: var(--bm-muted); }}
+    .kpi-val {{ font-size: 20px; font-weight: 700; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; margin: 3px 0; }}
+    .toolbar {{
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px;
+      padding: 11px 14px; border-bottom: 1px solid var(--bm-border);
+    }}
+    input[type="search"], select {{
+      background: var(--bm-surface); color: var(--bm-fg); border: 1px solid var(--bm-border);
+      border-radius: 7px; padding: 6px 10px; font-size: 12px; font-family: inherit;
+    }}
+    .table-wrap {{ overflow-x: auto; }}
+    table {{ width: 100%; border-collapse: collapse; font-size: 12px; }}
+    th, td {{ padding: 9px 11px; border-bottom: 1px solid var(--bm-border); text-align: left; white-space: nowrap; }}
+    th {{ color: var(--bm-muted); font-weight: 600; }}
+    td.num, th.num {{ text-align: right; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }}
+    tr.data-row:hover {{ background: var(--bm-surface); }}
+    .mono {{ font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }}
+    .pos {{ color: var(--bm-success); }}
+    .warn {{ color: var(--bm-warning); }}
+    .neg {{ color: var(--bm-error); }}
+    .muted {{ color: var(--bm-muted); }}
+    .chip {{
+      display: inline-block; padding: 2px 7px; margin: 1px 3px 1px 0; border-radius: 999px;
+      background: var(--bm-surface); border: 1px solid var(--bm-border);
+      font-size: 11px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }}
+    .link-btn {{
+      display: inline-flex; padding: 4px 9px; border-radius: 6px; text-decoration: none;
+      font-size: 11px; font-weight: 600; border: 1px solid var(--bm-border);
+      background: var(--bm-surface); color: var(--bm-fg); margin-right: 5px;
+    }}
+    .link-btn.primary {{ background: var(--bm-primary); color: var(--bm-primary-fg); border-color: var(--bm-primary); }}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="header">
+      <div>
+        <h1 class="title">Alpha_mining — Beta Mining Daily Archive Hub</h1>
+        <p id="hub-sub" class="subtitle"></p>
+      </div>
+      <div class="actions">
+        <a id="open-latest-btn" class="{latest_btn_cls}" href="{latest_href}">{latest_btn_label}</a>
+        <button id="theme-toggle" type="button" class="btn-ghost">Theme</button>
+      </div>
+    </header>
+
+    <section class="grid-4">
+      <div class="card">
+        <div class="kpi-label">Archived Mining Days</div>
+        <div id="hub-days" class="kpi-val">-</div>
+        <div id="hub-latest" class="kpi-label mono">-</div>
+      </div>
+      <div class="card">
+        <div class="kpi-label">Cumulative Mined Trials</div>
+        <div id="hub-trials" class="kpi-val">-</div>
+        <div id="hub-qual" class="kpi-label pos">-</div>
+      </div>
+      <div class="card">
+        <div class="kpi-label">#1 All-Time Cashflow Leader</div>
+        <div id="hub-top1" class="kpi-val" style="font-size:16px">-</div>
+        <div id="hub-top1-sub" class="kpi-label pos mono">-</div>
+      </div>
+      <div class="card">
+        <div class="kpi-label">Hard Safety Gate</div>
+        <div class="kpi-val warn" style="font-size:17px">No Liq · DD ≤ {dd_cap:g}%</div>
+        <div class="kpi-label">Primary: Cashflow DESC → DD ASC</div>
+      </div>
+    </section>
+
+    <section class="card" style="padding:0;overflow:hidden;">
+      <div class="toolbar">
+        <strong>Historical Daily Mining Batches (เลือกดูผล Mine รายวันย้อนหลัง)</strong>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <select id="quick-jump-date" aria-label="Jump to Daily Dashboard" class="mono"></select>
+          <input id="archive-search" type="search" placeholder="ค้นหาวันที่ หรือ model_id..." aria-label="Filter historical batches" />
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table id="archive-days-table">
+          <thead>
+            <tr>
+              <th>Batch Date</th>
+              <th class="num">Models</th>
+              <th class="num">Pass Gate</th>
+              <th>Mined Models</th>
+              <th class="num">Best Batch CF</th>
+              <th class="num">Lowest Batch DD</th>
+              <th class="num">Window</th>
+              <th>Open</th>
+            </tr>
+          </thead>
+          <tbody id="archive-days-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card" style="padding:0;overflow:hidden;">
+      <div class="toolbar">
+        <strong>Cumulative Top-{top_n} Leaderboard Snapshot</strong>
+        <span class="muted">คลิกปุ่ม Open Dashboard ด้านบนเพื่อเข้า Inspector &amp; Live DD Slider</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Model ID</th>
+              <th>Signal</th>
+              <th>Batch Date</th>
+              <th class="num">Realized CF</th>
+              <th class="num">AVG Weekly</th>
+              <th class="num">Max DD</th>
+              <th class="num">CF / DD</th>
+              <th class="num">MTM Return</th>
+            </tr>
+          </thead>
+          <tbody id="hub-top-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const PORTAL = {safe_json};
+
+    function escHtml(v) {{
+      return String(v ?? "").replace(/[&<>"']/g, ch => ({{ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }}[ch]));
+    }}
+
+    function isSafeDate(d) {{
+      return /^\\d{{4}}-\\d{{2}}-\\d{{2}}$/.test(String(d || ""));
+    }}
+
+    function fmtUsd(v) {{
+      const n = Number(v || 0);
+      return (n >= 0 ? "+$" : "-$") + Math.abs(n).toLocaleString("en-US", {{ minimumFractionDigits: 2, maximumFractionDigits: 2 }});
+    }}
+
+    function fmtPct(v) {{
+      const n = Number(v || 0);
+      return (n >= 0 ? "+" : "-") + Math.abs(n).toFixed(2) + "%";
+    }}
+
+    function shortLabel(modelId) {{
+      return String(modelId || "").replace(/^beta_\\d+_/, "");
+    }}
+
+    function renderPortal() {{
+      document.getElementById("hub-sub").textContent =
+        `Generated ${{PORTAL.generated_at_utc}} · ${{PORTAL.total_days}} Archived Day(s) · ${{PORTAL.total_models}} Isolated Models · Offline Zero-CDN`;
+      document.getElementById("hub-days").textContent = String(PORTAL.total_days);
+      document.getElementById("hub-latest").textContent = PORTAL.latest_date ? `Latest: ${{PORTAL.latest_date}}` : "No batches yet";
+      document.getElementById("hub-trials").textContent = String(PORTAL.total_trials);
+      document.getElementById("hub-qual").textContent = `Qualified: ${{PORTAL.qualified_count}} / ${{PORTAL.total_models}}`;
+
+      const top1 = (PORTAL.top_ranked || [])[0];
+      if (top1) {{
+        document.getElementById("hub-top1").textContent = top1.model_id;
+        document.getElementById("hub-top1-sub").textContent = `CF ${{fmtUsd(top1.cashflow_net_usd)}} · DD ${{Number(top1.max_drawdown_pct).toFixed(2)}}%`;
+      }}
+
+      const sel = document.getElementById("quick-jump-date");
+      sel.innerHTML = "";
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.textContent = "เลือกวันเพื่อเปิด Dashboard...";
+      sel.appendChild(placeholder);
+      (PORTAL.days || []).forEach(d => {{
+        if (!isSafeDate(d.batch_date) || d.has_dashboard === false) return;
+        const opt = document.createElement("option");
+        opt.value = `daily/${{d.batch_date}}/dashboard.html`;
+        opt.textContent = d.model_count ? `${{d.batch_date}} (${{d.model_count}} models)` : d.batch_date;
+        sel.appendChild(opt);
+      }});
+
+      renderArchiveTable("");
+
+      const topBody = document.getElementById("hub-top-body");
+      topBody.innerHTML = "";
+      const dashDateSet = new Set((PORTAL.days || []).filter(d => isSafeDate(d.batch_date) && d.has_dashboard !== false).map(d => d.batch_date));
+      (PORTAL.top_ranked || []).forEach(r => {{
+        const tr = document.createElement("tr");
+        tr.className = "data-row";
+        const safeDate = isSafeDate(r.batch_date) ? r.batch_date : "";
+        const dateCell = safeDate && dashDateSet.has(safeDate)
+          ? `<a href="daily/${{safeDate}}/dashboard.html" style="color:var(--bm-code-fg);text-decoration:none;">${{safeDate}}</a>`
+          : escHtml(r.batch_date || "-");
+        tr.innerHTML = `
+          <td class="mono" style="font-weight:700;">#${{Number(r.rank || 0)}}</td>
+          <td class="mono" style="font-weight:700;">${{escHtml(r.model_id)}}</td>
+          <td class="mono muted">${{escHtml(r.signal_name)}}</td>
+          <td class="mono">${{dateCell}}</td>
+          <td class="num pos" style="font-weight:700;">${{fmtUsd(r.cashflow_net_usd)}}</td>
+          <td class="num pos">${{fmtUsd(r.avg_weekly_cf_usd || 0)}}</td>
+          <td class="num warn" style="font-weight:700;">${{Number(r.max_drawdown_pct).toFixed(2)}}%</td>
+          <td class="num">${{Number(r.cashflow_to_dd_ratio).toFixed(2)}}x</td>
+          <td class="num ${{r.mtm_return_pct >= 0 ? 'pos' : 'neg'}}">${{fmtPct(r.mtm_return_pct)}}</td>
+        `;
+        topBody.appendChild(tr);
+      }});
+    }}
+
+    function renderArchiveTable(query) {{
+      const q = String(query || "").trim().toLowerCase();
+      const body = document.getElementById("archive-days-body");
+      body.innerHTML = "";
+      const rows = (PORTAL.days || []).filter(d => {{
+        if (!isSafeDate(d.batch_date)) return false;
+        if (!q) return true;
+        if (String(d.batch_date || "").toLowerCase().includes(q)) return true;
+        return (d.model_ids || []).some(id => String(id).toLowerCase().includes(q));
+      }});
+      if (!rows.length) {{
+        body.innerHTML = `<tr><td colspan="8" class="muted" style="text-align:center;padding:18px;">ไม่พบรายการวันที่ตรงกับคำค้นหา</td></tr>`;
+        return;
+      }}
+      rows.forEach(d => {{
+        const tr = document.createElement("tr");
+        tr.className = "data-row";
+        const chips = (d.model_ids || []).length
+          ? (d.model_ids || []).map(id => `<span class="chip">${{escHtml(shortLabel(id))}}</span>`).join("")
+          : '<span class="muted">-</span>';
+        const dashHref = `daily/${{d.batch_date}}/dashboard.html`;
+        const sumHref = `daily/${{d.batch_date}}/daily_summary.md`;
+        const spanTxt = d.days_covered ? `${{Math.round(Number(d.days_covered))}}d` : "-";
+        const bestCfCell = d.best_cashflow_model_id
+          ? `<strong>${{fmtUsd(d.best_cashflow_usd)}}</strong> <span class="muted">(${{escHtml(shortLabel(d.best_cashflow_model_id))}})</span>`
+          : '<span class="muted">-</span>';
+        const lowDdCell = d.lowest_dd_model_id
+          ? `<strong>${{Number(d.lowest_dd_pct || 0).toFixed(2)}}%</strong> <span class="muted">(${{escHtml(shortLabel(d.lowest_dd_model_id))}})</span>`
+          : '<span class="muted">-</span>';
+        const actionBtns = [
+          d.has_dashboard !== false ? `<a class="link-btn primary" href="${{dashHref}}">9-Panel Dashboard</a>` : "",
+          d.has_summary !== false ? `<a class="link-btn" href="${{sumHref}}">Summary MD</a>` : ""
+        ].filter(Boolean).join("") || '<span class="muted">-</span>';
+        tr.innerHTML = `
+          <td class="mono" style="font-weight:700;">${{escHtml(d.batch_date)}}</td>
+          <td class="num">${{Number(d.model_count || 0)}}</td>
+          <td class="num pos">${{Number(d.qualified_count || 0)}} / ${{Number(d.model_count || 0)}}</td>
+          <td style="white-space:normal;min-width:260px;">${{chips}}</td>
+          <td class="num pos">${{bestCfCell}}</td>
+          <td class="num warn">${{lowDdCell}}</td>
+          <td class="num muted">${{spanTxt}}</td>
+          <td>${{actionBtns}}</td>
+        `;
+        body.appendChild(tr);
+      }});
+    }}
+
+    document.getElementById("quick-jump-date").addEventListener("change", ev => {{
+      if (/^daily\\/\\d{{4}}-\\d{{2}}-\\d{{2}}\\/dashboard\\.html$/.test(ev.target.value)) {{
+        window.location.href = ev.target.value;
+      }}
+    }});
+    document.getElementById("archive-search").addEventListener("input", ev => {{
+      renderArchiveTable(ev.target.value);
+    }});
+    document.getElementById("theme-toggle").addEventListener("click", () => {{
+      document.body.classList.toggle("light");
+    }});
+    if (document.documentElement.classList.contains("light")) {{
+      document.body.classList.add("light");
+    }}
+    renderPortal();
   </script>
 </body>
 </html>

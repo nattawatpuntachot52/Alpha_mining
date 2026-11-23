@@ -796,6 +796,8 @@ jobs:
         self.assertIn("AGENT_ACK", text)
         self.assertIn("actual_model_id_version: UNKNOWN (not exposed by runtime)", text)
         self.assertIn("HEAD:refs/heads/${BRANCH}", text)
+        self.assertIn("beta_mining/index.html", text)
+        self.assertIn("beta_mining/daily/index.json", text)
         self.assertNotIn("refs/heads/main", text)
         self.assertNotIn("if: ${{ secrets.", text)
         self.assertNotIn("| head -n 1", text)

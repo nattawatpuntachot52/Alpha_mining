@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Alpha_mining — Beta Mining Daily Archive Hub</title>
+  <style>
+    :root {
+      --bm-bg: #0b1017;
+      --bm-card: #121923;
+      --bm-surface: #192331;
+      --bm-border: #263244;
+      --bm-fg: #e6edf6;
+      --bm-muted: #8ea0b8;
+      --bm-primary: #3b82f6;
+      --bm-primary-fg: #ffffff;
+      --bm-success: #22c55e;
+      --bm-warning: #f59e0b;
+      --bm-error: #ef4444;
+      --bm-code-fg: #93c5fd;
+    }
+    body.light {
+      --bm-bg: #f4f7fb;
+      --bm-card: #ffffff;
+      --bm-surface: #eef2f7;
+      --bm-border: #d7e0eb;
+      --bm-fg: #0f172a;
+      --bm-muted: #526277;
+      --bm-primary: #2563eb;
+      --bm-primary-fg: #ffffff;
+      --bm-success: #16a34a;
+      --bm-warning: #d97706;
+      --bm-error: #dc2626;
+      --bm-code-fg: #1d4ed8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 20px 22px 40px;
+      background: var(--bm-bg); color: var(--bm-fg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 13px; line-height: 1.45;
+    }
+    .wrap { max-width: 1380px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+    .header {
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
+      gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--bm-border);
+    }
+    .title { margin: 0; font-size: 20px; font-weight: 700; }
+    .subtitle { margin: 3px 0 0; color: var(--bm-muted); font-size: 12px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .btn-primary, .btn-ghost {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 8px 13px; border-radius: 8px; font-size: 12px; font-weight: 600;
+      text-decoration: none; cursor: pointer; border: 1px solid var(--bm-border);
+    }
+    .btn-primary { background: var(--bm-primary); color: var(--bm-primary-fg); border-color: var(--bm-primary); }
+    .btn-primary.disabled { opacity: 0.45; pointer-events: none; }
+    .btn-ghost { background: var(--bm-card); color: var(--bm-fg); }
+    .btn-ghost:hover { border-color: var(--bm-primary); }
+    .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .card { background: var(--bm-card); border: 1px solid var(--bm-border); border-radius: 12px; padding: 14px; }
+    .kpi-label { font-size: 12px; color: var(--bm-muted); }
+    .kpi-val { font-size: 20px; font-weight: 700; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; margin: 3px 0; }
+    .toolbar {
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px;
+      padding: 11px 14px; border-bottom: 1px solid var(--bm-border);
+    }
+    input[type="search"], select {
+      background: var(--bm-surface); color: var(--bm-fg); border: 1px solid var(--bm-border);
+      border-radius: 7px; padding: 6px 10px; font-size: 12px; font-family: inherit;
+    }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th, td { padding: 9px 11px; border-bottom: 1px solid var(--bm-border); text-align: left; white-space: nowrap; }
+    th { color: var(--bm-muted); font-weight: 600; }
+    td.num, th.num { text-align: right; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    tr.data-row:hover { background: var(--bm-surface); }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .pos { color: var(--bm-success); }
+    .warn { color: var(--bm-warning); }
+    .neg { color: var(--bm-error); }
+    .muted { color: var(--bm-muted); }
+    .chip {
+      display: inline-block; padding: 2px 7px; margin: 1px 3px 1px 0; border-radius: 999px;
+      background: var(--bm-surface); border: 1px solid var(--bm-border);
+      font-size: 11px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .link-btn {
+      display: inline-flex; padding: 4px 9px; border-radius: 6px; text-decoration: none;
+      font-size: 11px; font-weight: 600; border: 1px solid var(--bm-border);
+      background: var(--bm-surface); color: var(--bm-fg); margin-right: 5px;
+    }
+    .link-btn.primary { background: var(--bm-primary); color: var(--bm-primary-fg); border-color: var(--bm-primary); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="header">
+      <div>
+        <h1 class="title">Alpha_mining — Beta Mining Daily Archive Hub</h1>
+        <p id="hub-sub" class="subtitle"></p>
+      </div>
+      <div class="actions">
+        <a id="open-latest-btn" class="btn-primary" href="daily/2026-11-23/dashboard.html">Open Latest 9-Panel Dashboard (2026-11-23)</a>
+        <button id="theme-toggle" type="button" class="btn-ghost">Theme</button>
+      </div>
+    </header>
+
+    <section class="grid-4">
+      <div class="card">
+        <div class="kpi-label">Archived Mining Days</div>
+        <div id="hub-days" class="kpi-val">-</div>
+        <div id="hub-latest" class="kpi-label mono">-</div>
+      </div>
+      <div class="card">
+        <div class="kpi-label">Cumulative Mined Trials</div>
+        <div id="hub-trials" class="kpi-val">-</div>
+        <div id="hub-qual" class="kpi-label pos">-</div>
+      </div>
+      <div class="card">
+        <div class="kpi-label">#1 All-Time Cashflow Leader</div>
+        <div id="hub-top1" class="kpi-val" style="font-size:16px">-</div>
+        <div id="hub-top1-sub" class="kpi-label pos mono">-</div>
+      </div>
+      <div class="card">
+        <div class="kpi-label">Hard Safety Gate</div>
+        <div class="kpi-val warn" style="font-size:17px">No Liq · DD ≤ 40%</div>
+        <div class="kpi-label">Primary: Cashflow DESC → DD ASC</div>
+      </div>
+    </section>
+
+    <section class="card" style="padding:0;overflow:hidden;">
+      <div class="toolbar">
+        <strong>Historical Daily Mining Batches (เลือกดูผล Mine รายวันย้อนหลัง)</strong>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <select id="quick-jump-date" aria-label="Jump to Daily Dashboard" class="mono"></select>
+          <input id="archive-search" type="search" placeholder="ค้นหาวันที่ หรือ model_id..." aria-label="Filter historical batches" />
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table id="archive-days-table">
+          <thead>
+            <tr>
+              <th>Batch Date</th>
+              <th class="num">Models</th>
+              <th class="num">Pass Gate</th>
+              <th>Mined Models</th>
+              <th class="num">Best Batch CF</th>
+              <th class="num">Lowest Batch DD</th>
+              <th class="num">Window</th>
+              <th>Open</th>
+            </tr>
+          </thead>
+          <tbody id="archive-days-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card" style="padding:0;overflow:hidden;">
+      <div class="toolbar">
+        <strong>Cumulative Top-9 Leaderboard Snapshot</strong>
+        <span class="muted">คลิกปุ่ม Open Dashboard ด้านบนเพื่อเข้า Inspector &amp; Live DD Slider</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Model ID</th>
+              <th>Signal</th>
+              <th>Batch Date</th>
+              <th class="num">Realized CF</th>
+              <th class="num">AVG Weekly</th>
+              <th class="num">Max DD</th>
+              <th class="num">CF / DD</th>
+              <th class="num">MTM Return</th>
+            </tr>
+          </thead>
+          <tbody id="hub-top-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const PORTAL = {"generated_at_utc":"2026-11-23T07:41:12Z","latest_date":"2026-11-23","total_days":1,"total_trials":5,"total_models":5,"qualified_count":5,"top_n":9,"dd_cap":40.0,"days":[{"batch_date":"2026-11-23","generated_at_utc":"2026-11-23T07:41:12Z","model_count":5,"qualified_count":5,"model_ids":["beta_001_ha_1m","beta_002_ema_9_21","beta_003_ema_12_26","beta_004_supertrend_10_3","beta_005_rsi_reversion_14_40_60"],"best_cashflow_model_id":"beta_005_rsi_reversion_14_40_60","best_cashflow_usd":3282.71,"lowest_dd_model_id":"beta_003_ema_12_26","lowest_dd_pct":19.82,"window_start_utc":"2024-02-27T00:00:00Z","window_end_utc":"2026-11-21T23:59:00Z","days_covered":999.0,"has_dashboard":true,"has_summary":true,"dashboard_rel_path":"daily/2026-11-23/dashboard.html","summary_rel_path":"daily/2026-11-23/daily_summary.md"}],"top_ranked":[{"schema_version":"1.0","model_id":"beta_005_rsi_reversion_14_40_60","trial_number":5,"run_id":"2026-11-23_run02","batch_date":"2026-11-23","recorded_at_utc":"2026-11-23T04:19:02Z","signal_spec":"rsi_reversion_14_40_60","signal_name":"rsi_reversion_14_40_60","evidence_status":"reproducible","spec_sha256":"sha256:5b14ee564a2d1fac1a1ba9636f463a13486107ec4efa6799ccf3d4d8de840308","cashflow_net_usd":3282.707965,"cashflow_pct":32.8271,"cashflow_per_30d_usd":98.5798,"max_drawdown_pct":32.6702,"max_drawdown_abs":4130.968031,"cashflow_to_dd_ratio":1.0048,"would_liquidate":false,"liquidation_bar_utc":null,"mtm_return_pct":-11.8967,"mtm_pnl_usd":-1189.67377,"unrealized_end_usd":-4324.658,"worst_unrealized_usd":-4687.178,"total_fees_paid":258.795627,"total_funding_pnl":-483.291643,"sharpe_daily_ann":-0.0627,"sortino_daily_ann":-0.091,"calmar_ratio":-0.1384,"buy_fills":19912,"sell_fills":19712,"closed_trades_count":19712,"win_rate_pct":98.12,"avg_hold_minutes":5008.01,"max_open_qty":2.0,"ending_open_qty":2.0,"max_open_notional":5958.56,"buy_volume_eth":199.12,"sell_volume_eth":197.12,"turnover_usd":1293978.13,"max_utilization_pct":77.21,"avg_weekly_cf_usd":22.956,"weekly_count":143,"beta_to_eth":0.342,"corr_to_eth":0.9349,"window_start_utc":"2024-02-27T00:00:00Z","window_end_utc":"2026-11-21T23:59:00Z","days_covered":999.0,"bar_count":1438560,"zone_high":5000.0,"zone_low":500.0,"spacing_pct":0.2,"initial_capital":10000.0,"fill_mode":"strict_cross","symbol":"ETHUSDT","product_type":"USD_M","settlement_unit":"USDT","crash_stress":{"window_start_utc":"2026-01-14T17:40:00Z","window_end_utc":"2026-02-13T00:00:00Z","zone_high":3402.15,"zone_low":2721.72,"mtm_return_pct":-8.334,"max_drawdown_pct":10.1329,"max_drawdown_abs":1014.387101,"cashflow_net_usd":56.01809,"ending_open_qty":0.81,"would_liquidate":false,"closed_trades_count":351},"gate_passed":true,"disqualify_reasons":[],"rank":1},{"schema_version":"1.0","model_id":"beta_001_ha_1m","trial_number":1,"run_id":"2026-11-23_run02","batch_date":"2026-11-23","recorded_at_utc":"2026-11-23T04:18:29Z","signal_spec":"ha_1m","signal_name":"ha_1m","evidence_status":"reproducible","spec_sha256":"sha256:7c6526f6f99ac6e655db6542bf4d625237e05f208035e2cde75c927389cae430","cashflow_net_usd":3166.397248,"cashflow_pct":31.664,"cashflow_per_30d_usd":95.087,"max_drawdown_pct":30.701,"max_drawdown_abs":3854.816191,"cashflow_to_dd_ratio":1.0314,"would_liquidate":false,"liquidation_bar_utc":null,"mtm_return_pct":-10.0195,"mtm_pnl_usd":-1001.954004,"unrealized_end_usd":-4031.1428,"worst_unrealized_usd":-4390.4859,"total_fees_paid":206.840669,"total_funding_pnl":-455.995034,"sharpe_daily_ann":-0.0505,"sortino_daily_ann":-0.0738,"calmar_ratio":-0.1233,"buy_fills":16267,"sell_fills":16067,"closed_trades_count":16067,"win_rate_pct":98.03,"avg_hold_minutes":5917.17,"max_open_qty":2.0,"ending_open_qty":2.0,"max_open_notional":5530.21,"buy_volume_eth":162.67,"sell_volume_eth":160.67,"turnover_usd":1034203.35,"max_utilization_pct":74.1,"avg_weekly_cf_usd":22.1426,"weekly_count":143,"beta_to_eth":0.3217,"corr_to_eth":0.9402,"window_start_utc":"2024-02-27T00:00:00Z","window_end_utc":"2026-11-21T23:59:00Z","days_covered":999.0,"bar_count":1438560,"zone_high":5000.0,"zone_low":500.0,"spacing_pct":0.2,"initial_capital":10000.0,"fill_mode":"strict_cross","symbol":"ETHUSDT","product_type":"USD_M","settlement_unit":"USDT","crash_stress":{"window_start_utc":"2026-01-14T17:40:00Z","window_end_utc":"2026-02-13T00:00:00Z","zone_high":3402.15,"zone_low":2721.72,"mtm_return_pct":-7.8695,"max_drawdown_pct":9.4766,"max_drawdown_abs":948.427805,"cashflow_net_usd":45.581508,"ending_open_qty":0.73,"would_liquidate":false,"closed_trades_count":254},"gate_passed":true,"disqualify_reasons":[],"rank":2},{"schema_version":"1.0","model_id":"beta_004_supertrend_10_3","trial_number":4,"run_id":"2026-11-23_run02","batch_date":"2026-11-23","recorded_at_utc":"2026-11-23T04:18:51Z","signal_spec":"supertrend_10_3","signal_name":"supertrend_10_3","evidence_status":"reproducible","spec_sha256":"sha256:418824e3332ad73a6c298d81d64c25059944d3938048090562327c1ef3c9b8a9","cashflow_net_usd":2707.758538,"cashflow_pct":27.0776,"cashflow_per_30d_usd":81.3141,"max_drawdown_pct":22.2017,"max_drawdown_abs":2644.301825,"cashflow_to_dd_ratio":1.2196,"would_liquidate":false,"liquidation_bar_utc":null,"mtm_return_pct":-2.9889,"mtm_pnl_usd":-298.891747,"unrealized_end_usd":-2914.0979,"worst_unrealized_usd":-3247.2204,"total_fees_paid":133.458956,"total_funding_pnl":-333.486691,"sharpe_daily_ann":0.0256,"sortino_daily_ann":0.0378,"calmar_ratio":-0.0497,"buy_fills":11450,"sell_fills":11250,"closed_trades_count":11250,"win_rate_pct":98.01,"avg_hold_minutes":7723.2,"max_open_qty":2.0,"ending_open_qty":2.0,"max_open_notional":4264.0,"buy_volume_eth":114.5,"sell_volume_eth":112.5,"turnover_usd":667294.78,"max_utilization_pct":62.84,"avg_weekly_cf_usd":18.9354,"weekly_count":143,"beta_to_eth":0.2411,"corr_to_eth":0.9238,"window_start_utc":"2024-02-27T00:00:00Z","window_end_utc":"2026-11-21T23:59:00Z","days_covered":999.0,"bar_count":1438560,"zone_high":5000.0,"zone_low":500.0,"spacing_pct":0.2,"initial_capital":10000.0,"fill_mode":"strict_cross","symbol":"ETHUSDT","product_type":"USD_M","settlement_unit":"USDT","crash_stress":{"window_start_utc":"2026-01-14T17:40:00Z","window_end_utc":"2026-02-13T00:00:00Z","zone_high":3402.15,"zone_low":2721.72,"mtm_return_pct":-5.1507,"max_drawdown_pct":6.2558,"max_drawdown_abs":625.940034,"cashflow_net_usd":27.974742,"ending_open_qty":0.5,"would_liquidate":false,"closed_trades_count":137},"gate_passed":true,"disqualify_reasons":[],"rank":3},{"schema_version":"1.0","model_id":"beta_002_ema_9_21","trial_number":2,"run_id":"2026-11-23_run02","batch_date":"2026-11-23","recorded_at_utc":"2026-11-23T04:18:37Z","signal_spec":"ema_9_21","signal_name":"ema_9_21","evidence_status":"reproducible","spec_sha256":"sha256:fa2f325561012ba40eee13b0d2f9bb2299f72d8fe671350f77b3c8e3421212fb","cashflow_net_usd":2704.494748,"cashflow_pct":27.0449,"cashflow_per_30d_usd":81.2161,"max_drawdown_pct":20.2257,"max_drawdown_abs":2401.783107,"cashflow_to_dd_ratio":1.3372,"would_liquidate":false,"liquidation_bar_utc":null,"mtm_return_pct":-0.6076,"mtm_pnl_usd":-60.762033,"unrealized_end_usd":-2679.9538,"worst_unrealized_usd":-3019.0488,"total_fees_paid":130.586675,"total_funding_pnl":-323.000857,"sharpe_daily_ann":0.0703,"sortino_daily_ann":0.104,"calmar_ratio":-0.011,"buy_fills":11432,"sell_fills":11232,"closed_trades_count":11232,"win_rate_pct":98.0,"avg_hold_minutes":7634.55,"max_open_qty":2.0,"ending_open_qty":2.0,"max_open_notional":4111.03,"buy_volume_eth":114.32,"sell_volume_eth":112.32,"turnover_usd":652933.38,"max_utilization_pct":60.58,"avg_weekly_cf_usd":18.9125,"weekly_count":143,"beta_to_eth":0.2285,"corr_to_eth":0.9248,"window_start_utc":"2024-02-27T00:00:00Z","window_end_utc":"2026-11-21T23:59:00Z","days_covered":999.0,"bar_count":1438560,"zone_high":5000.0,"zone_low":500.0,"spacing_pct":0.2,"initial_capital":10000.0,"fill_mode":"strict_cross","symbol":"ETHUSDT","product_type":"USD_M","settlement_unit":"USDT","crash_stress":{"window_start_utc":"2026-01-14T17:40:00Z","window_end_utc":"2026-02-13T00:00:00Z","zone_high":3402.15,"zone_low":2721.72,"mtm_return_pct":-4.2594,"max_drawdown_pct":5.2024,"max_drawdown_abs":520.569269,"cashflow_net_usd":26.32431,"ending_open_qty":0.42,"would_liquidate":false,"closed_trades_count":130},"gate_passed":true,"disqualify_reasons":[],"rank":4},{"schema_version":"1.0","model_id":"beta_003_ema_12_26","trial_number":3,"run_id":"2026-11-23_run02","batch_date":"2026-11-23","recorded_at_utc":"2026-11-23T04:18:44Z","signal_spec":"ema_12_26","signal_name":"ema_12_26","evidence_status":"reproducible","spec_sha256":"sha256:3b7a488c3fb7df2308c56fea701c8e2dc23cc701ca180a00712c8dd46c8032d8","cashflow_net_usd":2652.045463,"cashflow_pct":26.5205,"cashflow_per_30d_usd":79.641,"max_drawdown_pct":19.8172,"max_drawdown_abs":2343.777112,"cashflow_to_dd_ratio":1.3383,"would_liquidate":false,"liquidation_bar_utc":null,"mtm_return_pct":-0.3133,"mtm_pnl_usd":-31.333973,"unrealized_end_usd":-2601.0891,"worst_unrealized_usd":-2937.1855,"total_fees_paid":122.240373,"total_funding_pnl":-305.956199,"sharpe_daily_ann":0.0715,"sortino_daily_ann":0.1058,"calmar_ratio":-0.0058,"buy_fills":10735,"sell_fills":10535,"closed_trades_count":10535,"win_rate_pct":98.0,"avg_hold_minutes":7711.94,"max_open_qty":2.0,"ending_open_qty":2.0,"max_open_notional":3903.41,"buy_volume_eth":107.35,"sell_volume_eth":105.35,"turnover_usd":611201.87,"max_utilization_pct":59.71,"avg_weekly_cf_usd":18.5458,"weekly_count":143,"beta_to_eth":0.2162,"corr_to_eth":0.9278,"window_start_utc":"2024-02-27T00:00:00Z","window_end_utc":"2026-11-21T23:59:00Z","days_covered":999.0,"bar_count":1438560,"zone_high":5000.0,"zone_low":500.0,"spacing_pct":0.2,"initial_capital":10000.0,"fill_mode":"strict_cross","symbol":"ETHUSDT","product_type":"USD_M","settlement_unit":"USDT","crash_stress":{"window_start_utc":"2026-01-14T17:40:00Z","window_end_utc":"2026-02-13T00:00:00Z","zone_high":3402.15,"zone_low":2721.72,"mtm_return_pct":-3.701,"max_drawdown_pct":4.5382,"max_drawdown_abs":454.104527,"cashflow_net_usd":28.097551,"ending_open_qty":0.37,"would_liquidate":false,"closed_trades_count":112},"gate_passed":true,"disqualify_reasons":[],"rank":5}]};
+
+    function escHtml(v) {
+      return String(v ?? "").replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+    }
+
+    function isSafeDate(d) {
+      return /^\d{4}-\d{2}-\d{2}$/.test(String(d || ""));
+    }
+
+    function fmtUsd(v) {
+      const n = Number(v || 0);
+      return (n >= 0 ? "+$" : "-$") + Math.abs(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function fmtPct(v) {
+      const n = Number(v || 0);
+      return (n >= 0 ? "+" : "-") + Math.abs(n).toFixed(2) + "%";
+    }
+
+    function shortLabel(modelId) {
+      return String(modelId || "").replace(/^beta_\d+_/, "");
+    }
+
+    function renderPortal() {
+      document.getElementById("hub-sub").textContent =
+        `Generated ${PORTAL.generated_at_utc} · ${PORTAL.total_days} Archived Day(s) · ${PORTAL.total_models} Isolated Models · Offline Zero-CDN`;
+      document.getElementById("hub-days").textContent = String(PORTAL.total_days);
+      document.getElementById("hub-latest").textContent = PORTAL.latest_date ? `Latest: ${PORTAL.latest_date}` : "No batches yet";
+      document.getElementById("hub-trials").textContent = String(PORTAL.total_trials);
+      document.getElementById("hub-qual").textContent = `Qualified: ${PORTAL.qualified_count} / ${PORTAL.total_models}`;
+
+      const top1 = (PORTAL.top_ranked || [])[0];
+      if (top1) {
+        document.getElementById("hub-top1").textContent = top1.model_id;
+        document.getElementById("hub-top1-sub").textContent = `CF ${fmtUsd(top1.cashflow_net_usd)} · DD ${Number(top1.max_drawdown_pct).toFixed(2)}%`;
+      }
+
+      const sel = document.getElementById("quick-jump-date");
+      sel.innerHTML = "";
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.textContent = "เลือกวันเพื่อเปิด Dashboard...";
+      sel.appendChild(placeholder);
+      (PORTAL.days || []).forEach(d => {
+        if (!isSafeDate(d.batch_date) || d.has_dashboard === false) return;
+        const opt = document.createElement("option");
+        opt.value = `daily/${d.batch_date}/dashboard.html`;
+        opt.textContent = d.model_count ? `${d.batch_date} (${d.model_count} models)` : d.batch_date;
+        sel.appendChild(opt);
+      });
+
+      renderArchiveTable("");
+
+      const topBody = document.getElementById("hub-top-body");
+      topBody.innerHTML = "";
+      const dashDateSet = new Set((PORTAL.days || []).filter(d => isSafeDate(d.batch_date) && d.has_dashboard !== false).map(d => d.batch_date));
+      (PORTAL.top_ranked || []).forEach(r => {
+        const tr = document.createElement("tr");
+        tr.className = "data-row";
+        const safeDate = isSafeDate(r.batch_date) ? r.batch_date : "";
+        const dateCell = safeDate && dashDateSet.has(safeDate)
+          ? `<a href="daily/${safeDate}/dashboard.html" style="color:var(--bm-code-fg);text-decoration:none;">${safeDate}</a>`
+          : escHtml(r.batch_date || "-");
+        tr.innerHTML = `
+          <td class="mono" style="font-weight:700;">#${Number(r.rank || 0)}</td>
+          <td class="mono" style="font-weight:700;">${escHtml(r.model_id)}</td>
+          <td class="mono muted">${escHtml(r.signal_name)}</td>
+          <td class="mono">${dateCell}</td>
+          <td class="num pos" style="font-weight:700;">${fmtUsd(r.cashflow_net_usd)}</td>
+          <td class="num pos">${fmtUsd(r.avg_weekly_cf_usd || 0)}</td>
+          <td class="num warn" style="font-weight:700;">${Number(r.max_drawdown_pct).toFixed(2)}%</td>
+          <td class="num">${Number(r.cashflow_to_dd_ratio).toFixed(2)}x</td>
+          <td class="num ${r.mtm_return_pct >= 0 ? 'pos' : 'neg'}">${fmtPct(r.mtm_return_pct)}</td>
+        `;
+        topBody.appendChild(tr);
+      });
+    }
+
+    function renderArchiveTable(query) {
+      const q = String(query || "").trim().toLowerCase();
+      const body = document.getElementById("archive-days-body");
+      body.innerHTML = "";
+      const rows = (PORTAL.days || []).filter(d => {
+        if (!isSafeDate(d.batch_date)) return false;
+        if (!q) return true;
+        if (String(d.batch_date || "").toLowerCase().includes(q)) return true;
+        return (d.model_ids || []).some(id => String(id).toLowerCase().includes(q));
+      });
+      if (!rows.length) {
+        body.innerHTML = `<tr><td colspan="8" class="muted" style="text-align:center;padding:18px;">ไม่พบรายการวันที่ตรงกับคำค้นหา</td></tr>`;
+        return;
+      }
+      rows.forEach(d => {
+        const tr = document.createElement("tr");
+        tr.className = "data-row";
+        const chips = (d.model_ids || []).length
+          ? (d.model_ids || []).map(id => `<span class="chip">${escHtml(shortLabel(id))}</span>`).join("")
+          : '<span class="muted">-</span>';
+        const dashHref = `daily/${d.batch_date}/dashboard.html`;
+        const sumHref = `daily/${d.batch_date}/daily_summary.md`;
+        const spanTxt = d.days_covered ? `${Math.round(Number(d.days_covered))}d` : "-";
+        const bestCfCell = d.best_cashflow_model_id
+          ? `<strong>${fmtUsd(d.best_cashflow_usd)}</strong> <span class="muted">(${escHtml(shortLabel(d.best_cashflow_model_id))})</span>`
+          : '<span class="muted">-</span>';
+        const lowDdCell = d.lowest_dd_model_id
+          ? `<strong>${Number(d.lowest_dd_pct || 0).toFixed(2)}%</strong> <span class="muted">(${escHtml(shortLabel(d.lowest_dd_model_id))})</span>`
+          : '<span class="muted">-</span>';
+        const actionBtns = [
+          d.has_dashboard !== false ? `<a class="link-btn primary" href="${dashHref}">9-Panel Dashboard</a>` : "",
+          d.has_summary !== false ? `<a class="link-btn" href="${sumHref}">Summary MD</a>` : ""
+        ].filter(Boolean).join("") || '<span class="muted">-</span>';
+        tr.innerHTML = `
+          <td class="mono" style="font-weight:700;">${escHtml(d.batch_date)}</td>
+          <td class="num">${Number(d.model_count || 0)}</td>
+          <td class="num pos">${Number(d.qualified_count || 0)} / ${Number(d.model_count || 0)}</td>
+          <td style="white-space:normal;min-width:260px;">${chips}</td>
+          <td class="num pos">${bestCfCell}</td>
+          <td class="num warn">${lowDdCell}</td>
+          <td class="num muted">${spanTxt}</td>
+          <td>${actionBtns}</td>
+        `;
+        body.appendChild(tr);
+      });
+    }
+
+    document.getElementById("quick-jump-date").addEventListener("change", ev => {
+      if (/^daily\/\d{4}-\d{2}-\d{2}\/dashboard\.html$/.test(ev.target.value)) {
+        window.location.href = ev.target.value;
+      }
+    });
+    document.getElementById("archive-search").addEventListener("input", ev => {
+      renderArchiveTable(ev.target.value);
+    });
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+      document.body.classList.toggle("light");
+    });
+    if (document.documentElement.classList.contains("light")) {
+      document.body.classList.add("light");
+    }
+    renderPortal();
+  </script>
+</body>
+</html>
