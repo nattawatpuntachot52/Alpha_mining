@@ -74,6 +74,46 @@
       "magic_number": 20261120,
       "mql5_prefix": "Day20",
       "status": "active"
+    },
+    {
+      "model_id": "macross_sma_28_101",
+      "category": "alpha",
+      "spec_path": "models/alpha/macross_sma_28_101/spec.json",
+      "magic_number": 20260617,
+      "mql5_prefix": "MACross",
+      "status": "active"
+    },
+    {
+      "model_id": "donchian_breakout_40_10",
+      "category": "alpha",
+      "spec_path": "models/alpha/donchian_breakout_40_10/spec.json",
+      "magic_number": 20261130,
+      "mql5_prefix": "Breakout",
+      "status": "active"
+    },
+    {
+      "model_id": "ema_4h_5_20",
+      "category": "alpha",
+      "spec_path": "models/alpha/ema_4h_5_20/spec.json",
+      "magic_number": 20261140,
+      "mql5_prefix": "EMA4H",
+      "status": "active"
+    },
+    {
+      "model_id": "session_a_22_06",
+      "category": "alpha",
+      "spec_path": "models/alpha/session_a_22_06/spec.json",
+      "magic_number": 20261161,
+      "mql5_prefix": "SessionA",
+      "status": "active"
+    },
+    {
+      "model_id": "session_b_21_04",
+      "category": "alpha",
+      "spec_path": "models/alpha/session_b_21_04/spec.json",
+      "magic_number": 20261162,
+      "mql5_prefix": "SessionB",
+      "status": "active"
     }
   ]
 }

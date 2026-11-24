@@ -30,7 +30,7 @@ def _copy_models_fixture(dst_root: Path) -> None:
 class TestModelRegistryAndAssembler(unittest.TestCase):
     def test_repo_registry_and_assembled_bundle_have_zero_drift(self) -> None:
         registry = load_and_validate_registry(REPO_ROOT)
-        self.assertEqual(len(registry.models), 7)
+        self.assertEqual(len(registry.models), 12)
 
         ids = [m.model_id for m in registry.models]
         self.assertEqual(
@@ -43,6 +43,11 @@ class TestModelRegistryAndAssembler(unittest.TestCase):
                 "impulse_efficiency_s1",
                 "impulse_efficiency_s2",
                 "monthly_day20",
+                "macross_sma_28_101",
+                "donchian_breakout_40_10",
+                "ema_4h_5_20",
+                "session_a_22_06",
+                "session_b_21_04",
             ],
         )
 
@@ -65,7 +70,8 @@ class TestModelRegistryAndAssembler(unittest.TestCase):
 
         # Verify every included model exposes ONLY Enable + Lot inputs and lifecycle calls
         self.assertIn("input long Account_Lock = 0;", assembled_a)
-        for rec in registry.models:
+        for slot in spec.slots:
+            rec = registry.get(slot.model_id)
             self.assertIn(f"input bool   Enable_{rec.mql5_prefix} =", assembled_a)
             self.assertIn(f"input double Lot_{rec.mql5_prefix}    =", assembled_a)
             self.assertIn(f"Init_{rec.mql5_prefix}();", assembled_a)
@@ -79,6 +85,30 @@ class TestModelRegistryAndAssembler(unittest.TestCase):
                 assembled_a,
             )
             self.assertIn(str(rec.magic_number), assembled_a)
+
+        # Market-closed (retcode 10018) cooldown guard must be present in every assembled EA
+        self.assertIn("IsMarketTradeAllowed", assembled_a)
+        self.assertIn("TRADE_RETCODE_MARKET_CLOSED", assembled_a)
+
+        # Tested 9-model Portfolio C v2 (5 new MT5 models) assembles with zero drift
+        p9_spec = load_portfolio_spec(REPO_ROOT / "portfolios" / "portfolio_c_9models_v2.json", registry)
+        self.assertEqual(
+            [s.model_id for s in p9_spec.slots],
+            [
+                "alpha005",
+                "alpha055",
+                "alpha010",
+                "heiken_ma_12_26",
+                "macross_sma_28_101",
+                "donchian_breakout_40_10",
+                "ema_4h_5_20",
+                "session_a_22_06",
+                "session_b_21_04",
+            ],
+        )
+        p9_assembled = assemble_portfolio_mq5(registry, p9_spec)
+        p9_committed = REPO_ROOT / "portfolios" / "assembled" / "portfolio_c_9models_v2.mq5"
+        self.assertEqual(p9_committed.read_text(encoding="utf-8"), p9_assembled)
 
     def test_single_model_standalone_assembly_is_isolated(self) -> None:
         registry = load_and_validate_registry(REPO_ROOT)
@@ -221,7 +251,7 @@ class TestModelRegistryAndAssembler(unittest.TestCase):
         )
         self.assertEqual(val_res.returncode, 0, msg=val_res.stderr)
         val_json = json.loads(val_res.stdout)
-        self.assertEqual(val_json["models_validated"], 7)
+        self.assertEqual(val_json["models_validated"], 12)
 
         list_res = subprocess.run(
             [*cli, "list", "--format", "json"],
@@ -231,7 +261,7 @@ class TestModelRegistryAndAssembler(unittest.TestCase):
         )
         self.assertEqual(list_res.returncode, 0, msg=list_res.stderr)
         rows = json.loads(list_res.stdout)
-        self.assertEqual(len(rows), 7)
+        self.assertEqual(len(rows), 12)
 
         with tempfile.TemporaryDirectory() as tmp:
             out_single = Path(tmp) / "Day20_Standalone.mq5"

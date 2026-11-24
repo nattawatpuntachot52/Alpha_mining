@@ -1,4 +1,4 @@
-name: Deploy Beta Mining Dashboard (GitHub Pages)
+name: Deploy Mining Dashboards (GitHub Pages — Beta + Alpha)
 
 on:
   push:
@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - "beta_mining/**"
+      - "alpha_mining/**"
       - ".github/workflows/deploy-beta-pages.yml"
   workflow_dispatch:
 
@@ -29,7 +30,7 @@ jobs:
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
-      - name: Stage public Beta Mining dashboard site (fail-closed)
+      - name: Stage public Beta & Alpha Mining dashboard sites (fail-closed)
         run: |
           set -euo pipefail
           shopt -s nullglob
@@ -44,15 +45,15 @@ jobs:
           cp beta_mining/daily/index.json pages_site/daily/index.json
           touch pages_site/.nojekyll
 
-          # Copy every valid YYYY-MM-DD daily dashboard & summary (never expose repo source or raw model folders)
-          copied_days=0
+          # Copy every valid YYYY-MM-DD Beta daily dashboard & summary (never expose repo source or raw model folders)
+          copied_beta_days=0
           for ddir in beta_mining/daily/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]; do
             if [[ -d "$ddir" ]]; then
               bdate=$(basename "$ddir")
               mkdir -p "pages_site/daily/${bdate}"
               if [[ -f "${ddir}/dashboard.html" ]]; then
                 cp "${ddir}/dashboard.html" "pages_site/daily/${bdate}/dashboard.html"
-                copied_days=$((copied_days + 1))
+                copied_beta_days=$((copied_beta_days + 1))
               fi
               if [[ -f "${ddir}/daily_summary.md" ]]; then
                 cp "${ddir}/daily_summary.md" "pages_site/daily/${bdate}/daily_summary.md"
@@ -60,12 +61,37 @@ jobs:
             fi
           done
 
-          if [[ "$copied_days" -lt 1 ]]; then
+          if [[ "$copied_beta_days" -lt 1 ]]; then
             echo "No daily dashboard.html files found under beta_mining/daily/" >&2
             exit 1
           fi
-          echo "Staged ${copied_days} historical daily dashboard(s) into pages_site/"
-          find pages_site -maxdepth 3 -type f | sort
+          echo "Staged ${copied_beta_days} historical Beta daily dashboard(s) into pages_site/"
+
+          # Stage public Alpha Mining dashboard site under pages_site/alpha/ when present
+          copied_alpha_days=0
+          if [[ -f alpha_mining/index.html ]] && [[ -f alpha_mining/daily/index.json ]]; then
+            mkdir -p pages_site/alpha/daily
+            cp alpha_mining/index.html pages_site/alpha/index.html
+            cp alpha_mining/daily/index.json pages_site/alpha/daily/index.json
+            if [[ -f alpha_mining/ranking_top9.json ]]; then
+              cp alpha_mining/ranking_top9.json pages_site/alpha/ranking_top9.json
+            fi
+            for ddir in alpha_mining/daily/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]; do
+              if [[ -d "$ddir" ]]; then
+                bdate=$(basename "$ddir")
+                mkdir -p "pages_site/alpha/daily/${bdate}"
+                if [[ -f "${ddir}/dashboard.html" ]]; then
+                  cp "${ddir}/dashboard.html" "pages_site/alpha/daily/${bdate}/dashboard.html"
+                  copied_alpha_days=$((copied_alpha_days + 1))
+                fi
+                if [[ -f "${ddir}/daily_summary.md" ]]; then
+                  cp "${ddir}/daily_summary.md" "pages_site/alpha/daily/${bdate}/daily_summary.md"
+                fi
+              fi
+            done
+            echo "Staged ${copied_alpha_days} historical Alpha daily dashboard(s) into pages_site/alpha/"
+          fi
+          find pages_site -maxdepth 4 -type f | sort
 
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v3

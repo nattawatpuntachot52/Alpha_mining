@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0",
+  "model_id": "session_a_22_06",
+  "category": "alpha",
+  "display_name": "Session A (Broker 22:00-06:00, Buy inside / Flat outside)",
+  "version": "1.0.0",
+  "evidence_status": "exploratory",
+  "drive_vault_folder_key": "models_alpha",
+  "mql5": {
+    "prefix": "SessionA",
+    "magic_number": 20261161,
+    "module_file": "module.mqh",
+    "timeframe": "PERIOD_M1",
+    "direction": "long_only",
+    "default_lot": 0.01,
+    "hedging_required": true
+  },
+  "logic": {
+    "summary": "Long-only time-window model: hold a buy during broker server time 22:00-06:00 and stay flat outside the window.",
+    "parameters": {
+      "start_hour": 22,
+      "end_hour": 6,
+      "retry_seconds": 15,
+      "deviation_points": 30,
+      "time_basis": "broker_server_time"
+    },
+    "economic_rationale": "Calendar/session drift: gold shows positive expected return in the overnight Asia session window; exposure is limited to that window.",
+    "known_assumptions": [
+      "Hours are broker SERVER time, not UTC; DST shifts the effective UTC window.",
+      "Market-closed cooldown (retcode 10018) prevents order spam at rollover."
+    ],
+    "rejection_criteria": [
+      "Edge vanishes when window start/end are shifted by +/-1h.",
+      "Negative Out-of-Sample expectancy after overnight spread and swap."
+    ]
+  }
+}

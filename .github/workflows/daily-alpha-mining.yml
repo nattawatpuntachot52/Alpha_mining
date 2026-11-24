@@ -1,0 +1,307 @@
+name: Daily Alpha Mining Factory (2 Rounds x 10 = 20 Models/Day: XAUUSD + ETHUSDT)
+
+on:
+  schedule:
+    # Round 1: Daily 07:15 ICT (00:15 UTC) — 10 models (5 XAUUSD + 5 ETHUSDT)
+    - cron: "15 0 * * *"
+    # Round 2: Daily 19:15 ICT (12:15 UTC) — +10 models (accumulates to 20 models/day: 10 XAUUSD + 10 ETHUSDT)
+    - cron: "15 12 * * *"
+  workflow_dispatch:
+    inputs:
+      per_symbol:
+        description: "Models per symbol per round (default: 5 -> 5 XAUUSD + 5 ETHUSDT = 10/round, 20/day)"
+        required: false
+        default: "5"
+        type: string
+      symbols:
+        description: "Comma-separated symbols (default: XAUUSD,ETHUSDT)"
+        required: false
+        default: "XAUUSD,ETHUSDT"
+        type: string
+      round:
+        description: "Optional round number (0 = auto next round up to 2/day)"
+        required: false
+        default: "0"
+        type: string
+      days:
+        description: "Optional lookback days override (0 = per-timeframe default)"
+        required: false
+        default: "0"
+        type: string
+      batch_date:
+        description: "Optional batch date YYYY-MM-DD (default: today UTC)"
+        required: false
+        default: ""
+        type: string
+      open_pr:
+        description: "Open or update a PR on bot/daily-alpha-mining-<date> (never pushes directly to main)"
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: alpha-daily-alpha-mining
+  cancel-in-progress: false
+
+jobs:
+  daily-alpha-mining:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Resolve and validate daily alpha mining parameters
+        id: params
+        env:
+          INPUT_DATE: ${{ inputs.batch_date }}
+          INPUT_PER_SYMBOL: ${{ inputs.per_symbol }}
+          INPUT_SYMBOLS: ${{ inputs.symbols }}
+          INPUT_ROUND: ${{ inputs.round }}
+          INPUT_DAYS: ${{ inputs.days }}
+          INPUT_OPEN_PR: ${{ inputs.open_pr }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          BATCH_DATE="${INPUT_DATE:-}"
+          if [[ -z "$BATCH_DATE" ]]; then
+            BATCH_DATE=$(date -u +%Y-%m-%d)
+          fi
+          if [[ ! "$BATCH_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+            echo "Invalid batch_date: $BATCH_DATE" >&2
+            exit 1
+          fi
+          PER_SYMBOL="${INPUT_PER_SYMBOL:-5}"
+          if [[ ! "$PER_SYMBOL" =~ ^[0-9]+$ ]] || [[ "$PER_SYMBOL" -lt 1 ]] || [[ "$PER_SYMBOL" -gt 20 ]]; then
+            echo "Invalid per_symbol: $PER_SYMBOL" >&2
+            exit 1
+          fi
+          SYMBOLS="${INPUT_SYMBOLS:-XAUUSD,ETHUSDT}"
+          if [[ ! "$SYMBOLS" =~ ^[A-Z0-9,]+$ ]]; then
+            echo "Invalid symbols: $SYMBOLS" >&2
+            exit 1
+          fi
+          ROUND_NO="${INPUT_ROUND:-0}"
+          if [[ ! "$ROUND_NO" =~ ^[0-9]+$ ]] || [[ "$ROUND_NO" -gt 10 ]]; then
+            echo "Invalid round: $ROUND_NO" >&2
+            exit 1
+          fi
+          DAYS="${INPUT_DAYS:-0}"
+          if [[ ! "$DAYS" =~ ^[0-9]+$ ]] || [[ "$DAYS" -gt 3650 ]]; then
+            echo "Invalid days: $DAYS" >&2
+            exit 1
+          fi
+          OPEN_PR="true"
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]] && [[ "$INPUT_OPEN_PR" == "false" ]]; then
+            OPEN_PR="false"
+          fi
+          {
+            echo "batch_date=$BATCH_DATE"
+            echo "per_symbol=$PER_SYMBOL"
+            echo "symbols=$SYMBOLS"
+            echo "round=$ROUND_NO"
+            echo "days=$DAYS"
+            echo "open_pr=$OPEN_PR"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Continue existing open daily Alpha PR branch if Round 1 is still unmerged
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BATCH_DATE: ${{ steps.params.outputs.batch_date }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          BRANCH="bot/daily-alpha-mining-${BATCH_DATE}"
+          OPEN_PR_NUM=$(gh pr list -R "$REPO" --head "$BRANCH" --state open --json number --jq '.[0].number // ""')
+          if [[ -n "$OPEN_PR_NUM" ]]; then
+            echo "Found open PR #${OPEN_PR_NUM} on ${BRANCH}; checking it out so Round 2 accumulates onto Round 1."
+            git fetch origin "${BRANCH}:${BRANCH}"
+            git checkout "$BRANCH"
+          fi
+
+      - name: Restore Binance Vision Multi-Timeframe Data Cache
+        uses: actions/cache/restore@v4
+        with:
+          path: data/cache/binance_vision
+          key: alpha-factory-vision-mtf-${{ steps.params.outputs.batch_date }}-${{ github.run_id }}
+          restore-keys: |
+            alpha-factory-vision-mtf-
+            alpha-binance-vision-1m-um-
+
+      - name: Run Alpha Mining Round (5 XAUUSD + 5 ETHUSDT -> 20/Day) & Build 9-Panel Dashboard
+        env:
+          BATCH_DATE: ${{ steps.params.outputs.batch_date }}
+          PER_SYMBOL: ${{ steps.params.outputs.per_symbol }}
+          SYMBOLS: ${{ steps.params.outputs.symbols }}
+          ROUND_NO: ${{ steps.params.outputs.round }}
+          DAYS: ${{ steps.params.outputs.days }}
+        run: |
+          set -euo pipefail
+          PYTHONDONTWRITEBYTECODE=1 python3 scripts/alpha_mining.py run-daily \
+            --date "$BATCH_DATE" \
+            --queue-file config/alpha_mining/daily_queue.json \
+            --per-symbol "$PER_SYMBOL" \
+            --symbols "$SYMBOLS" \
+            --round "$ROUND_NO" \
+            --max-rounds 2 \
+            --days "$DAYS" \
+            --oos-fraction 0.30 \
+            --max-dd-gate 50 \
+            --min-trades 30 \
+            --top-n 9
+
+          DASH_PATH="alpha_mining/daily/${BATCH_DATE}/dashboard.html"
+          SUMMARY_PATH="alpha_mining/daily/${BATCH_DATE}/daily_summary.md"
+          test -f "$DASH_PATH"
+          test -f "$SUMMARY_PATH"
+          test -f "alpha_mining/daily/index.json"
+          test -f "alpha_mining/index.html"
+          cat "$SUMMARY_PATH" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Save Refreshed Binance Vision Multi-Timeframe Data Cache
+        if: success()
+        uses: actions/cache/save@v4
+        with:
+          path: data/cache/binance_vision
+          key: alpha-factory-vision-mtf-${{ steps.params.outputs.batch_date }}-${{ github.run_id }}
+
+      - name: Upload Daily Alpha 9-Panel Dashboard & Ranking Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: daily-alpha-mining-${{ steps.params.outputs.batch_date }}-${{ github.run_id }}
+          path: |
+            alpha_mining/index.html
+            alpha_mining/daily/index.json
+            alpha_mining/daily/
+            alpha_mining/ranking_top9.json
+            alpha_mining/catalog.json
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Optional Sync Daily Alpha Dashboard & Summary to Google Drive Reports Folder
+        if: success()
+        env:
+          BATCH_DATE: ${{ steps.params.outputs.batch_date }}
+          RCLONE_CONFIG_GDRIVE_DATA: ${{ secrets.RCLONE_CONFIG_GDRIVE }}
+          RCLONE_ASK_PASSWORD: "false"
+        run: |
+          set -euo pipefail
+          RCLONE_TRIMMED="${RCLONE_CONFIG_GDRIVE_DATA:-}"
+          if [[ -z "${RCLONE_TRIMMED//[[:space:]]/}" ]]; then
+            echo "RCLONE_CONFIG_GDRIVE secret not configured; skipping optional Google Drive report copy."
+            exit 0
+          fi
+          if ! command -v rclone >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends rclone
+          fi
+          RCLONE_TMP=$(mktemp)
+          trap 'rm -f "$RCLONE_TMP"' EXIT
+          chmod 600 "$RCLONE_TMP"
+          printf '%s\n' "$RCLONE_CONFIG_GDRIVE_DATA" | tr -d '\r' > "$RCLONE_TMP"
+          if ! grep -Eq '^[[:space:]]*\[gdrive\][[:space:]]*$' "$RCLONE_TMP"; then
+            echo "RCLONE_CONFIG_GDRIVE secret missing [gdrive] section header." >&2
+            exit 1
+          fi
+          REMOTE_DIR="gdrive:00_Katherine_Workspace/01_Alpha_Mining/04_reports/alpha_mining/daily/${BATCH_DATE}"
+          RCLONE_CONFIG="$RCLONE_TMP" rclone copy \
+            "alpha_mining/daily/${BATCH_DATE}" \
+            "$REMOTE_DIR" </dev/null
+          RCLONE_CONFIG="$RCLONE_TMP" rclone copyto \
+            "alpha_mining/daily/index.json" \
+            "gdrive:00_Katherine_Workspace/01_Alpha_Mining/04_reports/alpha_mining/daily/index.json" </dev/null
+          RCLONE_CONFIG="$RCLONE_TMP" rclone copyto \
+            "alpha_mining/index.html" \
+            "gdrive:00_Katherine_Workspace/01_Alpha_Mining/04_reports/alpha_mining/index.html" </dev/null
+          RCLONE_CONFIG="$RCLONE_TMP" rclone copyto \
+            "alpha_mining/ranking_top9.json" \
+            "gdrive:00_Katherine_Workspace/01_Alpha_Mining/04_reports/alpha_mining/ranking_top9.json" </dev/null
+          echo "Synced Alpha daily 9-panel dashboard, archive hub index.html & ranking_top9.json to $REMOTE_DIR"
+
+      - name: Commit Isolated Alpha Models & Open PR-Only Proposal (Never Push to main)
+        if: ${{ success() && steps.params.outputs.open_pr == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BATCH_DATE: ${{ steps.params.outputs.batch_date }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$(git status --porcelain -- alpha_mining/)" ]]; then
+            echo "No changes under alpha_mining/ to commit."
+            exit 0
+          fi
+          MODEL_COUNT=$(python3 -c "import json; d=json.load(open('alpha_mining/daily/${BATCH_DATE}/batch.json')); print(d.get('model_count', 10))")
+          ROUNDS_TAG=$(python3 -c "import json; d=json.load(open('alpha_mining/daily/${BATCH_DATE}/batch.json')); r=d.get('rounds') or [1]; print('r' + '+'.join(str(x) for x in r))")
+          BRANCH="bot/daily-alpha-mining-${BATCH_DATE}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$BRANCH"
+          git add alpha_mining/
+          git commit -m "chore(alpha-mining): daily ${MODEL_COUNT}-model XAUUSD+ETH batch (${ROUNDS_TAG}) & 9-panel dashboard (${BATCH_DATE})"
+          git push --force-with-lease origin "HEAD:refs/heads/${BRANCH}"
+
+          PY_VER=$(python3 --version 2>&1)
+          GIT_VER=$(git --version 2>&1)
+          GH_VER=$(gh --version | sed -n '1p')
+          PR_BODY_FILE=$(mktemp)
+          trap 'rm -f "$PR_BODY_FILE"' EXIT
+          {
+            cat "alpha_mining/daily/${BATCH_DATE}/daily_summary.md"
+            echo ""
+            echo "---"
+            echo ""
+            echo '```text'
+            echo "AGENT_ACK"
+            echo "mission_id: alpha-mining-daily-alpha-factory"
+            echo "task_id: daily-alpha-mining-${BATCH_DATE}-${ROUNDS_TAG}"
+            echo "assignment_id: ${BRANCH}"
+            echo "phase_id: scheduled-daily-2round-20model-batch"
+            echo "agent_id: github-actions-daily-alpha-mining"
+            echo "ovca_role: engineer"
+            echo "actual_provider_runtime: GitHub Actions ubuntu-latest (Linux)"
+            echo "actual_model_id_version: UNKNOWN (not exposed by runtime)"
+            echo "tools_environment:"
+            echo "  host: github-actions-runner"
+            echo "  secondary_nodes: UNKNOWN / NOT_CONNECTED"
+            echo "  python: ${PY_VER}"
+            echo "  rust: UNKNOWN / NOT_CONNECTED"
+            echo "  git: ${GIT_VER}"
+            echo "  gh: ${GH_VER}"
+            echo "mutation_boundary: alpha_mining/ on ${BRANCH} (PR-only; main protected)"
+            echo "verification_summary: scripts/alpha_mining.py run-daily exited 0; ${MODEL_COUNT} models accumulated; dashboard.html and daily_summary.md generated"
+            echo '```'
+          } > "$PR_BODY_FILE"
+
+          PR_TITLE="chore(alpha-mining): daily ${MODEL_COUNT}-model XAUUSD+ETH batch (${ROUNDS_TAG}) & 9-panel dashboard (${BATCH_DATE})"
+          EXISTING_PR_NUM=$(gh pr list -R "$REPO" --head "$BRANCH" --state open --json number --jq '.[0].number // ""')
+          if [[ -n "$EXISTING_PR_NUM" ]]; then
+            gh pr edit "$EXISTING_PR_NUM" -R "$REPO" --title "$PR_TITLE" --body-file "$PR_BODY_FILE"
+            echo "Updated existing Daily Alpha Mining PR #${EXISTING_PR_NUM}"
+            echo "### Daily Alpha Mining PR" >> "$GITHUB_STEP_SUMMARY"
+            echo "Updated existing PR #${EXISTING_PR_NUM} (${MODEL_COUNT} models, ${ROUNDS_TAG})" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          if PR_URL=$(gh pr create -R "$REPO" \
+            --base main \
+            --head "$BRANCH" \
+            --title "$PR_TITLE" \
+            --body-file "$PR_BODY_FILE" 2>&1); then
+            echo "Created Daily Alpha Mining PR: $PR_URL"
+            echo "### Daily Alpha Mining PR" >> "$GITHUB_STEP_SUMMARY"
+            echo "Opened PR for owner review: $PR_URL" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::Pushed branch ${BRANCH} cleanly, but gh pr create returned: ${PR_URL}"
+            echo "### Daily Alpha Mining Branch Ready" >> "$GITHUB_STEP_SUMMARY"
+            echo "Branch \`${BRANCH}\` pushed cleanly. Open PR manually or enable Actions PR creation." >> "$GITHUB_STEP_SUMMARY"
+          fi

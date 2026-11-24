@@ -2528,6 +2528,7 @@ def render_portal_index_html(
       </div>
       <div class="actions">
         <a id="open-latest-btn" class="{latest_btn_cls}" href="{latest_href}">{latest_btn_label}</a>
+        <a class="btn-ghost" href="alpha/index.html" style="text-decoration:none">Alpha Mining Hub</a>
         <button id="theme-toggle" type="button" class="btn-ghost">Theme</button>
       </div>
     </header>

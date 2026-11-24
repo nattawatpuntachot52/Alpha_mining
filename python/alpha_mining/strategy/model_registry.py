@@ -96,7 +96,7 @@ class PortfolioSpec:
 
 
 def _sha256_bytes(data: bytes) -> str:
-    return hashlib.sha256(data).hexdigest()
+    return hashlib.sha256(data.replace(b"\r\n", b"\n")).hexdigest()
 
 
 def _resolve_under_root(repo_root: Path, rel_path: str, label: str) -> Path:

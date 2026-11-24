@@ -1,7 +1,19 @@
 //====================================================================//
 // SHARED CORE EXECUTION & POSITION HELPERS (MT5 Hedging Account)
 // Source: models/mql5_core/execution_helpers.mqh
+//
+// Market-closed / rollover guard:
+//   Observed in MT5 Strategy Tester (00:00-01:05 broker time) that order
+//   spam produced retcode=10018 (TRADE_RETCODE_MARKET_CLOSED) on every tick.
+//   Every order/close helper below now:
+//     1) refuses to send while g_marketRetryAfter is in the future, and
+//     2) arms a MARKET_CLOSED_COOLDOWN_SECONDS cooldown on retcode
+//        10018 (market closed) / 10017 (trade disabled) / SYMBOL_TRADE_MODE_DISABLED.
 //====================================================================//
+
+#define MARKET_CLOSED_COOLDOWN_SECONDS 60
+
+datetime g_marketRetryAfter = 0;
 
 bool IsHedgingAccount()
 {
@@ -80,9 +92,44 @@ bool IsNewBarForTimeframe(ENUM_TIMEFRAMES tf, datetime &lastBarTime)
    return true;
 }
 
-bool FindBuyPositionByMagic(long magic,
-                            ulong &ticket,
-                            double &volume)
+//====================================================================//
+// MARKET-OPEN / ROLLOVER GUARD
+//====================================================================//
+
+bool IsMarketTradeAllowed()
+{
+   datetime now = TimeCurrent();
+
+   if(g_marketRetryAfter > 0 && now < g_marketRetryAfter)
+      return false;
+
+   long mode = SymbolInfoInteger(_Symbol, SYMBOL_TRADE_MODE);
+   if(mode == SYMBOL_TRADE_MODE_DISABLED)
+   {
+      g_marketRetryAfter = now + MARKET_CLOSED_COOLDOWN_SECONDS;
+      return false;
+   }
+
+   return true;
+}
+
+void NoteTradeResult(uint retcode)
+{
+   if(retcode == TRADE_RETCODE_MARKET_CLOSED ||
+      retcode == TRADE_RETCODE_TRADE_DISABLED)
+   {
+      g_marketRetryAfter = TimeCurrent() + MARKET_CLOSED_COOLDOWN_SECONDS;
+   }
+}
+
+//====================================================================//
+// POSITION HELPERS
+//====================================================================//
+
+bool FindPositionByMagicAndType(long magic,
+                                long posType,
+                                ulong &ticket,
+                                double &volume)
 {
    ticket = 0;
    volume = 0.0;
@@ -103,7 +150,7 @@ bool FindBuyPositionByMagic(long magic,
       if((long)PositionGetInteger(POSITION_MAGIC) != magic)
          continue;
 
-      if((long)PositionGetInteger(POSITION_TYPE) != POSITION_TYPE_BUY)
+      if((long)PositionGetInteger(POSITION_TYPE) != posType)
          continue;
 
       ticket = currentTicket;
@@ -112,6 +159,13 @@ bool FindBuyPositionByMagic(long magic,
    }
 
    return false;
+}
+
+bool FindBuyPositionByMagic(long magic,
+                            ulong &ticket,
+                            double &volume)
+{
+   return FindPositionByMagicAndType(magic, POSITION_TYPE_BUY, ticket, volume);
 }
 
 int CountPositionsByMagic(long magic)
@@ -140,6 +194,39 @@ int CountPositionsByMagic(long magic)
    return count;
 }
 
+int CountPositionsByMagicAndType(long magic, long posType)
+{
+   int count = 0;
+
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+   {
+      ulong ticket = PositionGetTicket(i);
+
+      if(ticket == 0)
+         continue;
+
+      if(!PositionSelectByTicket(ticket))
+         continue;
+
+      if(PositionGetString(POSITION_SYMBOL) != _Symbol)
+         continue;
+
+      if((long)PositionGetInteger(POSITION_MAGIC) != magic)
+         continue;
+
+      if((long)PositionGetInteger(POSITION_TYPE) != posType)
+         continue;
+
+      count++;
+   }
+
+   return count;
+}
+
+//====================================================================//
+// ORDER HELPERS (all guarded by the market-open cooldown)
+//====================================================================//
+
 bool OpenBuyByMagic(long magic,
                     double lots,
                     int deviationPoints,
@@ -148,6 +235,9 @@ bool OpenBuyByMagic(long magic,
    lots = NormalizeLots(lots);
 
    if(lots <= 0.0)
+      return false;
+
+   if(!IsMarketTradeAllowed())
       return false;
 
    trade.SetExpertMagicNumber(magic);
@@ -164,9 +254,50 @@ bool OpenBuyByMagic(long magic,
 
    if(!ok)
    {
+      NoteTradeResult(trade.ResultRetcode());
       Print(
          label,
          " BUY failed | retcode=",
+         trade.ResultRetcode(),
+         " | ",
+         trade.ResultRetcodeDescription()
+      );
+   }
+
+   return ok;
+}
+
+bool OpenSellByMagic(long magic,
+                     double lots,
+                     int deviationPoints,
+                     string label)
+{
+   lots = NormalizeLots(lots);
+
+   if(lots <= 0.0)
+      return false;
+
+   if(!IsMarketTradeAllowed())
+      return false;
+
+   trade.SetExpertMagicNumber(magic);
+   trade.SetDeviationInPoints(deviationPoints);
+
+   bool ok = trade.Sell(
+      lots,
+      _Symbol,
+      0.0,
+      0.0,
+      0.0,
+      label
+   );
+
+   if(!ok)
+   {
+      NoteTradeResult(trade.ResultRetcode());
+      Print(
+         label,
+         " SELL failed | retcode=",
          trade.ResultRetcode(),
          " | ",
          trade.ResultRetcodeDescription()
@@ -188,6 +319,9 @@ bool OpenPctSlTpOrderByMagic(long magic,
 {
    lots = NormalizeLots(lots);
    if(lots <= 0.0)
+      return false;
+
+   if(!IsMarketTradeAllowed())
       return false;
 
    if(maxSpreadPoints > 0)
@@ -236,6 +370,7 @@ bool OpenPctSlTpOrderByMagic(long magic,
 
    if(!ok)
    {
+      NoteTradeResult(trade.ResultRetcode());
       Print(
          label,
          (orderType == ORDER_TYPE_BUY ? " BUY" : " SELL"),
@@ -259,6 +394,9 @@ bool CloseOneBuyPositionByMagic(long magic,
    if(!FindBuyPositionByMagic(magic, ticket, volume))
       return true;
 
+   if(!IsMarketTradeAllowed())
+      return false;
+
    trade.SetExpertMagicNumber(magic);
    trade.SetDeviationInPoints(deviationPoints);
 
@@ -266,6 +404,7 @@ bool CloseOneBuyPositionByMagic(long magic,
 
    if(!ok)
    {
+      NoteTradeResult(trade.ResultRetcode());
       Print(
          label,
          " CLOSE failed | ticket=",
@@ -280,10 +419,68 @@ bool CloseOneBuyPositionByMagic(long magic,
    return ok;
 }
 
+bool ClosePositionsByMagicAndType(long magic,
+                                  long posType,
+                                  int deviationPoints,
+                                  string label)
+{
+   bool allClosed = true;
+
+   if(CountPositionsByMagicAndType(magic, posType) > 0 && !IsMarketTradeAllowed())
+      return false;
+
+   trade.SetExpertMagicNumber(magic);
+   trade.SetDeviationInPoints(deviationPoints);
+
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+   {
+      ulong ticket = PositionGetTicket(i);
+
+      if(ticket == 0)
+         continue;
+
+      if(!PositionSelectByTicket(ticket))
+         continue;
+
+      if(PositionGetString(POSITION_SYMBOL) != _Symbol)
+         continue;
+
+      if((long)PositionGetInteger(POSITION_MAGIC) != magic)
+         continue;
+
+      if((long)PositionGetInteger(POSITION_TYPE) != posType)
+         continue;
+
+      bool ok = trade.PositionClose(ticket);
+
+      if(!ok)
+      {
+         allClosed = false;
+         NoteTradeResult(trade.ResultRetcode());
+         Print(
+            label,
+            " CLOSE failed | ticket=",
+            ticket,
+            " | retcode=",
+            trade.ResultRetcode(),
+            " | ",
+            trade.ResultRetcodeDescription()
+         );
+         if(!IsMarketTradeAllowed())
+            break;
+      }
+   }
+
+   return allClosed;
+}
+
 void CloseAllPositionsByMagic(long magic,
                               int deviationPoints,
                               string label)
 {
+   if(CountPositionsByMagic(magic) > 0 && !IsMarketTradeAllowed())
+      return;
+
    trade.SetExpertMagicNumber(magic);
    trade.SetDeviationInPoints(deviationPoints);
 
@@ -307,6 +504,7 @@ void CloseAllPositionsByMagic(long magic,
 
       if(!ok)
       {
+         NoteTradeResult(trade.ResultRetcode());
          Print(
             label,
             " CLOSE failed | ticket=",
@@ -316,6 +514,8 @@ void CloseAllPositionsByMagic(long magic,
             " | ",
             trade.ResultRetcodeDescription()
          );
+         if(!IsMarketTradeAllowed())
+            break;
       }
    }
 }
