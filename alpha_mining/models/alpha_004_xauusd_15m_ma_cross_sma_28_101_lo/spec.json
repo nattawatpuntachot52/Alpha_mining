@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_004_xauusd_15m_ma_cross_sma_28_101_lo",
+  "trial_number": 4,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"ma_cross\",\"params\":{\"fast\":28,\"ma\":\"sma\",\"slow\":101},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"15m\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "15m",
+  "family": "ma_cross",
+  "params": {
+    "ma": "sma",
+    "fast": 28,
+    "slow": 101
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day01_r1_mt5_core",
+  "hypothesis": "MT5 MACross baseline: M15 SMA 28/101 captures multi-session directional gold moves.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-24",
+  "updated_at_utc": "2026-11-24T09:56:07Z",
+  "spec_sha256": "sha256:6a5ef42276a5678483f232b7756c96d558da8d861684748b0ba726ae6e4e6821"
+}

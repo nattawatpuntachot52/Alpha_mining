@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_020_ethusdt_1h_rsi_regime_14_58_50_42_ls",
+  "trial_number": 20,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"rsi_regime\",\"params\":{\"lower\":42,\"mid\":50,\"period\":14,\"upper\":58},\"sl_pct\":0.0,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"1h\",\"tp_pct\":0.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "1h",
+  "family": "rsi_regime",
+  "params": {
+    "period": 14,
+    "upper": 58,
+    "mid": 50,
+    "lower": 42
+  },
+  "direction": "long_short",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day01_r2_eth_core",
+  "hypothesis": "H1 RSI(14) momentum regime stays long in bull impulses and short in liquidation regimes.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-24",
+  "updated_at_utc": "2026-11-24T09:58:43Z",
+  "spec_sha256": "sha256:4e602bb33eaff6bab427ac779be055f0c5aa6d72f8af59db95d9da50433398b5"
+}

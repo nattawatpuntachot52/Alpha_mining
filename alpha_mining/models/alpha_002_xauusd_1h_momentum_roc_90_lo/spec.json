@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_002_xauusd_1h_momentum_roc_90_lo",
+  "trial_number": 2,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"momentum_roc\",\"params\":{\"lookback\":90},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"1h\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "1h",
+  "family": "momentum_roc",
+  "params": {
+    "lookback": 90
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day01_r1_mt5_core",
+  "hypothesis": "MT5 Alpha010 baseline: 90-bar (~4 trading days) H1 momentum rides macro gold swings.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-24",
+  "updated_at_utc": "2026-11-24T09:56:03Z",
+  "spec_sha256": "sha256:067c6b6ef344d34120680996b39054a7b66d25469760ef5271ae682abd242dc7"
+}

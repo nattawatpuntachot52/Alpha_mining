@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_010_ethusdt_4h_ma_cross_ema_5_20_ls",
+  "trial_number": 10,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"ma_cross\",\"params\":{\"fast\":5,\"ma\":\"ema\",\"slow\":20},\"sl_pct\":0.0,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"4h\",\"tp_pct\":0.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "4h",
+  "family": "ma_cross",
+  "params": {
+    "ma": "ema",
+    "fast": 5,
+    "slow": 20
+  },
+  "direction": "long_short",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day01_r1_mt5_port",
+  "hypothesis": "MT5 EMA4H 5/20 two-way ported to ETHUSDT: monetises both ETH bull runs and -50% crashes.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-24",
+  "updated_at_utc": "2026-11-24T09:56:24Z",
+  "spec_sha256": "sha256:965980628043637b0ef001e46ca6716eb2c2fedb187371ff4df6c56d0b9b216c"
+}
