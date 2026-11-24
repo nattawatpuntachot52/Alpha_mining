@@ -1,0 +1,29 @@
+# Code Owners for Alpha_mining (01_Alpha_Mining — Quant Research & Trading Systems)
+# Routes explicit review accountability for governance, CI/CD, control plane,
+# trading strategy modules, and Architecture Decision Records.
+
+# Root governance & mirrored charters
+/AGENTS.md @nattawatpuntachot52
+/CLAUDE.md @nattawatpuntachot52
+/GEMINI.md @nattawatpuntachot52
+/roles/ @nattawatpuntachot52
+
+# Control-plane policies, rulesets, and storage vault config
+/config/governance/ @nattawatpuntachot52
+/config/github/ @nattawatpuntachot52
+/config/storage/ @nattawatpuntachot52
+
+# CI/CD workflows & GitHub operational controls
+/.github/ @nattawatpuntachot52
+
+# Rust OVCA control plane & core CLI scripts
+/rust/ @nattawatpuntachot52
+/scripts/ @nattawatpuntachot52
+
+# MQL5 model registry, strategy modules, and assembled portfolios
+/models/ @nattawatpuntachot52
+/portfolios/ @nattawatpuntachot52
+
+# Architecture Decision Records & Agent Operations Inventory
+/docs/decisions/ @nattawatpuntachot52
+/docs/operations/ @nattawatpuntachot52
