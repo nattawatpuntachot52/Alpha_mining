@@ -16,6 +16,8 @@ import json
 import re
 from typing import Any, Sequence
 
+from .portal_hub import humanize_alpha_model
+
 _SAFE_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 DEFAULT_CENTRAL_HUB_HREF = "../../../index.html"
 DEFAULT_BETA_HUB_HREF = "../../../beta/index.html"  # GitHub Pages: /alpha/daily/<date>/ -> /beta/index.html
@@ -132,38 +134,37 @@ th{cursor:pointer;color:var(--mut);position:sticky;top:0;background:var(--card)}
 .badge.xau{color:#fbbf24;border-color:#fbbf24}.badge.eth{color:#93c5fd;border-color:#93c5fd}
 #tip{position:fixed;pointer-events:none;background:rgba(11,16,23,.96);border:1px solid var(--bd);border-radius:8px;padding:6px 9px;font:11px ui-monospace,Menlo,monospace;z-index:9;display:none;max-width:420px;white-space:pre-line}
 .hidden{display:none!important}.note{color:var(--mut);font-size:12px}
-.portal-bar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;background:#0f1722;border:1px solid var(--bd);border-left:4px solid #f59e0b;border-radius:12px;padding:9px 14px}
-.portal-brand{font-weight:800;font-size:13px;color:var(--fg);text-decoration:none}
+.portal-bar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;background:#0f1722;border:1px solid var(--bd);border-radius:12px;padding:10px 14px}
 .portal-pills{display:flex;flex-wrap:wrap;gap:7px;align-items:center}
-.pp{display:inline-flex;align-items:center;padding:5px 11px;border-radius:999px;font-size:12px;font-weight:700;text-decoration:none;border:1px solid var(--bd);background:var(--surf);color:var(--fg)}
-.pp:hover{border-color:var(--fg)}.pp.a-on{background:#f59e0b;color:#0b1017;border-color:#f59e0b}.pp.b-go{color:#60a5fa;border-color:rgba(59,130,246,.45);background:rgba(59,130,246,.12)}
+.pp{display:inline-flex;align-items:center;padding:6px 12px;border-radius:999px;font-size:12px;font-weight:700;text-decoration:none;border:1px solid var(--bd);background:var(--surf);color:var(--fg);cursor:pointer}
+.pp:hover{border-color:var(--fg)}.pp.xau-on{background:#f59e0b;color:#0b1017;border-color:#f59e0b}.pp.eth-on{background:#06b6d4;color:#061318;border-color:#06b6d4}.pp.all-on{background:var(--fg);color:var(--bg);border-color:var(--fg)}.pp.b-go{color:#60a5fa;border-color:rgba(59,130,246,.45);background:rgba(59,130,246,.12)}
 </style>
 </head>
 <body>
 <div class="wrap">
   <nav class="portal-bar" aria-label="Unified Research Portal Navigation">
-    <a class="portal-brand" href="../../../index.html">Alpha_mining · Central Portal</a>
-    <div class="portal-pills">
-      <a class="pp" href="../../../index.html">Central Hub (ฐานกลาง)</a>
-      <a class="pp a-on" href="../../index.html">ALPHA Track · XAUUSD + ETH</a>
-      <a class="pp b-go" href="../../../beta/index.html">BETA Track · ETH Grid</a>
+    <div class="portal-pills" id="top-cats">
+      <a class="pp" href="../../../index.html">หน้าหลัก</a>
+      <a class="pp" data-sym="XAUUSD" href="#sym=XAUUSD">ALPHA · ทองคำ (XAUUSD)</a>
+      <a class="pp" data-sym="ETHUSDT" href="#sym=ETHUSDT">ALPHA · ETH</a>
+      <a class="pp" data-sym="ALL" href="#sym=ALL">ALPHA · ทั้งหมด</a>
+      <a class="pp b-go" href="../../../beta/index.html">BETA · ETH Grid</a>
     </div>
+    <div class="row" id="nav"></div>
   </nav>
   <div class="header">
     <div><h1 id="title"></h1><div class="sub" id="sub"></div></div>
-    <div class="row" id="nav"></div>
-  </div>
-  <div class="row" id="tabs">
-    <button data-tab="daily" class="active">Daily Batch — 9 Panels</button>
-    <button data-tab="ranking">Top-9 Ranking Board</button>
-    <button data-tab="all">All Models</button>
+    <div class="row" id="tabs">
+      <button data-tab="daily" class="active">กราฟเปรียบเทียบวันนี้</button>
+      <button data-tab="ranking">อันดับ Top 9</button>
+      <button data-tab="all">ตารางโมเดลทั้งหมด</button>
+    </div>
   </div>
   <div class="kpis" id="kpis"></div>
-  <div class="bar" id="filters"></div>
   <div id="tab-daily">
     <div class="bar" id="legend" style="margin-bottom:14px"></div>
     <div class="grid" id="panels"></div>
-    <div class="card" style="margin-top:14px"><div class="pt" style="margin-bottom:8px">Full Performance Summary</div><div class="tw" id="tbl-daily"></div></div>
+    <div class="card" style="margin-top:14px"><div class="pt" style="margin-bottom:8px">ตารางสรุปผลทุกโมเดลในหมวดนี้</div><div class="tw" id="tbl-daily"></div></div>
   </div>
   <div id="tab-ranking" class="hidden"></div>
   <div id="tab-all" class="hidden"><div class="card"><div class="tw" id="tbl-all"></div></div></div>
@@ -268,11 +269,11 @@ function drawPanels(){
   barChart($("cv-bc"),labels,[{name:"Beta",color:"#60a5fa",vals:ms.map(m=>m.beta_to_underlying)},{name:"Corr",color:"#fb923c",vals:ms.map(m=>m.corr_to_underlying)}],v=>v.toFixed(2),names);
   heat($("cv-cm"),labels,corrMatrix(ms),names);
 }
-const COLS=[["model_id","Model","l"],["symbol","Sym"],["timeframe","TF"],["direction","Dir"],["total_return_pct","Return"],["cagr_pct","CAGR"],["max_drawdown_pct","Max DD"],["sharpe_daily_ann","Sharpe"],["is_sharpe_ann","IS Sh"],["oos_sharpe_ann","OOS Sh"],["oos_return_pct","OOS Ret"],["trades","Trades"],["win_rate_pct","Win%"],["profit_factor","PF"],["exposure_pct","Expo%"],["buy_hold_return_pct","B&H"],["dsr_approx","DSR≈"],["rank","Rank"]];
+const COLS=[["label","โมเดล","l"],["symbol","สินทรัพย์"],["timeframe","TF"],["direction","ฝั่ง"],["oos_return_pct","กำไร OOS"],["oos_sharpe_ann","OOS Sharpe"],["total_return_pct","กำไรรวม"],["max_drawdown_pct","Max DD"],["trades","จำนวนเทรด"],["win_rate_pct","Win%"],["profit_factor","PF"],["rank","อันดับ"]];
 const RK={};(P.ranking.top_ranked||[]).forEach(r=>RK[r.model_id]=r.rank);const DSR={};[...(P.ranking.top_ranked||[]),...(P.ranking.disqualified||[])].forEach(r=>DSR[r.model_id]=r.dsr_approx);
 function cell(m,k){
   const v=m[k];
-  if(k==="model_id")return `<td class="l" title="${esc(m.hypothesis||"")}">${esc(v)}</td>`;
+  if(k==="label")return `<td class="l" title="${esc(m.model_id+" — "+(m.hypothesis||""))}"><b>${esc(v||m.model_id)}</b></td>`;
   if(k==="symbol")return `<td>${symBadge(v)}</td>`;
   if(k==="rank")return `<td>${RK[m.model_id]?"#"+RK[m.model_id]:"–"}</td>`;
   if(k==="dsr_approx")return `<td>${num(DSR[m.model_id],2)}</td>`;
@@ -282,52 +283,66 @@ function cell(m,k){
   return `<td>${esc(v)}</td>`;
 }
 function table(el,rows,key){
-  const[sk,sd]=S.sort[key];const val=m=>sk==="rank"?(RK[m.model_id]||1e9):sk==="dsr_approx"?(DSR[m.model_id]??-1):m[sk];
+  const[sk,sd]=S.sort[key];const val=m=>sk==="rank"?(RK[m.model_id]||1e9):sk==="dsr_approx"?(DSR[m.model_id]??-1):(m[sk]??"");
   const sorted=[...rows].sort((a,b)=>{const x=val(a),y=val(b);return (typeof x==="string"?x.localeCompare(y):(x-y))*sd});
   el.innerHTML=`<table><thead><tr>${COLS.map(c=>`<th class="${c[2]||""}" data-k="${c[0]}">${c[1]}${sk===c[0]?(sd>0?" ▲":" ▼"):""}</th>`).join("")}</tr></thead><tbody>${sorted.map(m=>`<tr>${COLS.map(c=>cell(m,c[0])).join("")}</tr>`).join("")}</tbody></table>`;
   el.querySelectorAll("th").forEach(th=>th.onclick=()=>{const k=th.dataset.k;S.sort[key]=[k,S.sort[key][0]===k?-S.sort[key][1]:-1];render()});
 }
-function rankTable(rows){return `<table><thead><tr><th>Rank</th><th class="l">Model</th><th>Sym</th><th>TF</th><th>OOS Sharpe</th><th>OOS Ret</th><th>Max DD</th><th>Trades</th><th>DSR≈</th><th>Batch</th></tr></thead><tbody>${rows.map(r=>`<tr><td>#${r.rank}</td><td class="l" title="${esc(r.hypothesis||"")}">${esc(r.model_id)}</td><td>${symBadge(r.symbol)}</td><td>${esc(r.timeframe)}</td><td>${num(r.oos_sharpe_ann)}</td><td>${sgn(r.oos_return_pct)}</td><td>${num(r.max_drawdown_pct,1)}%</td><td>${r.trades}</td><td>${num(r.dsr_approx)}</td><td>${esc(r.batch_date)}</td></tr>`).join("")||'<tr><td colspan="10" class="mut">No model passes the hard gates yet.</td></tr>'}</tbody></table>`}
+function rankTable(rows){return `<table><thead><tr><th>อันดับ</th><th class="l">โมเดล</th><th>สินทรัพย์</th><th>TF</th><th>OOS Sharpe</th><th>กำไร OOS</th><th>Max DD</th><th>เทรด</th><th>วันที่ทดสอบ</th></tr></thead><tbody>${rows.map(r=>`<tr><td>#${r.rank}</td><td class="l" title="${esc(r.model_id+" — "+(r.hypothesis||""))}"><b>${esc(r.label||r.model_id)}</b></td><td>${symBadge(r.symbol)}</td><td>${esc(r.timeframe)}</td><td>${num(r.oos_sharpe_ann)}</td><td>${sgn(r.oos_return_pct)}</td><td>${num(r.max_drawdown_pct,1)}%</td><td>${r.trades}</td><td>${esc(r.batch_date)}</td></tr>`).join("")||'<tr><td colspan="9" class="mut">ยังไม่มีโมเดลในหมวดนี้ที่ผ่านเกณฑ์ทั้งหมด</td></tr>'}</tbody></table>`}
 function renderRanking(){
-  const rr=P.ranking,mt=(rr.ranking_rule||{}).multiple_testing||{};
-  let h=`<div class="card"><div class="pt" style="margin-bottom:6px">Cumulative Top-${P.top_n} (all symbols)</div><div class="note" style="margin-bottom:8px">Rule: OOS Sharpe DESC → Max DD ASC · gates: no liquidation, trades ≥ ${(rr.ranking_rule.hard_gates||{}).min_trades}, OOS profit > 0, Max DD ≤ ${(rr.ranking_rule.hard_gates||{}).max_drawdown_pct_limit}% · N_trials=${mt.n_trials} (DSR≈ haircuts for multiple testing)</div><div class="tw">${rankTable(rr.top_ranked||[])}</div></div>`;
-  Object.entries(rr.top_ranked_by_symbol||{}).forEach(([s,rows])=>{h+=`<div class="card" style="margin-top:14px"><div class="pt" style="margin-bottom:8px">${symBadge(s)} Top-${P.top_n}</div><div class="tw">${rankTable(rows)}</div></div>`});
-  const dq=rr.disqualified||[];
-  h+=`<div class="card" style="margin-top:14px"><div class="pt" style="margin-bottom:8px">Disqualified (${dq.length}) — kept visible, never silently dropped</div><div class="tw"><table><thead><tr><th class="l">Model</th><th>Sym</th><th>TF</th><th>OOS Sharpe</th><th>Max DD</th><th>Trades</th><th class="l">Reasons</th></tr></thead><tbody>${dq.map(d=>`<tr><td class="l">${esc(d.model_id)}</td><td>${symBadge(d.symbol)}</td><td>${esc(d.timeframe)}</td><td>${num(d.oos_sharpe_ann)}</td><td>${num(d.max_drawdown_pct,1)}%</td><td>${d.trades}</td><td class="l mut">${esc((d.disqualify_reasons||[]).join(", "))}</td></tr>`).join("")}</tbody></table></div></div>`;
+  const rr=P.ranking;
+  let h="";
+  if(S.sym==="ALL"){
+    h+=`<div class="card"><div class="pt" style="margin-bottom:6px">อันดับ Top-${P.top_n} สะสมรวม</div><div class="note" style="margin-bottom:8px">เกณฑ์คัดกรอง: กำไรนอกกลุ่มตัวอย่าง (OOS) > 0, เทรด ≥ ${(rr.ranking_rule.hard_gates||{}).min_trades} ครั้ง, Max DD ≤ ${(rr.ranking_rule.hard_gates||{}).max_drawdown_pct_limit}%</div><div class="tw">${rankTable(rr.top_ranked||[])}</div></div>`;
+  }
+  Object.entries(rr.top_ranked_by_symbol||{}).filter(([s])=>S.sym==="ALL"||S.sym===s).forEach(([s,rows])=>{h+=`<div class="card" style="margin-top:14px"><div class="pt" style="margin-bottom:8px">${symBadge(s)} อันดับ Top-${P.top_n} เฉพาะสินทรัพย์นี้</div><div class="tw">${rankTable(rows)}</div></div>`});
+  const dq=(rr.disqualified||[]).filter(d=>S.sym==="ALL"||d.symbol===S.sym);
+  h+=`<div class="card" style="margin-top:14px"><div class="pt" style="margin-bottom:8px">โมเดลที่ยังไม่ผ่านเกณฑ์ (${dq.length})</div><div class="tw"><table><thead><tr><th class="l">โมเดล</th><th>สินทรัพย์</th><th>TF</th><th>OOS Sharpe</th><th>กำไร OOS</th><th>Max DD</th><th class="l">สาเหตุ</th></tr></thead><tbody>${dq.map(d=>`<tr><td class="l" title="${esc(d.model_id)}">${esc(d.label||d.model_id)}</td><td>${symBadge(d.symbol)}</td><td>${esc(d.timeframe)}</td><td>${num(d.oos_sharpe_ann)}</td><td>${sgn(d.oos_return_pct)}</td><td>${num(d.max_drawdown_pct,1)}%</td><td class="l mut">${esc((d.disqualify_reasons||[]).join(", "))}</td></tr>`).join("")}</tbody></table></div></div>`;
   $("tab-ranking").innerHTML=h;
 }
 function renderKpis(){
   const ms=P.batch_models.filter(visible),oos=ms.filter(m=>m.oos_return_pct>0).length,best=ms.reduce((a,m)=>(!a||m.oos_sharpe_ann>a.oos_sharpe_ann)?m:a,null);
-  const k=[["Models (filtered)",ms.length],["Rounds",(P.rounds||[]).join(" + ")||"1"],["OOS profitable",oos+" / "+ms.length],["Best OOS Sharpe",best?num(best.oos_sharpe_ann):"–"],["Cumulative trials",P.total_trials],["Top-9 qualified",P.ranking.qualified_count]];
-  $("kpis").innerHTML=k.map(x=>`<div class="card"><div class="kl">${x[0]}</div><div class="kv">${esc(x[1])}</div></div>`).join("");
+  const qualSym=S.sym==="ALL"?P.ranking.qualified_count:((P.ranking.top_ranked_by_symbol||{})[S.sym]||[]).length;
+  const k=[["โมเดลในหน้านี้",ms.length+" โมเดล"],["กำไร OOS เป็นบวก",oos+" / "+ms.length],["OOS Sharpe สูงสุด",best?num(best.oos_sharpe_ann)+" ("+(best.label||best.family)+")":"–"],["ผ่านเกณฑ์ขึ้นบอร์ด",qualSym+" โมเดล"]];
+  $("kpis").innerHTML=k.map(x=>`<div class="card"><div class="kl">${x[0]}</div><div class="kv" style="font-size:17px">${esc(x[1])}</div></div>`).join("");
 }
-function renderFilters(){
-  const syms=["ALL",...new Set(P.batch_models.map(m=>m.symbol))],rounds=["ALL",...new Set(P.batch_models.map(m=>String(m.round_no||1)))];
-  $("filters").innerHTML=`<span class="note">Symbol</span>`+syms.map(s=>`<button data-s="${s}" class="${S.sym===s?"active":""}">${s}</button>`).join("")+`<span class="note" style="margin-left:12px">Round</span>`+rounds.map(r=>`<button data-r="${r}" class="${S.round===r?"active":""}">${r==="ALL"?"ALL":"R"+r}</button>`).join("");
-  $("filters").querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{S.sym=b.dataset.s;render()});$("filters").querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{S.round=b.dataset.r;render()});
+function syncHash(){
+  const m=(location.hash||"").match(/sym=(XAUUSD|ETHUSDT|ALL)/i);
+  if(m)S.sym=m[1].toUpperCase();
+  document.querySelectorAll("#top-cats [data-sym]").forEach(a=>{
+    const s=a.dataset.sym;
+    a.className="pp"+(S.sym===s?(s==="XAUUSD"?" xau-on":s==="ETHUSDT"?" eth-on":" all-on"):"");
+  });
+  const catLabel=S.sym==="XAUUSD"?"ALPHA · ทองคำ (XAUUSD)":S.sym==="ETHUSDT"?"ALPHA · คริปโต (ETHUSDT)":"ALPHA · ทั้งหมด (XAUUSD + ETHUSDT)";
+  $("title").textContent=catLabel+" — "+P.batch_date;
 }
 function renderLegend(){
   const ms=P.batch_models.filter(visible);
-  $("legend").innerHTML=ms.map(m=>`<span class="pill ${S.off.has(m.model_id)?"off":""}" data-m="${esc(m.model_id)}" title="${esc(m.hypothesis||m.model_id)}"><span class="dot" style="background:${colorOf[m.model_id]}"></span>${idxOf[m.model_id]} ${esc(m.symbol)} ${esc(m.timeframe)} ${esc(m.family)}</span>`).join("")+`<button id="allon">All on</button><button id="alloff">All off</button>`;
+  const rounds=["ALL",...new Set(P.batch_models.map(m=>String(m.round_no||1)))];
+  const rBtns=rounds.length>2?`<span class="note">รอบ:</span>`+rounds.map(r=>`<button data-r="${r}" class="${S.round===r?"active":""}">${r==="ALL"?"ทั้งหมด":"รอบ "+r}</button>`).join("")+`<span style="width:8px"></span>`:"";
+  $("legend").innerHTML=rBtns+ms.map(m=>`<span class="pill ${S.off.has(m.model_id)?"off":""}" data-m="${esc(m.model_id)}" title="${esc(m.model_id+" — "+(m.hypothesis||""))}"><span class="dot" style="background:${colorOf[m.model_id]}"></span>${idxOf[m.model_id]} ${esc(m.label||m.family)}</span>`).join("")+`<button id="allon">เปิดทั้งหมด</button><button id="alloff">ซ่อนทั้งหมด</button>`;
   $("legend").querySelectorAll(".pill").forEach(p=>p.onclick=()=>{const id=p.dataset.m;S.off.has(id)?S.off.delete(id):S.off.add(id);render()});
+  $("legend").querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{S.round=b.dataset.r;render()});
   $("allon").onclick=()=>{S.off.clear();render()};$("alloff").onclick=()=>{ms.forEach(m=>S.off.add(m.model_id));render()};
 }
 function renderNav(){
+  const h=S.sym!=="ALL"?`#sym=${S.sym}`:"";
   const ds_=P.available_dates||[],i=ds_.findIndex(d=>d.batch_date===P.batch_date),older=ds_[i+1],newer=ds_[i-1];
-  $("nav").innerHTML=(older?`<a class="nav" href="../${esc(older.batch_date)}/dashboard.html">◀ ${esc(older.batch_date)}</a>`:"")+`<span class="badge">${esc(P.batch_date)}</span>`+(newer?`<a class="nav" href="../${esc(newer.batch_date)}/dashboard.html">${esc(newer.batch_date)} ▶</a>`:"")+`<a class="nav" href="../../index.html">Alpha Hub</a><a class="nav" href="${esc(P.beta_hub_href)}">Beta Hub</a>`;
+  $("nav").innerHTML=(older?`<a class="nav" href="../${esc(older.batch_date)}/dashboard.html${h}">◀ ${esc(older.batch_date)}</a>`:"")+`<span class="badge">${esc(P.batch_date)}</span>`+(newer?`<a class="nav" href="../${esc(newer.batch_date)}/dashboard.html${h}">${esc(newer.batch_date)} ▶</a>`:"");
 }
 function render(){
+  syncHash();
   document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("active",b.dataset.tab===S.tab));
   ["daily","ranking","all"].forEach(t=>$("tab-"+t).classList.toggle("hidden",t!==S.tab));
-  renderFilters();renderKpis();
+  renderNav();renderKpis();renderRanking();
   if(S.tab==="daily"){renderLegend();drawPanels();table($("tbl-daily"),P.batch_models.filter(visible),"daily")}
   if(S.tab==="all")table($("tbl-all"),P.models.filter(m=>S.sym==="ALL"||m.symbol===S.sym),"all");
 }
-$("title").textContent="Alpha Mining — "+P.batch_date;
-$("sub").textContent="Generated "+P.generated_at_utc+" · "+P.batch_models.length+" models · XAUUSD feed = PAXGUSDT proxy (24/7) · ETHUSDT = Binance USD-M perp";
-$("foot").textContent="Zero CDN · offline. Backtests are causal (signal at bar close → fill at next open), costs "+"per side included, OOS = last "+Math.round((P.oos_fraction||.3)*100)+"% of bars. Exploratory evidence only — not a live-trading promotion.";
+$("sub").textContent="คลิกชื่อโมเดลด้านล่างเพื่อเปิด/ปิดเส้นกราฟ · OOS = ช่วงทดสอบนอกกลุ่มตัวอย่าง 30% ล่าสุด";
+$("foot").textContent="ข้อมูลวิจัยเชิงทดลองแบบ Causal (ตัดสินใจเมื่อปิดแท่ง → เข้าที่ราคาเปิดแท่งถัดไป หักค่าธรรมเนียมต่อขาแล้ว)";
 document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;render()});
-buildPanels();renderNav();renderRanking();render();
+addEventListener("hashchange",()=>render());
+buildPanels();render();
 addEventListener("resize",()=>{if(S.tab==="daily")drawPanels()});
 </script>
 </body>
@@ -396,6 +411,7 @@ _SLIM_KEYS = (
 
 def _slim(m: dict[str, Any], keep_hyp: bool = False) -> dict[str, Any]:
     out = {k: m[k] for k in _SLIM_KEYS if k in m}
+    out["label"] = humanize_alpha_model(m)
     if keep_hyp and m.get("hypothesis"):
         out["hypothesis"] = str(m["hypothesis"])[:300]
     return out

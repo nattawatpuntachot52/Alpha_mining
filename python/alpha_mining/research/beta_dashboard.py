@@ -460,11 +460,11 @@ def render_dashboard_html(
 <body>
   <div class="wrap">
     <nav class="portal-bar" aria-label="Unified Research Portal Navigation">
-      <a class="portal-brand" href="../../../index.html">Alpha_mining · Central Portal</a>
       <div class="portal-pills">
-        <a class="pp" href="../../../index.html">Central Hub (ฐานกลาง)</a>
-        <a class="pp a-go" href="../../../alpha/index.html">ALPHA Track · XAUUSD + ETH</a>
-        <a class="pp b-on" href="../../index.html">BETA Track · ETH Grid</a>
+        <a class="pp" href="../../../index.html">หน้าหลัก</a>
+        <a class="pp a-go" href="../../../alpha/index.html#sym=XAUUSD">ALPHA · ทองคำ (XAUUSD)</a>
+        <a class="pp a-go" href="../../../alpha/index.html#sym=ETHUSDT">ALPHA · ETH</a>
+        <a class="pp b-on" href="#">BETA · ETH Grid</a>
       </div>
     </nav>
     <header class="header">
