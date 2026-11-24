@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_015_xauusd_1d_calendar_turn_x_long_lo",
+  "trial_number": 15,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"calendar_turn\",\"params\":{\"days_of_month\":[[20,21]],\"side\":\"long\"},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"1d\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "1d",
+  "family": "calendar_turn",
+  "params": {
+    "days_of_month": [
+      [
+        20,
+        21
+      ]
+    ],
+    "side": "long"
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day01_r2_mt5_extended",
+  "hypothesis": "MT5 Monthly Day-20 hypothesis: buy gold on calendar days 20-21 for monthly settlement/rebalance drift.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-24",
+  "updated_at_utc": "2026-11-24T09:58:39Z",
+  "spec_sha256": "sha256:ba17ebea99f1e4210a82a2880458f133561a9228bcfd40a2ea7f01c888882981"
+}

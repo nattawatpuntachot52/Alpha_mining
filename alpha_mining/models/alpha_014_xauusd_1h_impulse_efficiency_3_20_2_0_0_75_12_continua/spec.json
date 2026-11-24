@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_014_xauusd_1h_impulse_efficiency_3_20_2_0_0_75_12_continua",
+  "trial_number": 14,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"impulse_efficiency\",\"params\":{\"er_threshold\":0.75,\"hold_bars\":12,\"k\":3,\"mode\":\"continuation\",\"w\":20,\"z_threshold\":2.0},\"sl_pct\":0.75,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"1h\",\"tp_pct\":0.5}",
+  "symbol": "XAUUSD",
+  "timeframe": "1h",
+  "family": "impulse_efficiency",
+  "params": {
+    "k": 3,
+    "w": 20,
+    "z_threshold": 2.0,
+    "er_threshold": 0.75,
+    "hold_bars": 12,
+    "mode": "continuation"
+  },
+  "direction": "long_short",
+  "sl_pct": 0.75,
+  "tp_pct": 0.5,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day01_r2_mt5_extended",
+  "hypothesis": "MT5 Impulse Efficiency S1: H1 |Z_t(3)|>=2.0 & ER>=0.75 continuation with quick-harvest SL 0.75% / TP 0.50%.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-24",
+  "updated_at_utc": "2026-11-24T09:58:36Z",
+  "spec_sha256": "sha256:4695e32d9b24db9618ea51bc20c68bba69ffb09d039bea4baa83f549be503d8c"
+}
