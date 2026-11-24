@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_008_ethusdt_15m_heiken_ma_cross_sma_12_26_lo",
+  "trial_number": 8,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"heiken_ma_cross\",\"params\":{\"fast\":12,\"ma\":\"sma\",\"slow\":26},\"sl_pct\":0.0,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"15m\",\"tp_pct\":0.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "15m",
+  "family": "heiken_ma_cross",
+  "params": {
+    "ma": "sma",
+    "fast": 12,
+    "slow": 26
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day01_r1_mt5_port",
+  "hypothesis": "Heiken M15 SMA 12/26 ported to 24/7 ETHUSDT (no Thursday block) for smoothed intraday trend.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-24",
+  "updated_at_utc": "2026-11-24T09:56:17Z",
+  "spec_sha256": "sha256:77578c73143bcf31d95d0d7310b81a357111eb9a0419dc78e73f4f376ce02699"
+}

@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_007_ethusdt_1h_momentum_roc_90_lo",
+  "trial_number": 7,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"momentum_roc\",\"params\":{\"lookback\":90},\"sl_pct\":0.0,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"1h\",\"tp_pct\":0.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "1h",
+  "family": "momentum_roc",
+  "params": {
+    "lookback": 90
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day01_r1_mt5_port",
+  "hypothesis": "Alpha010 ported to ETHUSDT H1: 90-hour (~3.75d) trend-following avoids bear-market drawdowns.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-24",
+  "updated_at_utc": "2026-11-24T09:56:14Z",
+  "spec_sha256": "sha256:51355621052944358a91d68dae2932427a458d4f05df7cc0997780caed8bc05a"
+}

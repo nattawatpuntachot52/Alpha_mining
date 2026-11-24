@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_003_xauusd_15m_heiken_ma_cross_sma_12_26_x_lo",
+  "trial_number": 3,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"heiken_ma_cross\",\"params\":{\"block_entry_weekdays\":[3],\"fast\":12,\"ma\":\"sma\",\"slow\":26},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"15m\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "15m",
+  "family": "heiken_ma_cross",
+  "params": {
+    "ma": "sma",
+    "fast": 12,
+    "slow": 26,
+    "block_entry_weekdays": [
+      3
+    ]
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day01_r1_mt5_core",
+  "hypothesis": "MT5 Heiken baseline: M15 HA Close SMA 12/26 with Thursday entry block reduces mid-week whipsaw.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-24",
+  "updated_at_utc": "2026-11-24T09:56:06Z",
+  "spec_sha256": "sha256:0ea3e720956f9b5651e0cc3698b0faa9f67c55594c6e276bd077ea17ba546687"
+}

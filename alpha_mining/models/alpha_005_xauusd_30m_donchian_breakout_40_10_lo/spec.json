@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_005_xauusd_30m_donchian_breakout_40_10_lo",
+  "trial_number": 5,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"donchian_breakout\",\"params\":{\"entry\":40,\"exit\":10},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"30m\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "30m",
+  "family": "donchian_breakout",
+  "params": {
+    "entry": 40,
+    "exit": 10
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day01_r1_mt5_core",
+  "hypothesis": "MT5 Breakout baseline: M30 Donchian 40-bar high entry with asymmetric 10-bar low trailing exit.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-24",
+  "updated_at_utc": "2026-11-24T09:56:10Z",
+  "spec_sha256": "sha256:51ef0e1c32e1d975244c39f882c9fb79621866d55b11c77385576a3dfc03c678"
+}

@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0",
+  "generated_at_utc": "2026-11-24T09:56:24Z",
+  "latest_date": "2026-11-24",
+  "total_days": 1,
+  "dates": [
+    "2026-11-24"
+  ],
+  "days": [
+    {
+      "batch_date": "2026-11-24",
+      "generated_at_utc": "2026-11-24T09:56:24Z",
+      "model_count": 10,
+      "rounds": [
+        1
+      ],
+      "by_symbol": {
+        "XAUUSD": 5,
+        "ETHUSDT": 5
+      },
+      "model_ids": [
+        "alpha_001_xauusd_1h_momentum_roc_14_lo",
+        "alpha_002_xauusd_1h_momentum_roc_90_lo",
+        "alpha_003_xauusd_15m_heiken_ma_cross_sma_12_26_x_lo",
+        "alpha_004_xauusd_15m_ma_cross_sma_28_101_lo",
+        "alpha_005_xauusd_30m_donchian_breakout_40_10_lo",
+        "alpha_006_ethusdt_1h_momentum_roc_14_lo",
+        "alpha_007_ethusdt_1h_momentum_roc_90_lo",
+        "alpha_008_ethusdt_15m_heiken_ma_cross_sma_12_26_lo",
+        "alpha_009_ethusdt_30m_donchian_breakout_40_10_lo",
+        "alpha_010_ethusdt_4h_ma_cross_ema_5_20_ls"
+      ],
+      "best_oos_sharpe_model_id": "alpha_005_xauusd_30m_donchian_breakout_40_10_lo",
+      "best_oos_sharpe": 0.556,
+      "profitable_oos_count": 2,
+      "has_dashboard": true,
+      "has_summary": true,
+      "dashboard_rel_path": "daily/2026-11-24/dashboard.html",
+      "summary_rel_path": "daily/2026-11-24/daily_summary.md"
+    }
+  ]
+}
