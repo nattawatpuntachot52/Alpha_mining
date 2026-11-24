@@ -1,13 +1,22 @@
-# Separate Bot / GitHub App Account Setup (`Review Quorum >= 1`)
+# Separate Bot / GitHub App Account Setup (`Review Quorum >= 1`) — `Alpha_mining`
 
-## เหตุผลที่ต้องตั้งค่า `required_approving_review_count = 0` ชั่วคราว
+## สถานะปัจจุบัน (`Independently Verified Result` ล่าสุด `2026-11-24`)
 
-GitHub ไม่อนุญาตให้ **ผู้เปิด Pull Request (PR Author)** กด approve PR ของตัวเองได้  
-ปัจจุบัน repository `nattawatpuntachot52/Alpha_mining` มี collaborator เพียง 1 บัญชีคือ `nattawatpuntachot52` หากตั้ง `required_approving_review_count >= 1` ทันที ทุก PR ที่เปิดโดยบัญชีหลักจะเกิด **Self-Approval Deadlock** (merge ไม่ได้)
+- **ปลดล็อกและใช้งานจริงแล้วบน `nattawatpuntachot52/Alpha_mining`:**
+  - GitHub App: **`alpha-mining-ovca-reviewer`** (`OVCA_REVIEWER_APP_ID = 5800517` + Repository Secret `OVCA_REVIEWER_APP_PRIVATE_KEY` ตั้งค่าตั้งแต่ `2026-11-17`)
+  - Live Rulesets บน `main` (ตรวจผ่าน `python3 scripts/github_ruleset.py verify`):
+    1. [standard-main-protection.json](../config/github/rulesets/standard-main-protection.json) (Live Ruleset ID `27447738`): **`required_approving_review_count: 1`**, `dismiss_stale_reviews_on_push: true`, `required_review_thread_resolution: true`
+    2. [details-main-protection.json](../config/github/rulesets/details-main-protection.json) (Live Ruleset ID `27447741`): `strict_required_status_checks_policy: true`, บังคับ check `rust` และ `python`
+  - **หลักฐานการใช้งานจริง:** `alpha-mining-ovca-reviewer` อนุมัติ PR #15 (`619285d`), PR #18 (`5c3a863`, run `45318298071`), และตรวจจับ-ส่งกลับ-อนุมัติจริงในวงจร `CHANGES_REQUESTED -> fix -> APPROVED` บน PR #19 (`5a30101` → `fe65cac` → `1ddd667`)
+- **การนำไปใช้ซ้ำบน `Katherine-HQ`:** ไม่ต้องสร้าง GitHub App ใหม่ ให้เพิ่ม `nattawatpuntachot52/Katherine-HQ` เข้า Installation ของ App `5800517` แล้วตั้ง Secret `OVCA_REVIEWER_APP_PRIVATE_KEY` ก่อนตั้ง Variable `OVCA_REVIEWER_APP_ID = 5800517` (ดูคู่มือใน `Katherine-HQ/docs/bot-account-setup.md`)
 
-ระบบจึงแบ่ง Ruleset เป็น 2 ชั้นไว้ล่วงหน้า:
-1. [standard-main-protection.json](../config/github/rulesets/standard-main-protection.json) (`required_approving_review_count: 0` ชั่วคราว + `dismiss_stale_reviews_on_push: true` + `required_review_thread_resolution: true`)
-2. [details-main-protection.json](../config/github/rulesets/details-main-protection.json) (`strict_required_status_checks_policy: true`, บังคับ check `rust` และ `python`)
+---
+
+## เหตุผลเชิงสถาปัตยกรรมที่เริ่มด้วย `required_approving_review_count = 0` ก่อนสลับเป็น `1`
+
+GitHub ไม่อนุญาตให้ **ผู้เปิด Pull Request (PR Author)** กด approve PR ของตัวเองได้
+
+ในระยะแรกที่ repository `nattawatpuntachot52/Alpha_mining` มี collaborator เพียง 1 บัญชีคือ `nattawatpuntachot52` การตั้ง `required_approving_review_count >= 1` ทันทีจะทำให้เกิด **Self-Approval Deadlock** (merge ไม่ได้) ระบบจึงวาง Ruleset 2 ชั้นและสลับเป็น `1` หลังติดตั้ง Separate GitHub App สำเร็จแล้ว คู่มือด้านล่างเก็บไว้สำหรับการหมุนเวียนกุญแจ (key rotation) หรือตั้งค่าซ้ำใน repository อื่นค่ะ
 
 ---
 
