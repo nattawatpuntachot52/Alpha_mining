@@ -6,11 +6,16 @@ body{margin:0;padding:22px;background:#0b1017;color:#e6edf6;font:13px/1.5 -apple
 .w{max-width:1200px;margin:0 auto}h1{font-size:20px;margin:0 0 4px}.m{color:#8ea0b8}
 .card{background:#121923;border:1px solid #263244;border-radius:12px;padding:14px;margin-top:14px;overflow-x:auto}
 table{border-collapse:collapse;width:100%}th,td{padding:6px 8px;border-bottom:1px solid #263244;text-align:left;white-space:nowrap}th{color:#8ea0b8}
-a{color:#93c5fd}a.btn{display:inline-block;padding:7px 12px;border:1px solid #263244;border-radius:8px;background:#192331;text-decoration:none;margin-right:8px}
+a{color:#93c5fd}a.btn{display:inline-block;padding:7px 12px;border:1px solid #263244;border-radius:8px;background:#192331;text-decoration:none;margin-right:8px;font-weight:700}
+a.btn.alpha-cta{background:#f59e0b;color:#0b1017;border-color:#f59e0b}
+.pbar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;background:#0f1722;border:1px solid #263244;border-left:4px solid #f59e0b;border-radius:12px;padding:10px 14px;margin-bottom:14px}
+.pp{display:inline-flex;padding:5px 11px;border-radius:999px;font-size:12px;font-weight:700;text-decoration:none;border:1px solid #263244;background:#192331;color:#e6edf6;margin-left:6px}
+.pp.a-on{background:#f59e0b;color:#0b1017;border-color:#f59e0b}.pp.b-go{color:#60a5fa;border-color:rgba(59,130,246,.45);background:rgba(59,130,246,.12)}
 </style></head><body><div class="w">
-<h1>Alpha Mining Hub</h1>
-<div class="m">Generated 2026-11-24T09:58:43Z · 1 day(s) · 20 models · N_trials=20 · 20 models/day (10 XAUUSD + 10 ETHUSDT) in 2 rounds</div>
-<div style="margin-top:12px"><a class="btn" href="daily/2026-11-24/dashboard.html">Open latest (2026-11-24)</a><a class="btn" href="../index.html">Beta Mining Hub</a></div>
+<nav class="pbar"><b style="font-size:14px">Alpha_mining · Central Portal</b><div><a class="pp" href="../index.html">Central Hub (ฐานกลาง)</a><a class="pp a-on" href="index.html">ALPHA Track · XAUUSD + ETH</a><a class="pp b-go" href="../beta/index.html">BETA Track · ETH Grid</a></div></nav>
+<h1>ALPHA TRACK — Alpha Mining Hub (XAUUSD + ETHUSDT)</h1>
+<div class="m">Generated 2026-11-24T10:30:06Z · 1 day(s) · 20 models · N_trials=20 · 20 models/day (10 XAUUSD + 10 ETHUSDT) in 2 rounds</div>
+<div style="margin-top:12px"><a class="btn alpha-cta" href="daily/2026-11-24/dashboard.html">Open latest (2026-11-24)</a><a class="btn" href="../index.html">กลับฐานกลาง (Central Hub)</a><a class="btn" href="../beta/index.html">สลับไป BETA Hub</a></div>
 <div class="card"><b>Cumulative Top-9</b> <span class="m">(OOS Sharpe DESC, Max DD ASC; DSR≈ = multiple-testing haircut)</span>
 <table><thead><tr><th>Rank</th><th>Model</th><th>Sym</th><th>TF</th><th>OOS Sharpe</th><th>OOS Ret</th><th>Max DD</th><th>DSR≈</th></tr></thead><tbody><tr><td>#1</td><td>alpha_011_xauusd_4h_ma_cross_ema_5_20_ls</td><td>XAUUSD</td><td>4h</td><td>1.11</td><td>+42.4%</td><td>34.8%</td><td>0.02</td></tr><tr><td>#2</td><td>alpha_013_xauusd_1h_session_time_19_2_long_inside_lo</td><td>XAUUSD</td><td>1h</td><td>0.71</td><td>+12.2%</td><td>23.2%</td><td>0.00</td></tr><tr><td>#3</td><td>alpha_015_xauusd_1d_calendar_turn_x_long_lo</td><td>XAUUSD</td><td>1d</td><td>0.60</td><td>+7.8%</td><td>6.9%</td><td>0.05</td></tr><tr><td>#4</td><td>alpha_005_xauusd_30m_donchian_breakout_40_10_lo</td><td>XAUUSD</td><td>30m</td><td>0.56</td><td>+6.8%</td><td>22.1%</td><td>0.03</td></tr><tr><td>#5</td><td>alpha_012_xauusd_1h_session_time_20_4_long_inside_lo</td><td>XAUUSD</td><td>1h</td><td>0.32</td><td>+4.7%</td><td>20.7%</td><td>0.01</td></tr></tbody></table></div>
 <div class="card"><b>Daily batches</b>

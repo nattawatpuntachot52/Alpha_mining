@@ -440,10 +440,33 @@ def render_dashboard_html(
     }}
     .tt-lbl {{ display: inline-flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; }}
     .tt-dot {{ width: 8px; height: 8px; border-radius: 50%; flex: none; }}
+    .portal-bar {{
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px;
+      background: var(--bm-card); border: 1px solid var(--bm-border); border-left: 4px solid var(--bm-primary);
+      border-radius: 12px; padding: 9px 14px;
+    }}
+    .portal-brand {{ font-weight: 800; font-size: 13px; color: var(--bm-fg); text-decoration: none; }}
+    .portal-pills {{ display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }}
+    .pp {{
+      display: inline-flex; align-items: center; padding: 5px 11px; border-radius: 999px;
+      font-size: 12px; font-weight: 700; text-decoration: none;
+      border: 1px solid var(--bm-border); background: var(--bm-surface); color: var(--bm-fg);
+    }}
+    .pp:hover {{ border-color: var(--bm-primary); }}
+    .pp.b-on {{ background: var(--bm-primary); color: #ffffff; border-color: var(--bm-primary); }}
+    .pp.a-go {{ color: #f59e0b; border-color: rgba(245, 158, 11, 0.45); background: rgba(245, 158, 11, 0.12); }}
   </style>
 </head>
 <body>
   <div class="wrap">
+    <nav class="portal-bar" aria-label="Unified Research Portal Navigation">
+      <a class="portal-brand" href="../../../index.html">Alpha_mining · Central Portal</a>
+      <div class="portal-pills">
+        <a class="pp" href="../../../index.html">Central Hub (ฐานกลาง)</a>
+        <a class="pp a-go" href="../../../alpha/index.html">ALPHA Track · XAUUSD + ETH</a>
+        <a class="pp b-on" href="../../index.html">BETA Track · ETH Grid</a>
+      </div>
+    </nav>
     <header class="header">
       <div>
         <h1 class="title">Alpha_mining — Beta Mining 9-Panel Research Dashboard ({safe_date})</h1>
@@ -2517,18 +2540,41 @@ def render_portal_index_html(
       background: var(--bm-surface); color: var(--bm-fg); margin-right: 5px;
     }}
     .link-btn.primary {{ background: var(--bm-primary); color: var(--bm-primary-fg); border-color: var(--bm-primary); }}
+    .portal-bar {{
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px;
+      background: var(--bm-card); border: 1px solid var(--bm-border); border-left: 4px solid var(--bm-primary);
+      border-radius: 12px; padding: 9px 14px;
+    }}
+    .portal-brand {{ font-weight: 800; font-size: 13px; color: var(--bm-fg); text-decoration: none; }}
+    .portal-pills {{ display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }}
+    .pp {{
+      display: inline-flex; align-items: center; padding: 5px 11px; border-radius: 999px;
+      font-size: 12px; font-weight: 700; text-decoration: none;
+      border: 1px solid var(--bm-border); background: var(--bm-surface); color: var(--bm-fg);
+    }}
+    .pp:hover {{ border-color: var(--bm-primary); }}
+    .pp.b-on {{ background: var(--bm-primary); color: #ffffff; border-color: var(--bm-primary); }}
+    .pp.a-go {{ color: #f59e0b; border-color: rgba(245, 158, 11, 0.45); background: rgba(245, 158, 11, 0.12); }}
   </style>
 </head>
 <body>
   <div class="wrap">
+    <nav class="portal-bar" aria-label="Unified Research Portal Navigation">
+      <a class="portal-brand" href="../index.html">Alpha_mining · Central Portal</a>
+      <div class="portal-pills">
+        <a class="pp" href="../index.html">Central Hub (ฐานกลาง)</a>
+        <a class="pp a-go" href="../alpha/index.html">ALPHA Track · XAUUSD + ETH</a>
+        <a class="pp b-on" href="index.html">BETA Track · ETH Grid</a>
+      </div>
+    </nav>
     <header class="header">
       <div>
-        <h1 class="title">Alpha_mining — Beta Mining Daily Archive Hub</h1>
+        <h1 class="title">BETA TRACK — Beta Mining Daily Archive Hub</h1>
         <p id="hub-sub" class="subtitle"></p>
       </div>
       <div class="actions">
         <a id="open-latest-btn" class="{latest_btn_cls}" href="{latest_href}">{latest_btn_label}</a>
-        <a class="btn-ghost" href="alpha/index.html" style="text-decoration:none">Alpha Mining Hub</a>
+        <a class="btn-ghost" href="../index.html" style="text-decoration:none">กลับฐานกลาง</a>
         <button id="theme-toggle" type="button" class="btn-ghost">Theme</button>
       </div>
     </header>

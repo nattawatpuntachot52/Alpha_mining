@@ -1,4 +1,4 @@
-name: Deploy Mining Dashboards (GitHub Pages — Beta + Alpha)
+name: "Deploy Unified Research Portal (GitHub Pages | Central + Alpha + Beta)"
 
 on:
   push:
@@ -7,6 +7,8 @@ on:
     paths:
       - "beta_mining/**"
       - "alpha_mining/**"
+      - "python/alpha_mining/research/portal_hub.py"
+      - "scripts/build_portal.py"
       - ".github/workflows/deploy-beta-pages.yml"
   workflow_dispatch:
 
@@ -27,10 +29,15 @@ jobs:
       - name: Checkout main repository
         uses: actions/checkout@v4
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
-      - name: Stage public Beta & Alpha Mining dashboard sites (fail-closed)
+      - name: Stage Unified Central Portal, Alpha Track & Beta Track (fail-closed)
         run: |
           set -euo pipefail
           shopt -s nullglob
@@ -39,23 +46,37 @@ jobs:
           test -f beta_mining/ranking_top9.json
 
           rm -rf pages_site
-          mkdir -p pages_site/daily
-          cp beta_mining/index.html pages_site/index.html
-          cp beta_mining/ranking_top9.json pages_site/ranking_top9.json
-          cp beta_mining/daily/index.json pages_site/daily/index.json
+          mkdir -p pages_site/beta/daily pages_site/daily
           touch pages_site/.nojekyll
 
-          # Copy every valid YYYY-MM-DD Beta daily dashboard & summary (never expose repo source or raw model folders)
+          # 1. Build Unified Central Portal at site root (separating Alpha & Beta cleanly)
+          PYTHONDONTWRITEBYTECODE=1 python3 scripts/build_portal.py \
+            --alpha-dir alpha_mining \
+            --beta-dir beta_mining \
+            --alpha-prefix alpha \
+            --beta-prefix beta \
+            --out pages_site/index.html
+          test -f pages_site/index.html
+
+          # 2. Stage Beta Track under pages_site/beta/ (+ legacy /daily/<date>/ redirect for existing bookmarks)
+          cp beta_mining/index.html pages_site/beta/index.html
+          cp beta_mining/ranking_top9.json pages_site/beta/ranking_top9.json
+          cp beta_mining/daily/index.json pages_site/beta/daily/index.json
+          cp beta_mining/ranking_top9.json pages_site/ranking_top9.json
+          cp beta_mining/daily/index.json pages_site/daily/index.json
+
           copied_beta_days=0
           for ddir in beta_mining/daily/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]; do
             if [[ -d "$ddir" ]]; then
               bdate=$(basename "$ddir")
-              mkdir -p "pages_site/daily/${bdate}"
+              mkdir -p "pages_site/beta/daily/${bdate}" "pages_site/daily/${bdate}"
               if [[ -f "${ddir}/dashboard.html" ]]; then
-                cp "${ddir}/dashboard.html" "pages_site/daily/${bdate}/dashboard.html"
+                cp "${ddir}/dashboard.html" "pages_site/beta/daily/${bdate}/dashboard.html"
+                printf '<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><meta http-equiv="refresh" content="0;url=../../beta/daily/%s/dashboard.html"><title>Redirecting to Beta Dashboard</title></head><body style="background:#0b1017;color:#e6edf6;font-family:sans-serif;padding:24px"><p>Redirecting to <a style="color:#93c5fd" href="../../beta/daily/%s/dashboard.html">Beta Dashboard (%s)</a>...</p></body></html>\n' "$bdate" "$bdate" "$bdate" > "pages_site/daily/${bdate}/dashboard.html"
                 copied_beta_days=$((copied_beta_days + 1))
               fi
               if [[ -f "${ddir}/daily_summary.md" ]]; then
+                cp "${ddir}/daily_summary.md" "pages_site/beta/daily/${bdate}/daily_summary.md"
                 cp "${ddir}/daily_summary.md" "pages_site/daily/${bdate}/daily_summary.md"
               fi
             fi
@@ -65,9 +86,9 @@ jobs:
             echo "No daily dashboard.html files found under beta_mining/daily/" >&2
             exit 1
           fi
-          echo "Staged ${copied_beta_days} historical Beta daily dashboard(s) into pages_site/"
+          echo "Staged ${copied_beta_days} historical Beta daily dashboard(s) into pages_site/beta/"
 
-          # Stage public Alpha Mining dashboard site under pages_site/alpha/ when present
+          # 3. Stage Alpha Track under pages_site/alpha/ when present
           copied_alpha_days=0
           if [[ -f alpha_mining/index.html ]] && [[ -f alpha_mining/daily/index.json ]]; then
             mkdir -p pages_site/alpha/daily
