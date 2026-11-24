@@ -17,7 +17,8 @@ import re
 from typing import Any, Sequence
 
 _SAFE_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
-DEFAULT_BETA_HUB_HREF = "../../../index.html"  # GitHub Pages: /alpha/daily/<date>/ -> site root (Beta hub)
+DEFAULT_CENTRAL_HUB_HREF = "../../../index.html"
+DEFAULT_BETA_HUB_HREF = "../../../beta/index.html"  # GitHub Pages: /alpha/daily/<date>/ -> /beta/index.html
 
 
 def _safe_inline_json(payload: Any) -> str:
@@ -131,10 +132,23 @@ th{cursor:pointer;color:var(--mut);position:sticky;top:0;background:var(--card)}
 .badge.xau{color:#fbbf24;border-color:#fbbf24}.badge.eth{color:#93c5fd;border-color:#93c5fd}
 #tip{position:fixed;pointer-events:none;background:rgba(11,16,23,.96);border:1px solid var(--bd);border-radius:8px;padding:6px 9px;font:11px ui-monospace,Menlo,monospace;z-index:9;display:none;max-width:420px;white-space:pre-line}
 .hidden{display:none!important}.note{color:var(--mut);font-size:12px}
+.portal-bar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;background:#0f1722;border:1px solid var(--bd);border-left:4px solid #f59e0b;border-radius:12px;padding:9px 14px}
+.portal-brand{font-weight:800;font-size:13px;color:var(--fg);text-decoration:none}
+.portal-pills{display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+.pp{display:inline-flex;align-items:center;padding:5px 11px;border-radius:999px;font-size:12px;font-weight:700;text-decoration:none;border:1px solid var(--bd);background:var(--surf);color:var(--fg)}
+.pp:hover{border-color:var(--fg)}.pp.a-on{background:#f59e0b;color:#0b1017;border-color:#f59e0b}.pp.b-go{color:#60a5fa;border-color:rgba(59,130,246,.45);background:rgba(59,130,246,.12)}
 </style>
 </head>
 <body>
 <div class="wrap">
+  <nav class="portal-bar" aria-label="Unified Research Portal Navigation">
+    <a class="portal-brand" href="../../../index.html">Alpha_mining · Central Portal</a>
+    <div class="portal-pills">
+      <a class="pp" href="../../../index.html">Central Hub (ฐานกลาง)</a>
+      <a class="pp a-on" href="../../index.html">ALPHA Track · XAUUSD + ETH</a>
+      <a class="pp b-go" href="../../../beta/index.html">BETA Track · ETH Grid</a>
+    </div>
+  </nav>
   <div class="header">
     <div><h1 id="title"></h1><div class="sub" id="sub"></div></div>
     <div class="row" id="nav"></div>
@@ -392,7 +406,8 @@ def render_portal_index_html(
     daily_days: Sequence[dict[str, Any]],
     ranking_board: dict[str, Any],
     latest_date: str | None = None,
-    beta_hub_href: str = "../index.html",
+    central_hub_href: str = "../index.html",
+    beta_hub_href: str = "../beta/index.html",
 ) -> str:
     """Static zero-JS archive hub listing every Alpha day + cumulative Top-9, with a link to the Beta hub."""
     days = sorted(
@@ -433,11 +448,16 @@ body{{margin:0;padding:22px;background:#0b1017;color:#e6edf6;font:13px/1.5 -appl
 .w{{max-width:1200px;margin:0 auto}}h1{{font-size:20px;margin:0 0 4px}}.m{{color:#8ea0b8}}
 .card{{background:#121923;border:1px solid #263244;border-radius:12px;padding:14px;margin-top:14px;overflow-x:auto}}
 table{{border-collapse:collapse;width:100%}}th,td{{padding:6px 8px;border-bottom:1px solid #263244;text-align:left;white-space:nowrap}}th{{color:#8ea0b8}}
-a{{color:#93c5fd}}a.btn{{display:inline-block;padding:7px 12px;border:1px solid #263244;border-radius:8px;background:#192331;text-decoration:none;margin-right:8px}}
+a{{color:#93c5fd}}a.btn{{display:inline-block;padding:7px 12px;border:1px solid #263244;border-radius:8px;background:#192331;text-decoration:none;margin-right:8px;font-weight:700}}
+a.btn.alpha-cta{{background:#f59e0b;color:#0b1017;border-color:#f59e0b}}
+.pbar{{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;background:#0f1722;border:1px solid #263244;border-left:4px solid #f59e0b;border-radius:12px;padding:10px 14px;margin-bottom:14px}}
+.pp{{display:inline-flex;padding:5px 11px;border-radius:999px;font-size:12px;font-weight:700;text-decoration:none;border:1px solid #263244;background:#192331;color:#e6edf6;margin-left:6px}}
+.pp.a-on{{background:#f59e0b;color:#0b1017;border-color:#f59e0b}}.pp.b-go{{color:#60a5fa;border-color:rgba(59,130,246,.45);background:rgba(59,130,246,.12)}}
 </style></head><body><div class="w">
-<h1>Alpha Mining Hub</h1>
+<nav class="pbar"><b style="font-size:14px">Alpha_mining · Central Portal</b><div><a class="pp" href="{e(central_hub_href)}">Central Hub (ฐานกลาง)</a><a class="pp a-on" href="index.html">ALPHA Track · XAUUSD + ETH</a><a class="pp b-go" href="{e(beta_hub_href)}">BETA Track · ETH Grid</a></div></nav>
+<h1>ALPHA TRACK — Alpha Mining Hub (XAUUSD + ETHUSDT)</h1>
 <div class="m">Generated {e(str(ranking_board.get('generated_at_utc', '')))} · {len(days)} day(s) · {int(ranking_board.get('total_models', 0))} models · N_trials={int(ranking_board.get('total_trials', 0))} · 20 models/day (10 XAUUSD + 10 ETHUSDT) in 2 rounds</div>
-<div style="margin-top:12px">{latest_link}<a class="btn" href="{e(beta_hub_href)}">Beta Mining Hub</a></div>
+<div style="margin-top:12px">{latest_link.replace('class="btn"', 'class="btn alpha-cta"')}<a class="btn" href="{e(central_hub_href)}">กลับฐานกลาง (Central Hub)</a><a class="btn" href="{e(beta_hub_href)}">สลับไป BETA Hub</a></div>
 <div class="card"><b>Cumulative Top-{top_n}</b> <span class="m">(OOS Sharpe DESC, Max DD ASC; DSR≈ = multiple-testing haircut)</span>
 <table><thead><tr><th>Rank</th><th>Model</th><th>Sym</th><th>TF</th><th>OOS Sharpe</th><th>OOS Ret</th><th>Max DD</th><th>DSR≈</th></tr></thead><tbody>{top_rows}</tbody></table></div>
 <div class="card"><b>Daily batches</b>

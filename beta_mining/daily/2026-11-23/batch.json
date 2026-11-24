@@ -1,8 +1,9 @@
 {
   "schema_version": "1.0",
   "batch_date": "2026-11-23",
-  "generated_at_utc": "2026-11-23T07:41:12Z",
+  "generated_at_utc": "2026-11-24T10:30:07Z",
   "model_count": 5,
+  "rounds": [],
   "loader": {
     "source": "vision",
     "market": "um",
@@ -153,7 +154,7 @@
         "would_liquidate": false,
         "closed_trades_count": 130
       },
-      "current_top9_rank": 4
+      "current_top9_rank": null
     },
     {
       "schema_version": "1.0",
@@ -224,7 +225,7 @@
         "would_liquidate": false,
         "closed_trades_count": 112
       },
-      "current_top9_rank": 5
+      "current_top9_rank": null
     },
     {
       "schema_version": "1.0",
@@ -295,7 +296,7 @@
         "would_liquidate": false,
         "closed_trades_count": 137
       },
-      "current_top9_rank": 3
+      "current_top9_rank": 8
     },
     {
       "schema_version": "1.0",
