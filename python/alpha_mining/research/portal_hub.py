@@ -1,9 +1,11 @@
-"""Unified Central Research Portal HTML generator separating Alpha & Beta tracks cleanly.
+"""Clean, zero-redundancy Home Portal (`index.html`) organized into 3 crystal-clear categories:
 
-Renders a 100% self-contained, zero-CDN root `index.html` for GitHub Pages that sits above
-`/alpha/` (Directional Multi-Timeframe XAUUSD + ETHUSDT, 20 models/day) and `/beta/`
-(LGB154 Grid Cashflow ETHUSDT 1m, 10 models/day), with side-by-side leaderboards, daily batch
-archives, direct 9-panel dashboard links, and a persistent track switcher bar shared across all pages.
+1. ALPHA — ทองคำ (XAUUSD)      -> 1-click direct to Alpha Dashboard filtered to XAUUSD
+2. ALPHA — คริปโต (ETHUSDT)    -> 1-click direct to Alpha Dashboard filtered to ETHUSDT
+3. BETA  — Grid Cashflow (ETH) -> 1-click direct to Beta Dashboard
+
+Eliminates intermediate sub-hubs, duplicate archive/ranking tables, noisy technical IDs, and
+multi-row navigation clutter. 100% self-contained / zero-CDN.
 """
 
 from __future__ import annotations
@@ -16,6 +18,28 @@ from pathlib import Path
 from typing import Any
 
 _SAFE_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+_FAMILY_LABELS = {
+    "momentum_roc": "Momentum",
+    "ma_cross": "MA Cross",
+    "heiken_ma_cross": "Heiken Ashi MA",
+    "donchian_breakout": "Donchian Breakout",
+    "session_time": "Session Time",
+    "impulse_efficiency": "Impulse Efficiency",
+    "ibs_reversion": "IBS Mean Reversion",
+    "rsi_reversion": "RSI Reversion",
+    "rsi_regime": "RSI Trend",
+    "bollinger_reversion": "Bollinger Reversion",
+    "vol_expansion_breakout": "ATR Breakout",
+    "asia_range_breakout": "Asia Range Breakout",
+    "calendar_turn": "Calendar Window",
+}
+
+_DIR_LABELS = {
+    "long_only": "Buy อย่างเดียว",
+    "short_only": "Sell อย่างเดียว",
+    "long_short": "Buy & Sell",
+}
 
 
 def _now_utc_iso() -> str:
@@ -37,51 +61,116 @@ def _read_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def _slim_alpha_rank(row: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "rank": int(row.get("rank", 0)),
-        "model_id": str(row.get("model_id", "")),
-        "symbol": str(row.get("symbol", "")),
-        "timeframe": str(row.get("timeframe", "")),
-        "direction": str(row.get("direction", "")),
-        "oos_sharpe_ann": round(float(row.get("oos_sharpe_ann", 0.0)), 2),
-        "oos_return_pct": round(float(row.get("oos_return_pct", 0.0)), 2),
-        "total_return_pct": round(float(row.get("total_return_pct", 0.0)), 2),
-        "max_drawdown_pct": round(float(row.get("max_drawdown_pct", 0.0)), 2),
-        "trades": int(row.get("trades", 0)),
-        "dsr_approx": round(float(row.get("dsr_approx", 0.0)), 2),
-        "batch_date": str(row.get("batch_date", "")),
-    }
+def humanize_alpha_model(row: dict[str, Any]) -> str:
+    """Turn cryptic model rows into concise human-readable titles."""
+    fam = str(row.get("family", ""))
+    params = row.get("params") if isinstance(row.get("params"), dict) else {}
+    tf = str(row.get("timeframe", "")).upper()
+    base = _FAMILY_LABELS.get(fam, fam.replace("_", " ").title() or str(row.get("model_id", "")))
+    detail = ""
+    if fam in {"ma_cross", "heiken_ma_cross"} and "fast" in params and "slow" in params:
+        ma = str(params.get("ma", "MA")).upper()
+        detail = f"{ma} {params['fast']}/{params['slow']}"
+        base = "Heiken " + detail if fam == "heiken_ma_cross" else detail
+        detail = ""
+    elif fam == "momentum_roc" and "lookback" in params:
+        detail = f"{params['lookback']} แท่ง"
+    elif fam == "donchian_breakout" and "entry" in params and "exit" in params:
+        detail = f"{params['entry']}/{params['exit']}"
+    elif fam == "session_time" and "start_hour_utc" in params and "end_hour_utc" in params:
+        detail = f"{int(params['start_hour_utc']):02d}:00–{int(params['end_hour_utc']):02d}:00 UTC"
+    elif fam == "calendar_turn" and params.get("days_of_month"):
+        rng = params["days_of_month"][0]
+        detail = f"วันที่ {rng[0]}–{rng[1]}"
+    elif fam in {"rsi_reversion", "rsi_regime"} and "period" in params:
+        detail = f"RSI({params['period']})"
+    label = f"{base} {detail}".strip()
+    return f"{label} ({tf})" if tf else label
 
 
-def _slim_beta_rank(row: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "rank": int(row.get("rank", 0)),
-        "model_id": str(row.get("model_id", "")),
-        "signal_name": str(row.get("signal_name", "")),
-        "cashflow_net_usd": round(float(row.get("cashflow_net_usd", 0.0)), 2),
-        "cashflow_pct": round(float(row.get("cashflow_pct", 0.0)), 2),
-        "max_drawdown_pct": round(float(row.get("max_drawdown_pct", 0.0)), 2),
-        "cashflow_to_dd_ratio": round(float(row.get("cashflow_to_dd_ratio", 0.0)), 2),
-        "mtm_return_pct": round(float(row.get("mtm_return_pct", 0.0)), 2),
-        "avg_weekly_cf_usd": round(float(row.get("avg_weekly_cf_usd", 0.0)), 2),
-        "batch_date": str(row.get("batch_date", "")),
-    }
+def humanize_beta_signal(signal_name: str, model_id: str = "") -> str:
+    """Format LGB154 grid signal names cleanly for human reading."""
+    s = (signal_name or model_id).strip()
+    low = s.lower()
+    if low in {"ha_1m", "ha", "baseline"}:
+        return "Heikin-Ashi (1m)"
+    if low.startswith("ema_"):
+        parts = low.split("_")
+        if len(parts) == 3:
+            return f"EMA Cross {parts[1]}/{parts[2]}"
+    if low.startswith("supertrend_"):
+        parts = s.split("_")
+        if len(parts) == 3:
+            return f"Supertrend ({parts[1]}, {parts[2]})"
+    if low.startswith("rsi_reversion_"):
+        parts = low.split("_")
+        if len(parts) == 5:
+            return f"RSI({parts[2]}) Reversion {parts[3]}/{parts[4]}"
+    if low.startswith("rsi_trend_"):
+        parts = low.split("_")
+        if len(parts) == 5:
+            return f"RSI({parts[2]}) Trend {parts[3]}/{parts[4]}"
+    return s
 
 
 def _clean_days(raw_days: Any) -> list[dict[str, Any]]:
     if not isinstance(raw_days, list):
         return []
-    out: list[dict[str, Any]] = []
-    for d in raw_days:
-        if not isinstance(d, dict):
-            continue
-        bdate = str(d.get("batch_date", "")).strip()
-        if not _SAFE_DATE_RE.fullmatch(bdate):
-            continue
-        out.append(dict(d))
+    out = [
+        dict(d)
+        for d in raw_days
+        if isinstance(d, dict) and _SAFE_DATE_RE.fullmatch(str(d.get("batch_date", "")).strip())
+    ]
     out.sort(key=lambda x: str(x["batch_date"]), reverse=True)
     return out
+
+
+def _slim_alpha_item(r: dict[str, Any], *, qualified: bool) -> dict[str, Any]:
+    return {
+        "rank": int(r.get("rank", 0)),
+        "model_id": str(r.get("model_id", "")),
+        "title": humanize_alpha_model(r),
+        "symbol": str(r.get("symbol", "")),
+        "timeframe": str(r.get("timeframe", "")).upper(),
+        "direction_label": _DIR_LABELS.get(str(r.get("direction", "")), str(r.get("direction", ""))),
+        "oos_sharpe_ann": round(float(r.get("oos_sharpe_ann", 0.0)), 2),
+        "oos_return_pct": round(float(r.get("oos_return_pct", 0.0)), 1),
+        "total_return_pct": round(float(r.get("total_return_pct", 0.0)), 1),
+        "max_drawdown_pct": round(float(r.get("max_drawdown_pct", 0.0)), 1),
+        "trades": int(r.get("trades", 0)),
+        "qualified": qualified,
+    }
+
+
+def _slim_beta_item(r: dict[str, Any]) -> dict[str, Any]:
+    sig = str(r.get("signal_name", ""))
+    mid = str(r.get("model_id", ""))
+    return {
+        "rank": int(r.get("rank", 0)),
+        "model_id": mid,
+        "title": humanize_beta_signal(sig, mid),
+        "cashflow_net_usd": round(float(r.get("cashflow_net_usd", 0.0)), 2),
+        "cashflow_pct": round(float(r.get("cashflow_pct", 0.0)), 1),
+        "avg_weekly_cf_usd": round(float(r.get("avg_weekly_cf_usd", 0.0)), 2),
+        "max_drawdown_pct": round(float(r.get("max_drawdown_pct", 0.0)), 1),
+        "cashflow_to_dd_ratio": round(float(r.get("cashflow_to_dd_ratio", 0.0)), 2),
+    }
+
+
+def _leaders_for_symbol(alpha_rank: dict[str, Any], symbol: str, limit: int = 3) -> tuple[list[dict[str, Any]], int]:
+    by_sym = (alpha_rank.get("top_ranked_by_symbol") or {}).get(symbol) or []
+    qual_rows = [_slim_alpha_item(r, qualified=True) for r in by_sym[:limit]]
+    qual_total = len(by_sym)
+    if len(qual_rows) < limit:
+        # Show best OOS candidates transparently when fewer than `limit` passed all hard gates
+        disq = [
+            d for d in (alpha_rank.get("disqualified") or [])
+            if d.get("symbol") == symbol and float(d.get("oos_return_pct", 0.0)) > 0
+        ]
+        disq.sort(key=lambda x: -float(x.get("oos_sharpe_ann", -999.0)))
+        for d in disq[: limit - len(qual_rows)]:
+            qual_rows.append(_slim_alpha_item(d, qualified=False))
+    return qual_rows, qual_total
 
 
 def collect_unified_portal_payload(
@@ -91,7 +180,7 @@ def collect_unified_portal_payload(
     alpha_prefix: str = "alpha",
     beta_prefix: str = "beta",
 ) -> dict[str, Any]:
-    """Collect compact summary payloads from both `alpha_mining/` and `beta_mining/` stores."""
+    """Collect clean, non-redundant category summaries for XAUUSD Alpha, ETH Alpha, and ETH Beta."""
     alpha_idx = _read_json(alpha_dir / "daily" / "index.json")
     alpha_rank = _read_json(alpha_dir / "ranking_top9.json")
     beta_idx = _read_json(beta_dir / "daily" / "index.json")
@@ -109,6 +198,27 @@ def collect_unified_portal_payload(
 
     latest_overall = max([d for d in (alpha_latest, beta_latest) if d], default="")
 
+    xau_leaders, xau_qual = _leaders_for_symbol(alpha_rank, "XAUUSD", limit=3)
+    eth_leaders, eth_qual = _leaders_for_symbol(alpha_rank, "ETHUSDT", limit=3)
+    all_alpha_models = list(alpha_rank.get("top_ranked") or []) + list(alpha_rank.get("disqualified") or [])
+    xau_total = sum(1 for m in all_alpha_models if m.get("symbol") == "XAUUSD")
+    eth_total = sum(1 for m in all_alpha_models if m.get("symbol") == "ETHUSDT")
+
+    all_dates = sorted(
+        {d["batch_date"] for d in alpha_days} | {d["batch_date"] for d in beta_days},
+        reverse=True,
+    )
+    alpha_by_date = {d["batch_date"]: int(d.get("model_count", 0)) for d in alpha_days}
+    beta_by_date = {d["batch_date"]: int(d.get("model_count", 0)) for d in beta_days}
+    history = [
+        {
+            "date": dt,
+            "alpha_count": alpha_by_date.get(dt, 0),
+            "beta_count": beta_by_date.get(dt, 0),
+        }
+        for dt in all_dates[:14]
+    ]
+
     return {
         "generated_at_utc": _now_utc_iso(),
         "latest_date": latest_overall,
@@ -119,9 +229,8 @@ def collect_unified_portal_payload(
             "total_trials": int(alpha_rank.get("total_trials", 0)),
             "total_models": int(alpha_rank.get("total_models", 0)),
             "qualified_count": int(alpha_rank.get("qualified_count", 0)),
-            "disqualified_count": int(alpha_rank.get("disqualified_count", 0)),
-            "top_ranked": [_slim_alpha_rank(r) for r in (alpha_rank.get("top_ranked") or [])[:9]],
-            "days": alpha_days,
+            "xau": {"total": xau_total, "qualified": xau_qual, "leaders": xau_leaders},
+            "eth": {"total": eth_total, "qualified": eth_qual, "leaders": eth_leaders},
         },
         "beta": {
             "prefix": beta_prefix.strip("/"),
@@ -130,15 +239,14 @@ def collect_unified_portal_payload(
             "total_trials": int(beta_rank.get("total_trials", 0)),
             "total_models": int(beta_rank.get("total_models", 0)),
             "qualified_count": int(beta_rank.get("qualified_count", 0)),
-            "disqualified_count": int(beta_rank.get("disqualified_count", 0)),
-            "top_ranked": [_slim_beta_rank(r) for r in (beta_rank.get("top_ranked") or [])[:9]],
-            "days": beta_days,
+            "leaders": [_slim_beta_item(r) for r in (beta_rank.get("top_ranked") or [])[:3]],
         },
+        "history": history,
     }
 
 
 def render_unified_portal_html(payload: dict[str, Any]) -> str:
-    """Render the zero-CDN unified central portal HTML (`index.html`)."""
+    """Render an ultra-clean, zero-redundancy Home Portal with 3 direct category cards."""
     safe_json = _safe_inline_json(payload)
     alpha = payload.get("alpha") or {}
     beta = payload.get("beta") or {}
@@ -146,397 +254,298 @@ def render_unified_portal_html(payload: dict[str, Any]) -> str:
     b_pref = html.escape(str(beta.get("prefix", "beta")))
     a_latest = html.escape(str(alpha.get("latest_date", "")))
     b_latest = html.escape(str(beta.get("latest_date", "")))
-    a_dash = f"{a_pref}/daily/{a_latest}/dashboard.html" if a_latest else f"{a_pref}/index.html"
-    b_dash = f"{b_pref}/daily/{b_latest}/dashboard.html" if b_latest else f"{b_pref}/index.html"
+
+    a_base = f"{a_pref}/daily/{a_latest}/dashboard.html" if a_latest else f"{a_pref}/index.html"
+    b_base = f"{b_pref}/daily/{b_latest}/dashboard.html" if b_latest else f"{b_pref}/index.html"
 
     return f"""<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Alpha_mining — Unified Research Portal (Alpha &amp; Beta)</title>
+  <title>Alpha_mining — หน้าหลักสรุปหมวดหมู่ (Alpha &amp; Beta)</title>
   <style>
     :root {{
-      --bg: #080d14;
-      --bg2: #0f1722;
-      --card: #121b28;
-      --surf: #182334;
-      --bd: #253347;
-      --fg: #eaf0f8;
+      --bg: #0b1017;
+      --nav: #111824;
+      --card: #131c2a;
+      --surf: #1a2638;
+      --bd: #27364b;
+      --fg: #ecf2f9;
       --mut: #8fa3bc;
-      --alpha: #f59e0b;
-      --alpha-bg: rgba(245, 158, 11, 0.13);
-      --alpha-bd: rgba(245, 158, 11, 0.45);
-      --beta: #3b82f6;
-      --beta-bg: rgba(59, 130, 246, 0.13);
-      --beta-bd: rgba(59, 130, 246, 0.45);
+      --gold: #f59e0b;
+      --gold-soft: rgba(245, 158, 11, 0.14);
+      --cyan: #06b6d4;
+      --cyan-soft: rgba(6, 182, 212, 0.14);
+      --blue: #3b82f6;
+      --blue-soft: rgba(59, 130, 246, 0.14);
       --ok: #22c55e;
-      --err: #ef4444;
+      --warn: #eab308;
     }}
     body.light {{
       --bg: #f3f6fb;
-      --bg2: #ffffff;
+      --nav: #ffffff;
       --card: #ffffff;
       --surf: #eef3f9;
       --bd: #d5dfec;
       --fg: #0f172a;
       --mut: #52637a;
-      --alpha: #d97706;
-      --alpha-bg: rgba(217, 119, 6, 0.10);
-      --alpha-bd: rgba(217, 119, 6, 0.42);
-      --beta: #2563eb;
-      --beta-bg: rgba(37, 99, 235, 0.10);
-      --beta-bd: rgba(37, 99, 235, 0.42);
+      --gold: #d97706;
+      --gold-soft: rgba(217, 119, 6, 0.10);
+      --cyan: #0891b2;
+      --cyan-soft: rgba(8, 145, 178, 0.10);
+      --blue: #2563eb;
+      --blue-soft: rgba(37, 99, 235, 0.10);
       --ok: #16a34a;
-      --err: #dc2626;
+      --warn: #ca8a04;
     }}
     * {{ box-sizing: border-box; }}
     body {{
       margin: 0;
-      padding: 0 0 42px;
       background: var(--bg);
       color: var(--fg);
-      font: 13px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font: 14px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }}
-    .topbar {{
+    .topnav {{
       position: sticky; top: 0; z-index: 20;
-      background: var(--bg2);
-      border-bottom: 1px solid var(--bd);
-      padding: 10px 20px;
+      background: var(--nav); border-bottom: 1px solid var(--bd);
+      padding: 12px 20px;
     }}
-    .topbar-in {{
-      max-width: 1460px; margin: 0 auto;
+    .topnav-in {{
+      max-width: 1280px; margin: 0 auto;
       display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px;
     }}
-    .brand {{
-      display: flex; align-items: center; gap: 10px;
-      font-weight: 800; font-size: 15px; letter-spacing: -0.01em; color: var(--fg); text-decoration: none;
-    }}
-    .brand-dot {{
-      width: 10px; height: 10px; border-radius: 50%;
-      background: linear-gradient(135deg, var(--alpha), var(--beta));
-    }}
-    .nav-links {{ display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }}
-    .nav-pill {{
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 6px 12px; border-radius: 999px; border: 1px solid var(--bd);
+    .brand {{ font-size: 16px; font-weight: 800; color: var(--fg); text-decoration: none; }}
+    .menu {{ display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }}
+    .m-link {{
+      padding: 7px 14px; border-radius: 999px; border: 1px solid var(--bd);
       background: var(--surf); color: var(--fg); text-decoration: none;
-      font-size: 12px; font-weight: 700; transition: border-color .15s, background .15s;
+      font-size: 13px; font-weight: 700;
     }}
-    .nav-pill:hover {{ border-color: var(--fg); }}
-    .nav-pill.active {{ background: var(--fg); color: var(--bg); border-color: var(--fg); }}
-    .nav-pill.alpha {{ border-color: var(--alpha-bd); color: var(--alpha); background: var(--alpha-bg); }}
-    .nav-pill.beta {{ border-color: var(--beta-bd); color: var(--beta); background: var(--beta-bg); }}
-    .btn-theme {{
-      cursor: pointer; padding: 6px 11px; border-radius: 8px;
-      border: 1px solid var(--bd); background: var(--card); color: var(--fg);
-      font-size: 12px; font-weight: 600;
+    .m-link.active {{ background: var(--fg); color: var(--bg); border-color: var(--fg); }}
+    .m-link:hover {{ filter: brightness(1.1); }}
+    .theme-btn {{
+      cursor: pointer; padding: 7px 12px; border-radius: 999px;
+      border: 1px solid var(--bd); background: transparent; color: var(--mut); font-weight: 700; font-size: 12px;
     }}
-    .wrap {{ max-width: 1460px; margin: 18px auto 0; padding: 0 20px; display: flex; flex-direction: column; gap: 16px; }}
-    .hero {{
+    .wrap {{ max-width: 1280px; margin: 24px auto 48px; padding: 0 20px; display: flex; flex-direction: column; gap: 22px; }}
+    .intro h1 {{ margin: 0; font-size: 22px; font-weight: 800; }}
+    .intro p {{ margin: 4px 0 0; color: var(--mut); font-size: 14px; }}
+    .cats {{ display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; align-items: stretch; }}
+    @media (max-width: 1020px) {{ .cats {{ grid-template-columns: 1fr; }} }}
+    .cat {{
+      background: var(--card); border: 1px solid var(--bd); border-radius: 16px;
+      padding: 20px; display: flex; flex-direction: column; justify-content: space-between; gap: 16px;
+    }}
+    .cat.gold {{ border-top: 4px solid var(--gold); }}
+    .cat.cyan {{ border-top: 4px solid var(--cyan); }}
+    .cat.blue {{ border-top: 4px solid var(--blue); }}
+    .badge {{
+      display: inline-block; padding: 4px 10px; border-radius: 999px;
+      font-size: 11px; font-weight: 800; letter-spacing: 0.03em;
+    }}
+    .badge.gold {{ background: var(--gold-soft); color: var(--gold); }}
+    .badge.cyan {{ background: var(--cyan-soft); color: var(--cyan); }}
+    .badge.blue {{ background: var(--blue-soft); color: var(--blue); }}
+    .cat h2 {{ margin: 8px 0 4px; font-size: 19px; font-weight: 800; }}
+    .cat-sub {{ margin: 0; color: var(--mut); font-size: 13px; }}
+    .stat-strip {{
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 12px;
+    }}
+    .st {{ background: var(--surf); border-radius: 10px; padding: 10px 12px; }}
+    .st-l {{ color: var(--mut); font-size: 11px; }}
+    .st-v {{ font-size: 17px; font-weight: 800; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; margin-top: 2px; }}
+    .leader-list {{ display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }}
+    .leader-hdr {{ font-size: 12px; font-weight: 700; color: var(--mut); }}
+    .lrow {{
+      background: var(--surf); border: 1px solid var(--bd); border-radius: 10px;
+      padding: 9px 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    }}
+    .l-name {{ font-weight: 700; font-size: 13px; }}
+    .l-sub {{ color: var(--mut); font-size: 11px; }}
+    .l-val {{ text-align: right; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }}
+    .pos {{ color: var(--ok); font-weight: 800; }}
+    .warn {{ color: var(--warn); font-size: 11px; }}
+    .cta {{
+      display: block; text-align: center; padding: 12px 16px; border-radius: 11px;
+      text-decoration: none; font-size: 14px; font-weight: 800; transition: filter .15s;
+    }}
+    .cta:hover {{ filter: brightness(1.08); }}
+    .cta.gold {{ background: var(--gold); color: #0b1017; }}
+    .cta.cyan {{ background: var(--cyan); color: #061318; }}
+    .cta.blue {{ background: var(--blue); color: #ffffff; }}
+    .history {{
       background: var(--card); border: 1px solid var(--bd); border-radius: 14px;
-      padding: 18px 20px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 14px;
+      padding: 16px 20px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
     }}
-    .hero h1 {{ margin: 0; font-size: 21px; font-weight: 800; letter-spacing: -0.02em; }}
-    .hero p {{ margin: 4px 0 0; color: var(--mut); font-size: 13px; }}
-    .mode-switch {{ display: flex; flex-wrap: wrap; gap: 6px; }}
-    .mode-btn {{
-      cursor: pointer; padding: 7px 12px; border-radius: 9px;
-      border: 1px solid var(--bd); background: var(--surf); color: var(--fg);
-      font-size: 12px; font-weight: 700;
-    }}
-    .mode-btn.active {{ background: var(--fg); color: var(--bg); border-color: var(--fg); }}
-    .mode-btn.m-alpha.active {{ background: var(--alpha); color: #0b1017; border-color: var(--alpha); }}
-    .mode-btn.m-beta.active {{ background: var(--beta); color: #ffffff; border-color: var(--beta); }}
-    .kpis {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }}
-    .kpi {{
-      background: var(--card); border: 1px solid var(--bd); border-radius: 12px; padding: 13px 15px;
-    }}
-    .kl {{ color: var(--mut); font-size: 12px; }}
-    .kv {{ font-size: 21px; font-weight: 800; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; margin-top: 2px; }}
-    .ks {{ color: var(--mut); font-size: 11px; margin-top: 2px; }}
-    .tracks {{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }}
-    .tracks.single {{ grid-template-columns: 1fr; }}
-    @media (max-width: 1060px) {{ .tracks {{ grid-template-columns: 1fr; }} }}
-    .track {{
-      background: var(--card); border: 1px solid var(--bd); border-radius: 14px;
-      overflow: hidden; display: flex; flex-direction: column;
-    }}
-    .track.alpha-track {{ border-top: 4px solid var(--alpha); }}
-    .track.beta-track {{ border-top: 4px solid var(--beta); }}
-    .track-hdr {{
-      padding: 16px 18px 14px; border-bottom: 1px solid var(--bd);
-      display: flex; flex-direction: column; gap: 10px;
-    }}
-    .track-top {{ display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 10px; }}
-    .tag {{
+    .h-title {{ font-weight: 800; font-size: 14px; }}
+    .h-days {{ display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }}
+    .h-group {{
       display: inline-flex; align-items: center; gap: 6px;
-      padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 800; letter-spacing: 0.04em;
+      background: var(--surf); border: 1px solid var(--bd); border-radius: 10px; padding: 6px 10px;
+      font-size: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     }}
-    .tag-alpha {{ background: var(--alpha-bg); color: var(--alpha); border: 1px solid var(--alpha-bd); }}
-    .tag-beta {{ background: var(--beta-bg); color: var(--beta); border: 1px solid var(--beta-bd); }}
-    .track-title {{ margin: 4px 0 0; font-size: 18px; font-weight: 800; }}
-    .track-desc {{ margin: 2px 0 0; color: var(--mut); font-size: 12px; }}
-    .cta-row {{ display: flex; flex-wrap: wrap; gap: 8px; }}
-    .btn {{
-      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-      padding: 8px 14px; border-radius: 9px; text-decoration: none;
-      font-size: 12px; font-weight: 700; border: 1px solid var(--bd); background: var(--surf); color: var(--fg);
+    .h-btn {{
+      padding: 3px 8px; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 11px;
     }}
-    .btn:hover {{ filter: brightness(1.08); }}
-    .btn-alpha {{ background: var(--alpha); color: #0b1017; border-color: var(--alpha); }}
-    .btn-beta {{ background: var(--beta); color: #ffffff; border-color: var(--beta); }}
-    .mini-kpis {{ display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }}
-    .mk {{
-      background: var(--surf); border: 1px solid var(--bd); border-radius: 10px; padding: 9px 11px;
-    }}
-    .mk-l {{ color: var(--mut); font-size: 11px; }}
-    .mk-v {{ font-size: 16px; font-weight: 800; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; margin-top: 2px; }}
-    .sec {{ padding: 14px 18px; border-bottom: 1px solid var(--bd); }}
-    .sec:last-child {{ border-bottom: none; }}
-    .sec-title {{ font-size: 13px; font-weight: 800; margin: 0 0 8px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }}
-    .sec-sub {{ color: var(--mut); font-weight: 500; font-size: 11px; }}
-    .tw {{ overflow-x: auto; }}
-    table {{ border-collapse: collapse; width: 100%; font-size: 12px; }}
-    th, td {{ padding: 6px 8px; border-bottom: 1px solid var(--bd); text-align: right; white-space: nowrap; }}
-    th {{ color: var(--mut); font-weight: 700; font-size: 11px; }}
-    th:first-child, td:first-child, th.l, td.l {{ text-align: left; }}
-    .mono {{ font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }}
-    .pos {{ color: var(--ok); font-weight: 700; }}
-    .neg {{ color: var(--err); font-weight: 700; }}
-    .mut {{ color: var(--mut); }}
-    .sym {{
-      display: inline-block; padding: 1px 6px; border-radius: 5px;
-      font-size: 10px; font-weight: 800; border: 1px solid var(--bd); background: var(--surf);
-    }}
-    .sym-xau {{ color: var(--alpha); border-color: var(--alpha-bd); }}
-    .sym-eth {{ color: var(--beta); border-color: var(--beta-bd); }}
-    .tbl-link {{
-      display: inline-block; padding: 3px 8px; border-radius: 6px; text-decoration: none;
-      font-size: 11px; font-weight: 700; border: 1px solid var(--bd); background: var(--surf); color: var(--fg);
-      margin-left: 4px;
-    }}
-    .tbl-link.a {{ border-color: var(--alpha-bd); color: var(--alpha); }}
-    .tbl-link.b {{ border-color: var(--beta-bd); color: var(--beta); }}
-    .hidden {{ display: none !important; }}
-    .foot {{ color: var(--mut); font-size: 11px; text-align: center; padding-top: 6px; }}
+    .h-btn.a {{ background: var(--gold-soft); color: var(--gold); }}
+    .h-btn.b {{ background: var(--blue-soft); color: var(--blue); }}
   </style>
 </head>
 <body>
-  <nav class="topbar" aria-label="Unified Alpha and Beta Navigation">
-    <div class="topbar-in">
-      <a class="brand" href="index.html"><span class="brand-dot"></span>Alpha_mining · Central Research Portal</a>
-      <div class="nav-links">
-        <a class="nav-pill active" href="index.html">Central Hub (ฐานกลาง)</a>
-        <a class="nav-pill alpha" href="{a_pref}/index.html">ALPHA Track · XAUUSD + ETH</a>
-        <a class="nav-pill beta" href="{b_pref}/index.html">BETA Track · ETH Grid</a>
-        <button id="theme-toggle" type="button" class="btn-theme">Theme</button>
+  <!-- Single unified navigation bar (ALPHA TRACK & BETA TRACK direct 1-click links) -->
+  <nav class="topnav">
+    <div class="topnav-in">
+      <a class="brand" href="index.html">Alpha_mining</a>
+      <div class="menu">
+        <a class="m-link active" href="index.html">หน้าหลัก</a>
+        <a class="m-link" href="{a_base}#sym=XAUUSD">ALPHA · ทองคำ (XAUUSD)</a>
+        <a class="m-link" href="{a_base}#sym=ETHUSDT">ALPHA · ETH</a>
+        <a class="m-link" href="{b_base}">BETA · ETH Grid</a>
+        <button id="theme-toggle" type="button" class="theme-btn">สลับสีพื้นหลัง</button>
       </div>
     </div>
   </nav>
 
   <main class="wrap">
-    <section class="hero">
-      <div>
-        <h1>Alpha_mining — ฐานกลางวิจัยและทดสอบโมเดล (Alpha / Beta)</h1>
-        <p id="hero-sub">ศูนย์รวม Dashboard, Top-9 Ranking Board และผลทดสอบรายวัน แยกสาย Alpha (Directional Multi-TF) กับ Beta (Grid Cashflow) ชัดเจน</p>
-      </div>
-      <div class="mode-switch" role="group" aria-label="Track View Switcher">
-        <button type="button" class="mode-btn active" data-view="split">แสดงคู่ (Alpha + Beta)</button>
-        <button type="button" class="mode-btn m-alpha" data-view="alpha">โฟกัส ALPHA</button>
-        <button type="button" class="mode-btn m-beta" data-view="beta">โฟกัส BETA</button>
-      </div>
-    </section>
+    <div class="intro">
+      <h1>เลือกหมวดที่ต้องการดูผลทดสอบ</h1>
+      <p id="intro-sub">แยกเป็น 3 หมวดชัดเจน ไม่ซ้ำซ้อน — กดปุ่มในกล่องเพื่อเข้าดูกราฟ 9 ช่องของหมวดนั้นได้ทันที</p>
+    </div>
 
-    <section class="kpis" id="global-kpis"></section>
-
-    <section class="tracks" id="tracks-grid">
-      <!-- ALPHA TRACK -->
-      <article class="track alpha-track" id="panel-alpha">
-        <div class="track-hdr">
-          <div class="track-top">
-            <div>
-              <span class="tag tag-alpha">ALPHA TRACK · DIRECTIONAL &amp; TACTICAL</span>
-              <h2 class="track-title">Alpha Mining Factory (XAUUSD + ETHUSDT)</h2>
-              <p class="track-desc">Multi-Timeframe (M5–D1) · 20 โมเดล/วัน (10 XAUUSD + 10 ETH) · แบ่ง 2 รอบ (07:15 &amp; 19:15 ICT)</p>
-            </div>
-          </div>
-          <div class="cta-row">
-            <a id="cta-alpha-dash" class="btn btn-alpha" href="{a_dash}">เปิด Alpha Dashboard ล่าสุด ({a_latest or "–"})</a>
-            <a class="btn" href="{a_pref}/index.html">Alpha Hub รวมทุกวัน</a>
-          </div>
-          <div class="mini-kpis" id="alpha-kpis"></div>
+    <section class="cats">
+      <!-- 1. ALPHA TRACK: XAUUSD -->
+      <article class="cat gold">
+        <div>
+          <span class="badge gold">หมวด 1 · ALPHA TRACK (XAUUSD)</span>
+          <h2>ทองคำ — จับทิศทาง (XAUUSD)</h2>
+          <p class="cat-sub">ทดสอบทุก Timeframe (M5–D1) · วันละ 10 โมเดล (2 รอบ)</p>
+          <div class="stat-strip" id="stat-xau"></div>
         </div>
-        <div class="sec">
-          <h3 class="sec-title">Alpha Top-9 Leaderboard <span class="sec-sub">OOS Sharpe DESC → Max DD ASC (หัก DSR≈)</span></h3>
-          <div class="tw" id="alpha-top"></div>
+        <div class="leader-list">
+          <div class="leader-hdr">โมเดลเด่น (เรียงตามผลงานนอกกลุ่มตัวอย่าง OOS)</div>
+          <div id="list-xau" class="leader-list"></div>
         </div>
-        <div class="sec">
-          <h3 class="sec-title">Alpha ผลทดสอบรายวัน (Archive) <span class="sec-sub">สะสมรอบ 1 + รอบ 2</span></h3>
-          <div class="tw" id="alpha-days"></div>
-        </div>
+        <a class="cta gold" href="{a_base}#sym=XAUUSD">เข้าดูกราฟ ALPHA ทองคำ →</a>
       </article>
 
-      <!-- BETA TRACK -->
-      <article class="track beta-track" id="panel-beta">
-        <div class="track-hdr">
-          <div class="track-top">
-            <div>
-              <span class="tag tag-beta">BETA TRACK · LGB154 GRID CASHFLOW</span>
-              <h2 class="track-title">Beta Mining Factory (ETHUSDT 1m Grid)</h2>
-              <p class="track-desc">1,000-Day Backtest + Crash -46% Stress · 10 โมเดล/วัน (รอบละ 5) · แบ่ง 2 รอบ (07:30 &amp; 19:30 ICT)</p>
-            </div>
-          </div>
-          <div class="cta-row">
-            <a id="cta-beta-dash" class="btn btn-beta" href="{b_dash}">เปิด Beta Dashboard ล่าสุด ({b_latest or "–"})</a>
-            <a class="btn" href="{b_pref}/index.html">Beta Hub รวมทุกวัน</a>
-          </div>
-          <div class="mini-kpis" id="beta-kpis"></div>
+      <!-- 2. ALPHA TRACK: ETHUSDT -->
+      <article class="cat cyan">
+        <div>
+          <span class="badge cyan">หมวด 2 · ALPHA TRACK (ETHUSDT)</span>
+          <h2>คริปโต — จับทิศทาง (ETHUSDT)</h2>
+          <p class="cat-sub">ทดสอบทุก Timeframe (M5–D1) · วันละ 10 โมเดล (2 รอบ)</p>
+          <div class="stat-strip" id="stat-eth"></div>
         </div>
-        <div class="sec">
-          <h3 class="sec-title">Beta Top-9 Leaderboard <span class="sec-sub">Realized Cashflow DESC → Max DD ASC (DD ≤ 40%)</span></h3>
-          <div class="tw" id="beta-top"></div>
+        <div class="leader-list">
+          <div class="leader-hdr">โมเดลเด่น (เรียงตามผลงานนอกกลุ่มตัวอย่าง OOS)</div>
+          <div id="list-eth" class="leader-list"></div>
         </div>
-        <div class="sec">
-          <h3 class="sec-title">Beta ผลทดสอบรายวัน (Archive) <span class="sec-sub">สะสมรอบ 1 + รอบ 2</span></h3>
-          <div class="tw" id="beta-days"></div>
+        <a class="cta cyan" href="{a_base}#sym=ETHUSDT">เข้าดูกราฟ ALPHA คริปโต →</a>
+      </article>
+
+      <!-- 3. BETA TRACK: ETH GRID -->
+      <article class="cat blue">
+        <div>
+          <span class="badge blue">หมวด 3 · BETA TRACK (GRID CASHFLOW)</span>
+          <h2>ETH Grid — สร้างกระแสเงินสด</h2>
+          <p class="cat-sub">LGB154 โซน 5000→500 (1,000 วัน) · วันละ 10 โมเดล (2 รอบ)</p>
+          <div class="stat-strip" id="stat-beta"></div>
         </div>
+        <div class="leader-list">
+          <div class="leader-hdr">3 อันดับทำกระแสเงินสดสูงสุด (DD ≤ 40%)</div>
+          <div id="list-beta" class="leader-list"></div>
+        </div>
+        <a class="cta blue" href="{b_base}">เข้าดูกราฟ BETA Grid →</a>
       </article>
     </section>
 
-    <div class="foot" id="portal-foot"></div>
+    <section class="history">
+      <div class="h-title">ดูผลย้อนหลังตามวันที่:</div>
+      <div class="h-days" id="history-row"></div>
+    </section>
+    <div style="display:none"><a href="{a_pref}/index.html">alpha</a><a href="{b_pref}/index.html">beta</a></div>
   </main>
 
   <script>
     const DATA = {safe_json};
     const $ = (id) => document.getElementById(id);
     const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}}[c]));
-    const num = (v, d = 2) => (v == null || Number.isNaN(Number(v))) ? "–" : Number(v).toFixed(d);
-    const sgn = (v, d = 1, suf = "%") => {{
-      const n = Number(v);
-      if (Number.isNaN(n)) return "–";
-      return `<span class="${{n >= 0 ? "pos" : "neg"}}">${{n >= 0 ? "+" : ""}}${{n.toFixed(d)}}${{suf}}</span>`;
-    }};
-    const symBadge = (s) => `<span class="sym ${{s === "XAUUSD" ? "sym-xau" : "sym-eth"}}">${{esc(s)}}</span>`;
 
-    function renderGlobalKpis() {{
-      const a = DATA.alpha || {{}};
-      const b = DATA.beta || {{}};
-      const totalTrials = (a.total_trials || 0) + (b.total_trials || 0);
-      const totalQual = (a.qualified_count || 0) + (b.qualified_count || 0);
-      const items = [
-        ["Daily Capacity (2 รอบ/วัน)", "30 Models", "20 Alpha (10 XAU + 10 ETH) · 10 Beta"],
-        ["Cumulative Mined Trials", String(totalTrials), `Alpha ${{a.total_trials || 0}} · Beta ${{b.total_trials || 0}}`],
-        ["Qualified Top-9 Models", String(totalQual), `Alpha ${{a.qualified_count || 0}} ผ่านเกณฑ์ · Beta ${{b.qualified_count || 0}} ผ่านเกณฑ์`],
-        ["Latest Mining Date", DATA.latest_date || "–", `UTC updated ${{DATA.generated_at_utc || "–"}}`]
-      ];
-      $("global-kpis").innerHTML = items.map(([l, v, s]) =>
-        `<div class="kpi"><div class="kl">${{esc(l)}}</div><div class="kv">${{esc(v)}}</div><div class="ks">${{esc(s)}}</div></div>`
-      ).join("");
-    }}
-
-    function renderAlpha() {{
-      const a = DATA.alpha || {{}};
-      const pref = a.prefix || "alpha";
-      const top1 = (a.top_ranked || [])[0];
-      $("alpha-kpis").innerHTML = [
-        ["Cumulative Trials", a.total_trials || 0],
-        ["Qualified Top-9", `${{a.qualified_count || 0}} / ${{a.total_models || 0}}`],
-        ["#1 OOS Sharpe", top1 ? `${{num(top1.oos_sharpe_ann)}} (${{top1.symbol}})` : "–"]
-      ].map(([l, v]) => `<div class="mk"><div class="mk-l">${{esc(l)}}</div><div class="mk-v">${{esc(v)}}</div></div>`).join("");
-
-      const topRows = (a.top_ranked || []).slice(0, 6).map((r) => `
-        <tr>
-          <td class="mono">#${{r.rank}}</td>
-          <td class="l mono" title="${{esc(r.model_id)}}">${{esc(r.model_id.length > 34 ? r.model_id.slice(0, 34) + "…" : r.model_id)}}</td>
-          <td>${{symBadge(r.symbol)}}</td>
-          <td class="mono">${{esc(r.timeframe)}}</td>
-          <td class="mono pos">${{num(r.oos_sharpe_ann)}}</td>
-          <td class="mono">${{sgn(r.oos_return_pct)}}</td>
-          <td class="mono">${{num(r.max_drawdown_pct, 1)}}%</td>
-          <td class="mono">${{num(r.dsr_approx)}}</td>
-        </tr>`).join("") || '<tr><td colspan="8" class="l mut">ยังไม่มีโมเดล Alpha ที่ผ่านเกณฑ์</td></tr>';
-      $("alpha-top").innerHTML = `<table><thead><tr><th>#</th><th class="l">Model ID</th><th>Sym</th><th>TF</th><th>OOS Sh</th><th>OOS Ret</th><th>Max DD</th><th>DSR≈</th></tr></thead><tbody>${{topRows}}</tbody></table>`;
-
-      const dayRows = (a.days || []).slice(0, 10).map((d) => {{
-        const bySym = Object.entries(d.by_symbol || {{}}).map(([k, v]) => `${{k}}:${{v}}`).join(" ");
-        const rds = (d.rounds || [1]).join("+");
-        return `<tr>
-          <td class="l mono">${{esc(d.batch_date)}}</td>
-          <td class="mono">${{d.model_count || 0}}</td>
-          <td class="mono">R${{esc(rds)}}</td>
-          <td class="l mono mut">${{esc(bySym)}}</td>
-          <td class="mono pos">${{num(d.best_oos_sharpe)}}</td>
-          <td><a class="tbl-link a" href="${{esc(pref)}}/daily/${{esc(d.batch_date)}}/dashboard.html">9-Panel</a></td>
-        </tr>`;
-      }}).join("") || '<tr><td colspan="6" class="l mut">ยังไม่มีข้อมูลรายวัน</td></tr>';
-      $("alpha-days").innerHTML = `<table><thead><tr><th class="l">Date</th><th>Models</th><th>Rounds</th><th class="l">Assets</th><th>Best OOS Sh</th><th>Open</th></tr></thead><tbody>${{dayRows}}</tbody></table>`;
-    }}
-
-    function renderBeta() {{
-      const b = DATA.beta || {{}};
-      const pref = b.prefix || "beta";
-      const top1 = (b.top_ranked || [])[0];
-      $("beta-kpis").innerHTML = [
-        ["Cumulative Trials", b.total_trials || 0],
-        ["Qualified Top-9", `${{b.qualified_count || 0}} / ${{b.total_models || 0}}`],
-        ["#1 Cashflow", top1 ? `+$${{num(top1.cashflow_net_usd, 0)}}` : "–"]
-      ].map(([l, v]) => `<div class="mk"><div class="mk-l">${{esc(l)}}</div><div class="mk-v">${{esc(v)}}</div></div>`).join("");
-
-      const topRows = (b.top_ranked || []).slice(0, 6).map((r) => `
-        <tr>
-          <td class="mono">#${{r.rank}}</td>
-          <td class="l mono">${{esc(r.model_id)}}</td>
-          <td class="mono pos">${{r.cashflow_net_usd >= 0 ? "+" : ""}}$${{num(r.cashflow_net_usd, 2)}}</td>
-          <td class="mono">${{num(r.max_drawdown_pct, 2)}}%</td>
-          <td class="mono">${{num(r.cashflow_to_dd_ratio, 2)}}x</td>
-          <td class="mono">${{sgn(r.mtm_return_pct, 2)}}</td>
-        </tr>`).join("") || '<tr><td colspan="6" class="l mut">ยังไม่มีโมเดล Beta ที่ผ่านเกณฑ์</td></tr>';
-      $("beta-top").innerHTML = `<table><thead><tr><th>#</th><th class="l">Model ID</th><th>Cashflow</th><th>Max DD</th><th>CF/DD</th><th>MTM Ret</th></tr></thead><tbody>${{topRows}}</tbody></table>`;
-
-      const dayRows = (b.days || []).slice(0, 10).map((d) => `
-        <tr>
-          <td class="l mono">${{esc(d.batch_date)}}</td>
-          <td class="mono">${{d.model_count || 0}}</td>
-          <td class="mono">${{d.qualified_count || 0}}/${{d.model_count || 0}}</td>
-          <td class="mono pos">+$${{num(d.best_cashflow_usd, 0)}}</td>
-          <td class="mono">${{num(d.lowest_dd_pct, 1)}}%</td>
-          <td><a class="tbl-link b" href="${{esc(pref)}}/daily/${{esc(d.batch_date)}}/dashboard.html">9-Panel</a></td>
-        </tr>`).join("") || '<tr><td colspan="6" class="l mut">ยังไม่มีข้อมูลรายวัน</td></tr>';
-      $("beta-days").innerHTML = `<table><thead><tr><th class="l">Date</th><th>Models</th><th>Pass</th><th>Best CF</th><th>Low DD</th><th>Open</th></tr></thead><tbody>${{dayRows}}</tbody></table>`;
-    }}
-
-    function setView(mode) {{
-      const grid = $("tracks-grid");
-      const pa = $("panel-alpha");
-      const pb = $("panel-beta");
-      document.querySelectorAll(".mode-btn").forEach((btn) => btn.classList.toggle("active", btn.dataset.view === mode));
-      if (mode === "alpha") {{
-        grid.classList.add("single");
-        pa.classList.remove("hidden");
-        pb.classList.add("hidden");
-      }} else if (mode === "beta") {{
-        grid.classList.add("single");
-        pa.classList.add("hidden");
-        pb.classList.remove("hidden");
-      }} else {{
-        grid.classList.remove("single");
-        pa.classList.remove("hidden");
-        pb.classList.remove("hidden");
+    function renderAlphaCard(boxStat, boxList, block) {{
+      const total = (block && block.total) || 0;
+      const qual = (block && block.qualified) || 0;
+      $(boxStat).innerHTML = `
+        <div class="st"><div class="st-l">ทดสอบสะสม</div><div class="st-v">${{total}} โมเดล</div></div>
+        <div class="st"><div class="st-l">ผ่านเกณฑ์ทั้งหมด</div><div class="st-v">${{qual}} โมเดล</div></div>
+      `;
+      const rows = (block && block.leaders) || [];
+      if (!rows.length) {{
+        $(boxList).innerHTML = `<div class="lrow"><span class="l-sub">กำลังสะสมผลรอบถัดไป</span></div>`;
+        return;
       }}
+      $(boxList).innerHTML = rows.map((r, idx) => `
+        <div class="lrow">
+          <div>
+            <div class="l-name">#${{idx + 1}} ${{esc(r.title)}}</div>
+            <div class="l-sub">${{esc(r.direction_label)}} · ${{r.qualified ? "ผ่านเกณฑ์" : "รอคุม DD (" + r.max_drawdown_pct + "%)"}}</div>
+          </div>
+          <div class="l-val">
+            <div class="pos">${{r.oos_return_pct >= 0 ? "+" : ""}}${{r.oos_return_pct.toFixed(1)}}% OOS</div>
+            <div class="l-sub">Sharpe ${{r.oos_sharpe_ann.toFixed(2)}} · DD ${{r.max_drawdown_pct.toFixed(1)}}%</div>
+          </div>
+        </div>
+      `).join("");
     }}
 
-    document.querySelectorAll(".mode-btn").forEach((btn) => btn.addEventListener("click", () => setView(btn.dataset.view)));
+    function renderBetaCard() {{
+      const b = DATA.beta || {{}};
+      $("stat-beta").innerHTML = `
+        <div class="st"><div class="st-l">ทดสอบสะสม</div><div class="st-v">${{b.total_models || 0}} โมเดล</div></div>
+        <div class="st"><div class="st-l">ผ่านเกณฑ์ (DD ≤ 40%)</div><div class="st-v">${{b.qualified_count || 0}} โมเดล</div></div>
+      `;
+      const rows = b.leaders || [];
+      if (!rows.length) {{
+        $("list-beta").innerHTML = `<div class="lrow"><span class="l-sub">ยังไม่มีข้อมูล</span></div>`;
+        return;
+      }}
+      $("list-beta").innerHTML = rows.map((r) => `
+        <div class="lrow">
+          <div>
+            <div class="l-name">#${{r.rank}} ${{esc(r.title)}}</div>
+            <div class="l-sub">เฉลี่ย +$${{r.avg_weekly_cf_usd.toFixed(1)}}/สัปดาห์ · CF/DD ${{r.cashflow_to_dd_ratio.toFixed(2)}}x</div>
+          </div>
+          <div class="l-val">
+            <div class="pos">+$${{r.cashflow_net_usd.toFixed(0)}}</div>
+            <div class="l-sub">DD ${{r.max_drawdown_pct.toFixed(1)}}%</div>
+          </div>
+        </div>
+      `).join("");
+    }}
+
+    function renderHistory() {{
+      const aPref = (DATA.alpha && DATA.alpha.prefix) || "alpha";
+      const bPref = (DATA.beta && DATA.beta.prefix) || "beta";
+      const hist = DATA.history || [];
+      $("history-row").innerHTML = hist.map((h) => `
+        <span class="h-group">
+          <b>${{esc(h.date)}}</b>
+          ${{h.alpha_count ? `<a class="h-btn a" href="${{esc(aPref)}}/daily/${{esc(h.date)}}/dashboard.html">Alpha (${{h.alpha_count}})</a>` : ""}}
+          ${{h.beta_count ? `<a class="h-btn b" href="${{esc(bPref)}}/daily/${{esc(h.date)}}/dashboard.html">Beta (${{h.beta_count}})</a>` : ""}}
+        </span>
+      `).join("") || `<span class="l-sub">ยังไม่มีประวัติรายวัน</span>`;
+    }}
+
     $("theme-toggle").addEventListener("click", () => {{
       document.body.classList.toggle("light");
       try {{ localStorage.setItem("am_theme", document.body.classList.contains("light") ? "light" : "dark"); }} catch (_e) {{}}
     }});
     try {{ if (localStorage.getItem("am_theme") === "light") document.body.classList.add("light"); }} catch (_e) {{}}
 
-    renderGlobalKpis();
-    renderAlpha();
-    renderBeta();
-    $("portal-foot").textContent = `Alpha_mining Unified Central Portal · Zero CDN / Offline Ready · Generated ${{DATA.generated_at_utc || ""}} · Exploratory research only`;
+    renderAlphaCard("stat-xau", "list-xau", DATA.alpha && DATA.alpha.xau);
+    renderAlphaCard("stat-eth", "list-eth", DATA.alpha && DATA.alpha.eth);
+    renderBetaCard();
+    renderHistory();
   </script>
 </body>
 </html>

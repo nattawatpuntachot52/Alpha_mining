@@ -112,6 +112,23 @@ jobs:
             done
             echo "Staged ${copied_alpha_days} historical Alpha daily dashboard(s) into pages_site/alpha/"
           fi
+          # 4. Remove duplicate sub-hubs: /alpha/ and /beta/ jump straight to the latest dashboard
+          python3 - <<'PYEOF'
+          import json, pathlib
+          for name in ("alpha", "beta"):
+              idx = pathlib.Path(f"pages_site/{name}/daily/index.json")
+              if not idx.is_file():
+                  continue
+              latest = json.loads(idx.read_text(encoding="utf-8")).get("latest_date", "")
+              target = f"daily/{latest}/dashboard.html"
+              if latest and pathlib.Path(f"pages_site/{name}/{target}").is_file():
+                  pathlib.Path(f"pages_site/{name}/index.html").write_text(
+                      '<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">'
+                      '<script>location.replace("' + target + '"+location.hash)</script>'
+                      '<meta http-equiv="refresh" content="0;url=' + target + '">'
+                      '<title>Redirecting</title></head><body><a href="' + target + '">เปิดหน้าล่าสุด</a></body></html>',
+                      encoding="utf-8")
+          PYEOF
           find pages_site -maxdepth 4 -type f | sort
 
       - name: Upload GitHub Pages artifact
