@@ -1,4 +1,4 @@
-name: Daily Alpha Mining Factory (2 Rounds x 10 = 20 Models/Day: XAUUSD + ETHUSDT)
+name: "Daily Alpha Mining Factory (2 Rounds x 10 = 20 Models/Day | XAUUSD + ETHUSDT)"
 
 on:
   schedule:
