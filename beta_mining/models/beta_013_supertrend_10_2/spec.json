@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "model_id": "beta_013_supertrend_10_2",
+  "trial_number": 13,
+  "category": "beta",
+  "signal_spec": "supertrend_10_2",
+  "signal_name": "supertrend_10_2",
+  "symbol": "ETHUSDT",
+  "product_type": "USD_M",
+  "settlement_unit": "USDT",
+  "zone_high": 5000.0,
+  "zone_low": 500.0,
+  "spacing_pct": 0.2,
+  "grid_levels_count": 1151,
+  "initial_capital": 10000.0,
+  "fill_mode": "strict_cross",
+  "hypothesis": "Tighter 2x multiplier on ATR(10) raises realized turnover.",
+  "tags": [
+    "beta_mining",
+    "day03_supertrend_sweep"
+  ],
+  "evidence_status": "reproducible",
+  "config_snapshot": {
+    "profile": "usdm",
+    "high": "5000.0",
+    "low": "500.0",
+    "spacing_pct": "0.2",
+    "order_quantity": "0.01",
+    "max_position_quantity": "2.0",
+    "max_notional_usdt": "10000.0",
+    "initial_capital": "10000.0",
+    "recovery_mode": "partial_only",
+    "fill_mode": "strict_cross"
+  },
+  "created_batch_date": "2026-11-24",
+  "updated_at_utc": "2026-11-24T09:47:40Z",
+  "spec_sha256": "sha256:01e3ba864e623a78c5fee8fe7e7fa6e3f920bea9229bd7d19ae7a6e7d4871a3e"
+}
