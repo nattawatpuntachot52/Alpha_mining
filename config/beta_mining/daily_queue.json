@@ -1,14 +1,16 @@
 {
   "schema_version": "1.0",
-  "description": "Curated daily 5-model Beta Mining queue for LGB154 USD-M ETHUSDT (5000->500, 2 ETH cap, $10,000 capital, 1,000d window).",
-  "models_per_day": 5,
+  "description": "Curated daily 10-model Beta Mining queue (2 rounds/day x 5 models) for LGB154 USD-M ETHUSDT (5000->500, 2 ETH cap, $10,000 capital, 1,000d window).",
+  "models_per_day": 10,
+  "models_per_round": 5,
+  "rounds_per_day": 2,
   "defaults": {
     "profile": "usdm",
     "symbol": "ETHUSDT",
     "days": 1000,
     "high": 5000.0,
     "low": 500.0,
-    "spacing_pct": 0.20,
+    "spacing_pct": 0.2,
     "max_position_qty": 2.0,
     "max_notional": 10000.0,
     "initial_capital": 10000.0,
@@ -59,6 +61,66 @@
     {"signal_spec": "supertrend_14_4", "theme": "day07_selective_swing", "hypothesis": "Wide 4x ATR(14) Supertrend avoids whipsaw entries in choppy crashes."},
     {"signal_spec": "rsi_reversion_14_25_75", "theme": "day07_selective_swing", "hypothesis": "Deep oversold RSI(14) 25/75 buys only capitulation wicks."},
     {"signal_spec": "rsi_trend_14_40_60", "theme": "day07_selective_swing", "hypothesis": "Wide neutral deadband RSI(14) 40/60 requires strong momentum confirmation."},
-    {"signal_spec": "rsi_trend_21_45_55", "theme": "day07_selective_swing", "hypothesis": "Smoothed RSI(21) 45/55 hysteresis trend gate balances CF and DD."}
+    {"signal_spec": "rsi_trend_21_45_55", "theme": "day07_selective_swing", "hypothesis": "Smoothed RSI(21) 45/55 hysteresis trend gate balances CF and DD."},
+
+    {"signal_spec": "ema_3_8", "theme": "day08_ema_fibonacci", "hypothesis": "Fibonacci-ratio EMA pair ema_3_8 tests whether natural-ratio spacing improves CF/DD efficiency on 1m ETHUSDT."},
+    {"signal_spec": "ema_5_13", "theme": "day08_ema_fibonacci", "hypothesis": "Fibonacci-ratio EMA pair ema_5_13 tests whether natural-ratio spacing improves CF/DD efficiency on 1m ETHUSDT."},
+    {"signal_spec": "ema_8_34", "theme": "day08_ema_fibonacci", "hypothesis": "Fibonacci-ratio EMA pair ema_8_34 tests whether natural-ratio spacing improves CF/DD efficiency on 1m ETHUSDT."},
+    {"signal_spec": "ema_13_55", "theme": "day08_ema_fibonacci", "hypothesis": "Fibonacci-ratio EMA pair ema_13_55 tests whether natural-ratio spacing improves CF/DD efficiency on 1m ETHUSDT."},
+    {"signal_spec": "ema_21_89", "theme": "day08_ema_fibonacci", "hypothesis": "Fibonacci-ratio EMA pair ema_21_89 tests whether natural-ratio spacing improves CF/DD efficiency on 1m ETHUSDT."},
+
+    {"signal_spec": "ema_10_30", "theme": "day09_ema_wide_macro", "hypothesis": "Wide EMA pair ema_10_30 keeps the grid defensive through multi-hour drawdowns at the cost of fill cadence."},
+    {"signal_spec": "ema_25_75", "theme": "day09_ema_wide_macro", "hypothesis": "Wide EMA pair ema_25_75 keeps the grid defensive through multi-hour drawdowns at the cost of fill cadence."},
+    {"signal_spec": "ema_40_120", "theme": "day09_ema_wide_macro", "hypothesis": "Wide EMA pair ema_40_120 keeps the grid defensive through multi-hour drawdowns at the cost of fill cadence."},
+    {"signal_spec": "ema_60_180", "theme": "day09_ema_wide_macro", "hypothesis": "Wide EMA pair ema_60_180 keeps the grid defensive through multi-hour drawdowns at the cost of fill cadence."},
+    {"signal_spec": "ema_100_300", "theme": "day09_ema_wide_macro", "hypothesis": "Wide EMA pair ema_100_300 keeps the grid defensive through multi-hour drawdowns at the cost of fill cadence."},
+
+    {"signal_spec": "supertrend_5_2", "theme": "day10_supertrend_fine", "hypothesis": "Supertrend supertrend_5_2 fine-tunes the ATR band to balance whipsaw buys against missed rebounds."},
+    {"signal_spec": "supertrend_5_3", "theme": "day10_supertrend_fine", "hypothesis": "Supertrend supertrend_5_3 fine-tunes the ATR band to balance whipsaw buys against missed rebounds."},
+    {"signal_spec": "supertrend_12_2.5", "theme": "day10_supertrend_fine", "hypothesis": "Supertrend supertrend_12_2.5 fine-tunes the ATR band to balance whipsaw buys against missed rebounds."},
+    {"signal_spec": "supertrend_12_3.5", "theme": "day10_supertrend_fine", "hypothesis": "Supertrend supertrend_12_3.5 fine-tunes the ATR band to balance whipsaw buys against missed rebounds."},
+    {"signal_spec": "supertrend_30_3", "theme": "day10_supertrend_fine", "hypothesis": "Supertrend supertrend_30_3 fine-tunes the ATR band to balance whipsaw buys against missed rebounds."},
+
+    {"signal_spec": "supertrend_30_4", "theme": "day11_supertrend_wide", "hypothesis": "Supertrend supertrend_30_4 (long ATR / wide band) tests tail-risk minimisation versus realised cashflow."},
+    {"signal_spec": "supertrend_50_3", "theme": "day11_supertrend_wide", "hypothesis": "Supertrend supertrend_50_3 (long ATR / wide band) tests tail-risk minimisation versus realised cashflow."},
+    {"signal_spec": "supertrend_50_4", "theme": "day11_supertrend_wide", "hypothesis": "Supertrend supertrend_50_4 (long ATR / wide band) tests tail-risk minimisation versus realised cashflow."},
+    {"signal_spec": "supertrend_10_5", "theme": "day11_supertrend_wide", "hypothesis": "Supertrend supertrend_10_5 (long ATR / wide band) tests tail-risk minimisation versus realised cashflow."},
+    {"signal_spec": "supertrend_20_2", "theme": "day11_supertrend_wide", "hypothesis": "Supertrend supertrend_20_2 (long ATR / wide band) tests tail-risk minimisation versus realised cashflow."},
+
+    {"signal_spec": "rsi_reversion_5_20_80", "theme": "day12_rsi_reversion_deep", "hypothesis": "RSI reversion rsi_reversion_5_20_80 buys only deeper oversold dips to reduce inventory lock-up."},
+    {"signal_spec": "rsi_reversion_9_30_70", "theme": "day12_rsi_reversion_deep", "hypothesis": "RSI reversion rsi_reversion_9_30_70 buys only deeper oversold dips to reduce inventory lock-up."},
+    {"signal_spec": "rsi_reversion_14_20_80", "theme": "day12_rsi_reversion_deep", "hypothesis": "RSI reversion rsi_reversion_14_20_80 buys only deeper oversold dips to reduce inventory lock-up."},
+    {"signal_spec": "rsi_reversion_28_40_60", "theme": "day12_rsi_reversion_deep", "hypothesis": "RSI reversion rsi_reversion_28_40_60 buys only deeper oversold dips to reduce inventory lock-up."},
+    {"signal_spec": "rsi_reversion_28_35_65", "theme": "day12_rsi_reversion_deep", "hypothesis": "RSI reversion rsi_reversion_28_35_65 buys only deeper oversold dips to reduce inventory lock-up."},
+
+    {"signal_spec": "rsi_reversion_9_35_65", "theme": "day13_rsi_reversion_mid", "hypothesis": "RSI reversion rsi_reversion_9_35_65 explores the moderate-threshold region between day04 and day12 leaders."},
+    {"signal_spec": "rsi_reversion_9_40_60", "theme": "day13_rsi_reversion_mid", "hypothesis": "RSI reversion rsi_reversion_9_40_60 explores the moderate-threshold region between day04 and day12 leaders."},
+    {"signal_spec": "rsi_reversion_5_30_70", "theme": "day13_rsi_reversion_mid", "hypothesis": "RSI reversion rsi_reversion_5_30_70 explores the moderate-threshold region between day04 and day12 leaders."},
+    {"signal_spec": "rsi_reversion_14_45_55", "theme": "day13_rsi_reversion_mid", "hypothesis": "RSI reversion rsi_reversion_14_45_55 explores the moderate-threshold region between day04 and day12 leaders."},
+    {"signal_spec": "rsi_reversion_21_30_70", "theme": "day13_rsi_reversion_mid", "hypothesis": "RSI reversion rsi_reversion_21_30_70 explores the moderate-threshold region between day04 and day12 leaders."},
+
+    {"signal_spec": "rsi_trend_5_50_50", "theme": "day14_rsi_trend_fast", "hypothesis": "Fast RSI trend gate rsi_trend_5_50_50 reacts quickly to momentum regime flips."},
+    {"signal_spec": "rsi_trend_9_50_50", "theme": "day14_rsi_trend_fast", "hypothesis": "Fast RSI trend gate rsi_trend_9_50_50 reacts quickly to momentum regime flips."},
+    {"signal_spec": "rsi_trend_9_45_55", "theme": "day14_rsi_trend_fast", "hypothesis": "Fast RSI trend gate rsi_trend_9_45_55 reacts quickly to momentum regime flips."},
+    {"signal_spec": "rsi_trend_5_45_55", "theme": "day14_rsi_trend_fast", "hypothesis": "Fast RSI trend gate rsi_trend_5_45_55 reacts quickly to momentum regime flips."},
+    {"signal_spec": "rsi_trend_14_35_65", "theme": "day14_rsi_trend_fast", "hypothesis": "Fast RSI trend gate rsi_trend_14_35_65 reacts quickly to momentum regime flips."},
+
+    {"signal_spec": "rsi_trend_28_45_55", "theme": "day15_rsi_trend_slow", "hypothesis": "Slow RSI trend gate rsi_trend_28_45_55 favours capital preservation and low Beta to ETH."},
+    {"signal_spec": "rsi_trend_35_50_50", "theme": "day15_rsi_trend_slow", "hypothesis": "Slow RSI trend gate rsi_trend_35_50_50 favours capital preservation and low Beta to ETH."},
+    {"signal_spec": "rsi_trend_35_45_55", "theme": "day15_rsi_trend_slow", "hypothesis": "Slow RSI trend gate rsi_trend_35_45_55 favours capital preservation and low Beta to ETH."},
+    {"signal_spec": "rsi_trend_50_50_50", "theme": "day15_rsi_trend_slow", "hypothesis": "Slow RSI trend gate rsi_trend_50_50_50 favours capital preservation and low Beta to ETH."},
+    {"signal_spec": "rsi_trend_21_40_60", "theme": "day15_rsi_trend_slow", "hypothesis": "Slow RSI trend gate rsi_trend_21_40_60 favours capital preservation and low Beta to ETH."},
+
+    {"signal_spec": "ema_7_25", "theme": "day16_mixed_ema", "hypothesis": "Mixed-ratio EMA pair ema_7_25 probes parameter robustness around prior EMA leaders."},
+    {"signal_spec": "ema_9_26", "theme": "day16_mixed_ema", "hypothesis": "Mixed-ratio EMA pair ema_9_26 probes parameter robustness around prior EMA leaders."},
+    {"signal_spec": "ema_12_50", "theme": "day16_mixed_ema", "hypothesis": "Mixed-ratio EMA pair ema_12_50 probes parameter robustness around prior EMA leaders."},
+    {"signal_spec": "ema_18_40", "theme": "day16_mixed_ema", "hypothesis": "Mixed-ratio EMA pair ema_18_40 probes parameter robustness around prior EMA leaders."},
+    {"signal_spec": "ema_35_70", "theme": "day16_mixed_ema", "hypothesis": "Mixed-ratio EMA pair ema_35_70 probes parameter robustness around prior EMA leaders."},
+
+    {"signal_spec": "supertrend_8_2.5", "theme": "day17_mixed_supertrend", "hypothesis": "Supertrend supertrend_8_2.5 probes parameter robustness around prior Supertrend leaders."},
+    {"signal_spec": "supertrend_8_3.5", "theme": "day17_mixed_supertrend", "hypothesis": "Supertrend supertrend_8_3.5 probes parameter robustness around prior Supertrend leaders."},
+    {"signal_spec": "supertrend_16_2", "theme": "day17_mixed_supertrend", "hypothesis": "Supertrend supertrend_16_2 probes parameter robustness around prior Supertrend leaders."},
+    {"signal_spec": "supertrend_16_3", "theme": "day17_mixed_supertrend", "hypothesis": "Supertrend supertrend_16_3 probes parameter robustness around prior Supertrend leaders."},
+    {"signal_spec": "supertrend_25_2.5", "theme": "day17_mixed_supertrend", "hypothesis": "Supertrend supertrend_25_2.5 probes parameter robustness around prior Supertrend leaders."}
   ]
 }

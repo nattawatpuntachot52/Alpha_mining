@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "model_id": "donchian_breakout_40_10",
+  "category": "alpha",
+  "display_name": "Donchian Breakout (M30 Entry 40 / Exit 10, Long-Only)",
+  "version": "1.0.0",
+  "evidence_status": "exploratory",
+  "drive_vault_folder_key": "models_alpha",
+  "mql5": {
+    "prefix": "Breakout",
+    "magic_number": 20261130,
+    "module_file": "module.mqh",
+    "timeframe": "PERIOD_M30",
+    "direction": "long_only",
+    "default_lot": 0.01,
+    "hedging_required": true
+  },
+  "logic": {
+    "summary": "Long-only M30 Donchian: buy when the last closed bar closes above the prior 40-bar high; exit when it closes below the prior 10-bar low.",
+    "parameters": {
+      "timeframe": "PERIOD_M30",
+      "entry_bars": 40,
+      "exit_bars": 10,
+      "enable_buy": true,
+      "enable_sell": false,
+      "deviation_points": 30
+    },
+    "economic_rationale": "Classic turtle-style channel breakout: volatility expansion beyond a 40-bar range tends to persist; asymmetric 10-bar exit cuts failed breakouts quickly.",
+    "known_assumptions": [
+      "Channels are computed from shift 2 onward so the signal bar (shift 1) never contaminates its own channel.",
+      "Sell side is implemented but disabled (BREAKOUT_ENABLE_SELL=false)."
+    ],
+    "rejection_criteria": [
+      "Net Out-of-Sample expectancy <= 0 after M30 spread/slippage.",
+      "Profit concentrated in fewer than 3 trending episodes."
+    ]
+  }
+}

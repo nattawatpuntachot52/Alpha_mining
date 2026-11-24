@@ -1,0 +1,39 @@
+{
+  "schema_version": "1.0",
+  "model_id": "macross_sma_28_101",
+  "category": "alpha",
+  "display_name": "MA Cross (M15 SMA 28/101, Long-Only)",
+  "version": "1.0.0",
+  "evidence_status": "exploratory",
+  "drive_vault_folder_key": "models_alpha",
+  "mql5": {
+    "prefix": "MACross",
+    "magic_number": 20260617,
+    "module_file": "module.mqh",
+    "timeframe": "PERIOD_M15",
+    "direction": "long_only",
+    "default_lot": 0.01,
+    "hedging_required": true
+  },
+  "logic": {
+    "summary": "Long-only M15 SMA(28)/SMA(101) Close crossover; cross-down exits; 1000-point spread guard on entry.",
+    "parameters": {
+      "timeframe": "PERIOD_M15",
+      "ma_method": "MODE_SMA",
+      "applied_price": "PRICE_CLOSE",
+      "fast_period": 28,
+      "slow_period": 101,
+      "max_spread_points": 1000,
+      "deviation_points": 30
+    },
+    "economic_rationale": "Slow SMA crossover on M15 captures sustained intraday-to-multiday gold trend shifts while filtering minute noise.",
+    "known_assumptions": [
+      "Uses closed bars only (CopyBuffer shift 1 and 2) so there is no intrabar lookahead.",
+      "Long-only: cross-down closes but never reverses to short."
+    ],
+    "rejection_criteria": [
+      "Net Out-of-Sample expectancy <= 0 after realistic M15 spread/slippage.",
+      "Edge disappears when SMA periods are perturbed by +/-20%."
+    ]
+  }
+}

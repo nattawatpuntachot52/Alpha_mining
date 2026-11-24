@@ -142,6 +142,7 @@ class BetaModelStore:
         config_snapshot: dict[str, Any] | None = None,
         run_id: str | None = None,
         recorded_at_utc: str | None = None,
+        round_no: int | None = None,
     ) -> dict[str, Any]:
         """Persist one model's spec, latest metrics, and immutable run record into its isolated folder."""
         self.ensure_initialized()
@@ -256,6 +257,7 @@ class BetaModelStore:
             "symbol": result.symbol,
             "product_type": result.product_type,
             "settlement_unit": result.settlement_unit,
+            "round_no": int(round_no) if round_no is not None else None,
             "crash_stress": (
                 {
                     "window_start_utc": crash_summary["start_utc"],
@@ -498,6 +500,13 @@ class BetaModelStore:
             return None
         return json.loads(bp.read_text(encoding="utf-8"))
 
+    def load_daily_batch_models(self, batch_date: str) -> list[dict[str, Any]]:
+        """Return models already saved in `daily/<YYYY-MM-DD>/batch.json` (empty list when absent)."""
+        batch = self.load_daily_batch(batch_date)
+        if not isinstance(batch, dict):
+            return []
+        return [dict(m) for m in (batch.get("models") or []) if isinstance(m, dict) and m.get("model_id")]
+
     def load_daily_batches_summary(self, *, max_dd_pct: float = DEFAULT_MAX_DD_GATE_PCT) -> list[dict[str, Any]]:
         """Summarize every saved daily batch (sorted newest-first) for archive indexes and date switchers."""
         summaries: list[dict[str, Any]] = []
@@ -593,6 +602,7 @@ class BetaModelStore:
             "batch_date": bdate,
             "generated_at_utc": _now_utc_iso(),
             "model_count": len(batch_rows),
+            "rounds": sorted({int(r["round_no"]) for r in batch_rows if r.get("round_no") is not None}),
             "loader": loader_meta or {},
             "models": batch_rows,
             "ranking_snapshot_top_n": ranking_board.get("ranking_rule", {}).get("top_n", DEFAULT_TOP_N),
@@ -605,6 +615,27 @@ class BetaModelStore:
         if portal_html is not None:
             self.write_portal_index(portal_html)
         return ddir
+
+
+def merge_batch_models(
+    existing: Sequence[dict[str, Any]],
+    new_models: Sequence[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Accumulate a later round into the same-day batch (Round 1 + Round 2 -> full daily batch).
+
+    Existing models keep their original order; a model re-mined in the new round replaces its
+    old row in place; genuinely new models are appended in mined order.
+    """
+    merged: list[dict[str, Any]] = [dict(m) for m in existing]
+    index = {str(m["model_id"]): i for i, m in enumerate(merged)}
+    for m in new_models:
+        mid = str(m["model_id"])
+        if mid in index:
+            merged[index[mid]] = dict(m)
+        else:
+            index[mid] = len(merged)
+            merged.append(dict(m))
+    return merged
 
 
 def compute_return_correlation_matrix(

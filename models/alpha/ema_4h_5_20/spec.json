@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "model_id": "ema_4h_5_20",
+  "category": "alpha",
+  "display_name": "EMA 4H Two-Way (H4 EMA 5/20, Long & Short)",
+  "version": "1.0.0",
+  "evidence_status": "exploratory",
+  "drive_vault_folder_key": "models_alpha",
+  "mql5": {
+    "prefix": "EMA4H",
+    "magic_number": 20261140,
+    "module_file": "module.mqh",
+    "timeframe": "PERIOD_H4",
+    "direction": "long_short",
+    "default_lot": 0.01,
+    "hedging_required": true
+  },
+  "logic": {
+    "summary": "Two-way H4 EMA(5) vs EMA(20) Close: fast above slow holds a buy, fast below slow holds a sell; the opposite side is closed first.",
+    "parameters": {
+      "timeframe": "PERIOD_H4",
+      "ma_method": "MODE_EMA",
+      "applied_price": "PRICE_CLOSE",
+      "fast_period": 5,
+      "slow_period": 20,
+      "deviation_points": 30
+    },
+    "economic_rationale": "Always-in-market H4 EMA regime follower monetises both up and down trends of gold with very low trade frequency.",
+    "known_assumptions": [
+      "Evaluated once per new H4 bar on the last closed bar (shift 1).",
+      "Opposite side is closed before opening the target side (no self-hedge)."
+    ],
+    "rejection_criteria": [
+      "Short leg has negative Out-of-Sample expectancy after swap/spread.",
+      "Max drawdown exceeds the portfolio risk budget."
+    ]
+  }
+}

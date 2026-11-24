@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0",
+  "model_id": "session_b_21_04",
+  "category": "alpha",
+  "display_name": "Session B (Broker 21:00-04:00, Buy inside / Flat outside)",
+  "version": "1.0.0",
+  "evidence_status": "exploratory",
+  "drive_vault_folder_key": "models_alpha",
+  "mql5": {
+    "prefix": "SessionB",
+    "magic_number": 20261162,
+    "module_file": "module.mqh",
+    "timeframe": "PERIOD_M1",
+    "direction": "long_only",
+    "default_lot": 0.01,
+    "hedging_required": true
+  },
+  "logic": {
+    "summary": "Long-only time-window model: hold a buy during broker server time 21:00-04:00 and stay flat outside the window.",
+    "parameters": {
+      "start_hour": 21,
+      "end_hour": 4,
+      "retry_seconds": 15,
+      "deviation_points": 30,
+      "time_basis": "broker_server_time"
+    },
+    "economic_rationale": "Variant of Session A with earlier entry and earlier exit to test sensitivity of the overnight drift hypothesis.",
+    "known_assumptions": [
+      "Hours are broker SERVER time, not UTC.",
+      "Highly correlated with Session A; counts as a related, not independent, trial."
+    ],
+    "rejection_criteria": [
+      "Adds no diversification versus Session A (return correlation > 0.9).",
+      "Negative Out-of-Sample expectancy after spread and swap."
+    ]
+  }
+}

@@ -1,9 +1,11 @@
-name: Daily Beta Mining Factory (5 Models + 9-Panel Dashboard)
+name: Daily Beta Mining Factory (2 Rounds x 5 = 10 Models/Day + 9-Panel Dashboard)
 
 on:
   schedule:
-    # Daily 07:30 ICT (00:30 UTC) — 30 min before Katherine-HQ 08:00 ICT Morning Digest
+    # Round 1: Daily 07:30 ICT (00:30 UTC) — 5 models before Katherine-HQ 08:00 ICT Morning Digest
     - cron: "30 0 * * *"
+    # Round 2: Daily 19:30 ICT (12:30 UTC) — +5 models (accumulates to 10 models/day)
+    - cron: "30 12 * * *"
   workflow_dispatch:
     inputs:
       signals:
@@ -12,9 +14,14 @@ on:
         default: ""
         type: string
       batch_size:
-        description: "Number of models to mine from daily_queue.json when signals is blank"
+        description: "Number of models to mine per round from daily_queue.json when signals is blank (default: 5)"
         required: false
         default: "5"
+        type: string
+      round:
+        description: "Optional round number (0 = auto next round up to 2/day)"
+        required: false
+        default: "0"
         type: string
       days:
         description: "Backtest window in days (default: 1000)"
@@ -43,7 +50,7 @@ concurrency:
 jobs:
   daily-beta-mining:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
         with:
@@ -59,6 +66,7 @@ jobs:
           INPUT_DATE: ${{ inputs.batch_date }}
           INPUT_DAYS: ${{ inputs.days }}
           INPUT_BATCH_SIZE: ${{ inputs.batch_size }}
+          INPUT_ROUND: ${{ inputs.round }}
           INPUT_SIGNALS: ${{ inputs.signals }}
           INPUT_OPEN_PR: ${{ inputs.open_pr }}
           EVENT_NAME: ${{ github.event_name }}
@@ -82,6 +90,11 @@ jobs:
             echo "Invalid batch_size: $BATCH_SIZE" >&2
             exit 1
           fi
+          ROUND_NO="${INPUT_ROUND:-0}"
+          if [[ ! "$ROUND_NO" =~ ^[0-9]+$ ]] || [[ "$ROUND_NO" -gt 10 ]]; then
+            echo "Invalid round: $ROUND_NO" >&2
+            exit 1
+          fi
           SIGNALS="${INPUT_SIGNALS:-}"
           if [[ -n "$SIGNALS" ]] && [[ ! "$SIGNALS" =~ ^[A-Za-z0-9_.,[:space:]-]+$ ]]; then
             echo "Invalid characters in signals override: $SIGNALS" >&2
@@ -95,9 +108,25 @@ jobs:
             echo "batch_date=$BATCH_DATE"
             echo "days=$DAYS"
             echo "batch_size=$BATCH_SIZE"
+            echo "round=$ROUND_NO"
             echo "signals=$SIGNALS"
             echo "open_pr=$OPEN_PR"
           } >> "$GITHUB_OUTPUT"
+
+      - name: Continue existing open daily PR branch if Round 1 is still unmerged
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BATCH_DATE: ${{ steps.params.outputs.batch_date }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          BRANCH="bot/daily-beta-mining-${BATCH_DATE}"
+          OPEN_PR_NUM=$(gh pr list -R "$REPO" --head "$BRANCH" --state open --json number --jq '.[0].number // ""')
+          if [[ -n "$OPEN_PR_NUM" ]]; then
+            echo "Found open PR #${OPEN_PR_NUM} on ${BRANCH}; checking it out so Round 2 accumulates onto Round 1."
+            git fetch origin "${BRANCH}:${BRANCH}"
+            git checkout "$BRANCH"
+          fi
 
       - name: Restore Binance Vision 1m UM Data Cache
         uses: actions/cache/restore@v4
@@ -107,11 +136,12 @@ jobs:
           restore-keys: |
             alpha-binance-vision-1m-um-
 
-      - name: Run Daily 5-Model Beta Mining Batch & Build 9-Panel Dashboard
+      - name: Run Beta Mining Round (5 Models/Round -> 10/Day) & Build 9-Panel Dashboard
         env:
           BATCH_DATE: ${{ steps.params.outputs.batch_date }}
           DAYS: ${{ steps.params.outputs.days }}
           BATCH_SIZE: ${{ steps.params.outputs.batch_size }}
+          ROUND_NO: ${{ steps.params.outputs.round }}
           SIGNALS: ${{ steps.params.outputs.signals }}
         run: |
           set -euo pipefail
@@ -120,6 +150,8 @@ jobs:
             --date "$BATCH_DATE"
             --queue-file config/beta_mining/daily_queue.json
             --batch-size "$BATCH_SIZE"
+            --round "$ROUND_NO"
+            --max-rounds 2
             --days "$DAYS"
             --high 5000
             --low 500
@@ -157,7 +189,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: daily-beta-mining-${{ steps.params.outputs.batch_date }}
+          name: daily-beta-mining-${{ steps.params.outputs.batch_date }}-${{ github.run_id }}
           path: |
             beta_mining/index.html
             beta_mining/daily/index.json
@@ -219,21 +251,15 @@ jobs:
             echo "No changes under beta_mining/ to commit."
             exit 0
           fi
+          MODEL_COUNT=$(python3 -c "import json; d=json.load(open('beta_mining/daily/${BATCH_DATE}/batch.json')); print(d.get('model_count', 5))")
+          ROUNDS_TAG=$(python3 -c "import json; d=json.load(open('beta_mining/daily/${BATCH_DATE}/batch.json')); r=d.get('rounds') or [1]; print('r' + '+'.join(str(x) for x in r))")
           BRANCH="bot/daily-beta-mining-${BATCH_DATE}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -B "$BRANCH"
           git add beta_mining/
-          git commit -m "chore(beta-mining): daily 5-model batch & 9-panel dashboard (${BATCH_DATE})"
+          git commit -m "chore(beta-mining): daily ${MODEL_COUNT}-model batch (${ROUNDS_TAG}) & 9-panel dashboard (${BATCH_DATE})"
           git push --force-with-lease origin "HEAD:refs/heads/${BRANCH}"
-
-          EXISTING_PR=$(gh pr list -R "$REPO" --head "$BRANCH" --state open --json number,url --jq '.[0].url // ""')
-          if [[ -n "$EXISTING_PR" ]]; then
-            echo "Updated existing Daily Beta Mining PR: $EXISTING_PR"
-            echo "### Daily Beta Mining PR" >> "$GITHUB_STEP_SUMMARY"
-            echo "Updated existing PR: $EXISTING_PR" >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
 
           PY_VER=$(python3 --version 2>&1)
           GIT_VER=$(git --version 2>&1)
@@ -248,9 +274,9 @@ jobs:
             echo '```text'
             echo "AGENT_ACK"
             echo "mission_id: alpha-mining-daily-beta-factory"
-            echo "task_id: daily-beta-mining-${BATCH_DATE}"
+            echo "task_id: daily-beta-mining-${BATCH_DATE}-${ROUNDS_TAG}"
             echo "assignment_id: ${BRANCH}"
-            echo "phase_id: scheduled-daily-5model-batch"
+            echo "phase_id: scheduled-daily-2round-10model-batch"
             echo "agent_id: github-actions-daily-beta-mining"
             echo "ovca_role: engineer"
             echo "actual_provider_runtime: GitHub Actions ubuntu-latest (Linux)"
@@ -263,14 +289,24 @@ jobs:
             echo "  git: ${GIT_VER}"
             echo "  gh: ${GH_VER}"
             echo "mutation_boundary: beta_mining/ on ${BRANCH} (PR-only; main protected)"
-            echo "verification_summary: scripts/beta_mining.py run-daily exited 0; dashboard.html and daily_summary.md generated"
+            echo "verification_summary: scripts/beta_mining.py run-daily exited 0; ${MODEL_COUNT} models accumulated; dashboard.html and daily_summary.md generated"
             echo '```'
           } > "$PR_BODY_FILE"
+
+          PR_TITLE="chore(beta-mining): daily ${MODEL_COUNT}-model batch (${ROUNDS_TAG}) & 9-panel dashboard (${BATCH_DATE})"
+          EXISTING_PR_NUM=$(gh pr list -R "$REPO" --head "$BRANCH" --state open --json number --jq '.[0].number // ""')
+          if [[ -n "$EXISTING_PR_NUM" ]]; then
+            gh pr edit "$EXISTING_PR_NUM" -R "$REPO" --title "$PR_TITLE" --body-file "$PR_BODY_FILE"
+            echo "Updated existing Daily Beta Mining PR #${EXISTING_PR_NUM}"
+            echo "### Daily Beta Mining PR" >> "$GITHUB_STEP_SUMMARY"
+            echo "Updated existing PR #${EXISTING_PR_NUM} (${MODEL_COUNT} models, ${ROUNDS_TAG})" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
 
           if PR_URL=$(gh pr create -R "$REPO" \
             --base main \
             --head "$BRANCH" \
-            --title "chore(beta-mining): daily 5-model batch & 9-panel dashboard (${BATCH_DATE})" \
+            --title "$PR_TITLE" \
             --body-file "$PR_BODY_FILE" 2>&1); then
             echo "Created Daily Beta Mining PR: $PR_URL"
             echo "### Daily Beta Mining PR" >> "$GITHUB_STEP_SUMMARY"
@@ -278,5 +314,5 @@ jobs:
           else
             echo "::warning::Pushed branch ${BRANCH} cleanly, but gh pr create returned: ${PR_URL}"
             echo "### Daily Beta Mining Branch Ready" >> "$GITHUB_STEP_SUMMARY"
-            echo "Branch \`${BRANCH}\` pushed cleanly. Enable 'Allow GitHub Actions to create and approve pull requests' in Repo Settings or open PR manually." >> "$GITHUB_STEP_SUMMARY"
+            echo "Branch \`${BRANCH}\` pushed cleanly. Open PR manually or enable Actions PR creation." >> "$GITHUB_STEP_SUMMARY"
           fi

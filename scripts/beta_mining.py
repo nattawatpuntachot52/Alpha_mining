@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Daily Beta Mining Factory CLI — run 5 isolated models/day, compare, rank Top-9 (Cashflow->DD), and build dashboard.html."""
+"""Daily Beta Mining Factory CLI — 2 rounds/day x 5 isolated models (10/day), compare, rank Top-9 (Cashflow->DD), and build dashboard.html."""
 
 from __future__ import annotations
 
@@ -33,6 +33,7 @@ from alpha_mining.research.beta_store import (  # noqa: E402
     DEFAULT_MAX_DD_GATE_PCT,
     DEFAULT_TOP_N,
     compute_return_correlation_matrix,
+    merge_batch_models,
 )
 from alpha_mining.research.kline_loader import (  # noqa: E402
     fetch_binance_vision_funding_rates,
@@ -117,7 +118,7 @@ def select_next_queue_batch(
     candidates = raw.get("candidates")
     if not isinstance(candidates, list) or not candidates:
         raise SystemExit(f"queue-file {queue_path} must contain a non-empty 'candidates' list")
-    limit = int(batch_size or raw.get("models_per_day", 5))
+    limit = int(batch_size or raw.get("models_per_round", raw.get("models_per_day", 5)))
     if limit < 1:
         raise SystemExit("batch-size must be >= 1")
 
@@ -210,6 +211,21 @@ def _cmd_run_daily(args: argparse.Namespace) -> int:
     store.ensure_initialized()
 
     batch_date = args.date or datetime.now(timezone.utc).date().isoformat()
+
+    # Same-day multi-round accumulation: Round 2 merges into (never overwrites) Round 1.
+    existing_day_models = store.load_daily_batch_models(batch_date)
+    existing_rounds = sorted({int(m.get("round_no") or 1) for m in existing_day_models})
+    if args.round:
+        round_no = int(args.round)
+    else:
+        if existing_day_models and len(existing_rounds) >= args.max_rounds:
+            print(
+                f"Batch {batch_date} already has {len(existing_rounds)} round(s) "
+                f"({len(existing_day_models)} models) >= --max-rounds {args.max_rounds}; nothing to mine."
+            )
+            return 0
+        round_no = (max(existing_rounds) + 1) if existing_rounds else 1
+
     cfg = _build_grid_cfg(
         profile=args.profile,
         symbol=args.symbol,
@@ -225,7 +241,7 @@ def _cmd_run_daily(args: argparse.Namespace) -> int:
     start_d = date.fromisoformat(args.start_date) if args.start_date else (end_d - timedelta(days=max(1, args.days) - 1))
 
     funding_rates: dict[int, float] = {}
-    loader_meta: dict[str, Any] = {"source": args.source, "market": market}
+    loader_meta: dict[str, Any] = {"source": args.source, "market": market, "round_no": round_no}
     if args.source == "local":
         if args.local_path is None:
             raise SystemExit("--local-path is required when --source=local")
@@ -316,6 +332,7 @@ def _cmd_run_daily(args: argparse.Namespace) -> int:
             result=res,
             crash_result=crash_res,
             hypothesis=str(item.get("hypothesis", "")),
+            round_no=round_no,
             tags=item.get("tags", ("beta_mining",)),
             config_snapshot={
                 "profile": args.profile,
@@ -331,6 +348,13 @@ def _cmd_run_daily(args: argparse.Namespace) -> int:
             },
         )
         batch_metrics.append(rec)
+
+    round_metrics = list(batch_metrics)
+    batch_metrics = merge_batch_models(existing_day_models, round_metrics)
+    print(
+        f"Round {round_no} mined {len(round_metrics)} model(s); "
+        f"{batch_date} batch now holds {len(batch_metrics)} model(s)."
+    )
 
     board = store.compute_ranking(
         top_n=args.top_n,
@@ -568,7 +592,9 @@ def _build_parser() -> argparse.ArgumentParser:
     rd.add_argument("--date", default=None, help="Batch date YYYY-MM-DD (default: today UTC).")
     rd.add_argument("--batch-file", type=Path, default=None, help="Optional JSON batch spec file.")
     rd.add_argument("--queue-file", type=Path, default=None, help="Optional daily mining queue JSON file (auto-selects next unmined models).")
-    rd.add_argument("--batch-size", type=int, default=5, help="Number of models to draw when using --queue-file (default: 5).")
+    rd.add_argument("--batch-size", type=int, default=5, help="Number of models to draw per round when using --queue-file (default: 5).")
+    rd.add_argument("--round", type=int, default=0, help="Round number within the day (default: auto = next round after those already saved for --date).")
+    rd.add_argument("--max-rounds", type=int, default=2, help="Auto mode only: skip when the date already has this many rounds (default: 2).")
     rd.add_argument(
         "--signals",
         default=None,
