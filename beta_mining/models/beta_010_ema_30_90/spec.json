@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "model_id": "beta_010_ema_30_90",
+  "trial_number": 10,
+  "category": "beta",
+  "signal_spec": "ema_30_90",
+  "signal_name": "ema_30_90",
+  "symbol": "ETHUSDT",
+  "product_type": "USD_M",
+  "settlement_unit": "USDT",
+  "zone_high": 5000.0,
+  "zone_low": 500.0,
+  "spacing_pct": 0.2,
+  "grid_levels_count": 1151,
+  "initial_capital": 10000.0,
+  "fill_mode": "strict_cross",
+  "hypothesis": "Macro 1m EMA 30/90 trades fewer cycles with lower Beta to ETH.",
+  "tags": [
+    "beta_mining",
+    "day02_ema_sweep"
+  ],
+  "evidence_status": "reproducible",
+  "config_snapshot": {
+    "profile": "usdm",
+    "high": "5000.0",
+    "low": "500.0",
+    "spacing_pct": "0.2",
+    "order_quantity": "0.01",
+    "max_position_quantity": "2.0",
+    "max_notional_usdt": "10000.0",
+    "initial_capital": "10000.0",
+    "recovery_mode": "partial_only",
+    "fill_mode": "strict_cross"
+  },
+  "created_batch_date": "2026-11-24",
+  "updated_at_utc": "2026-11-24T03:02:36Z",
+  "spec_sha256": "sha256:84eead2255eb9a58f4b4ddeede77a0f38fb35487aa1b2ef69ae55ff7cffa9b6f"
+}
