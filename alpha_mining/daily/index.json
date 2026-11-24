@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "generated_at_utc": "2026-11-24T09:56:24Z",
+  "generated_at_utc": "2026-11-24T09:58:43Z",
   "latest_date": "2026-11-24",
   "total_days": 1,
   "dates": [
@@ -9,14 +9,15 @@
   "days": [
     {
       "batch_date": "2026-11-24",
-      "generated_at_utc": "2026-11-24T09:56:24Z",
-      "model_count": 10,
+      "generated_at_utc": "2026-11-24T09:58:43Z",
+      "model_count": 20,
       "rounds": [
-        1
+        1,
+        2
       ],
       "by_symbol": {
-        "XAUUSD": 5,
-        "ETHUSDT": 5
+        "XAUUSD": 10,
+        "ETHUSDT": 10
       },
       "model_ids": [
         "alpha_001_xauusd_1h_momentum_roc_14_lo",
@@ -28,11 +29,21 @@
         "alpha_007_ethusdt_1h_momentum_roc_90_lo",
         "alpha_008_ethusdt_15m_heiken_ma_cross_sma_12_26_lo",
         "alpha_009_ethusdt_30m_donchian_breakout_40_10_lo",
-        "alpha_010_ethusdt_4h_ma_cross_ema_5_20_ls"
+        "alpha_010_ethusdt_4h_ma_cross_ema_5_20_ls",
+        "alpha_011_xauusd_4h_ma_cross_ema_5_20_ls",
+        "alpha_012_xauusd_1h_session_time_20_4_long_inside_lo",
+        "alpha_013_xauusd_1h_session_time_19_2_long_inside_lo",
+        "alpha_014_xauusd_1h_impulse_efficiency_3_20_2_0_0_75_12_continua",
+        "alpha_015_xauusd_1d_calendar_turn_x_long_lo",
+        "alpha_016_ethusdt_1h_impulse_efficiency_3_20_2_0_0_75_12_continu",
+        "alpha_017_ethusdt_1d_ibs_reversion_0_2_0_85_0_7_5_lo",
+        "alpha_018_ethusdt_1h_session_time_13_21_long_inside_lo",
+        "alpha_019_ethusdt_4h_donchian_breakout_30_10_14_0_9_ls",
+        "alpha_020_ethusdt_1h_rsi_regime_14_58_50_42_ls"
       ],
-      "best_oos_sharpe_model_id": "alpha_005_xauusd_30m_donchian_breakout_40_10_lo",
-      "best_oos_sharpe": 0.556,
-      "profitable_oos_count": 2,
+      "best_oos_sharpe_model_id": "alpha_011_xauusd_4h_ma_cross_ema_5_20_ls",
+      "best_oos_sharpe": 1.114,
+      "profitable_oos_count": 7,
       "has_dashboard": true,
       "has_summary": true,
       "dashboard_rel_path": "daily/2026-11-24/dashboard.html",
