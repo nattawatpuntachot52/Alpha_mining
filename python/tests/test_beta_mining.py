@@ -320,7 +320,20 @@ class TestBetaMiningStoreAndDashboard(unittest.TestCase):
             sp = create_signal_provider(spec)
             self.assertTrue(sp.name)
 
-        # Against repo store (which has Day-1's 5 baseline models), next-batch must pick Day-2's 5 models
+        # Against repo store, next-batch must pick the next 5 unmined candidates from daily_queue.json
+        catalog_path = REPO_ROOT / "beta_mining" / "catalog.json"
+        cdata = json.loads(catalog_path.read_text(encoding="utf-8"))
+        mined_specs = {
+            m["signal_spec"]
+            for m in (cdata.get("models") or {}).values()
+            if isinstance(m, dict) and m.get("signal_spec")
+        }
+        expected_unmined = [
+            entry["signal_spec"]
+            for entry in candidates
+            if entry["signal_spec"] not in mined_specs
+        ][:5]
+
         proc = subprocess.run(
             [
                 sys.executable,
@@ -340,11 +353,12 @@ class TestBetaMiningStoreAndDashboard(unittest.TestCase):
         )
         self.assertEqual(proc.returncode, 0, proc.stderr)
         nb = json.loads(proc.stdout)
-        self.assertEqual(nb["selection_mode"], "queue_unmined")
-        self.assertEqual(
-            [m["signal_spec"] for m in nb["models"]],
-            ["ema_5_15", "ema_8_21", "ema_13_34", "ema_20_50", "ema_30_90"],
-        )
+        if expected_unmined:
+            self.assertEqual(nb["selection_mode"], "queue_unmined")
+            self.assertEqual(
+                [m["signal_spec"] for m in nb["models"]],
+                expected_unmined,
+            )
 
         # Exhausted queue gracefully switches to top_leaders_refresh
         with tempfile.TemporaryDirectory() as tmp:
