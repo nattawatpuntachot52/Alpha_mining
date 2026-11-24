@@ -6,10 +6,10 @@
 //| Account Mode : MT5 Hedging required
 //|
 //| Included Models (editable inputs: Enable & Lot only):
-//|  1) Alpha005   [alpha] v1.0.0 | magic=5105005 | status=exploratory | sha=ff05fe5b933c
-//|  2) Alpha055   [alpha] v1.0.0 | magic=5105055 | status=exploratory | sha=cdd6aee0943f
-//|  3) Alpha010   [alpha] v1.0.0 | magic=5105010 | status=exploratory | sha=1bdb5a21e702
-//|  4) Heiken     [alpha] v1.0.0 | magic=20260616 | status=exploratory | sha=c6f34f40619c
+//|  1) Alpha005   [alpha] v1.0.0 | magic=5105005 | status=exploratory | sha=7567ea26062c
+//|  2) Alpha055   [alpha] v1.0.0 | magic=5105055 | status=exploratory | sha=ce1fa714ae96
+//|  3) Alpha010   [alpha] v1.0.0 | magic=5105010 | status=exploratory | sha=b88f009d8808
+//|  4) Heiken     [alpha] v1.0.0 | magic=20260616 | status=exploratory | sha=6731b05c5959
 //|  5) MACross    [alpha] v1.0.0 | magic=20260617 | status=exploratory | sha=f0b9ff1c494c
 //|  6) Breakout   [alpha] v1.0.0 | magic=20261130 | status=exploratory | sha=809a9949dd1a
 //|  7) EMA4H      [alpha] v1.0.0 | magic=20261140 | status=exploratory | sha=5a3b4312e9f6

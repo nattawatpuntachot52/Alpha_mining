@@ -108,7 +108,7 @@ def _cmd_build(args: argparse.Namespace) -> int:
         return 0
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(assembled, encoding="utf-8")
+    out_path.write_text(assembled, encoding="utf-8", newline="\n")
     print(f"Built {out_path} ({len(spec.slots)} models)")
     return 0
 

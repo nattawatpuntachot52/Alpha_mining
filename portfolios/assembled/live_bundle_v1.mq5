@@ -6,13 +6,13 @@
 //| Account Mode : MT5 Hedging required
 //|
 //| Included Models (editable inputs: Enable & Lot only):
-//|  1) Alpha005   [alpha] v1.0.0 | magic=5105005 | status=exploratory | sha=ff05fe5b933c
-//|  2) Alpha055   [alpha] v1.0.0 | magic=5105055 | status=exploratory | sha=cdd6aee0943f
-//|  3) Alpha010   [alpha] v1.0.0 | magic=5105010 | status=exploratory | sha=1bdb5a21e702
-//|  4) Heiken     [alpha] v1.0.0 | magic=20260616 | status=exploratory | sha=c6f34f40619c
-//|  5) Impulse1   [alpha] v1.0.0 | magic=20261101 | status=exploratory | sha=ce1052432bdc
-//|  6) Impulse2   [alpha] v1.0.0 | magic=20261102 | status=exploratory | sha=38d13de93dd1
-//|  7) Day20      [alpha] v1.0.0 | magic=20261120 | status=proposed | sha=201095ad2301
+//|  1) Alpha005   [alpha] v1.0.0 | magic=5105005 | status=exploratory | sha=7567ea26062c
+//|  2) Alpha055   [alpha] v1.0.0 | magic=5105055 | status=exploratory | sha=ce1fa714ae96
+//|  3) Alpha010   [alpha] v1.0.0 | magic=5105010 | status=exploratory | sha=b88f009d8808
+//|  4) Heiken     [alpha] v1.0.0 | magic=20260616 | status=exploratory | sha=6731b05c5959
+//|  5) Impulse1   [alpha] v1.0.0 | magic=20261101 | status=exploratory | sha=f334b3f90130
+//|  6) Impulse2   [alpha] v1.0.0 | magic=20261102 | status=exploratory | sha=6a26036ece5a
+//|  7) Day20      [alpha] v1.0.0 | magic=20261120 | status=proposed | sha=385f184911af
 //|
 //| DO NOT EDIT DIRECTLY — edit atomic files under models/ and rebuild.
 //+------------------------------------------------------------------+
