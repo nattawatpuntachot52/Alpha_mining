@@ -1,7 +1,7 @@
 # Alpha_mining — Beta Mining Daily Summary (2026-11-24)
 
-- **Generated (UTC):** `2026-11-25T04:30:39Z`
-- **Batch Models Tested Today:** `10` | **Cumulative Total Trials (`N_trials`):** `20`
+- **Generated (UTC):** `2026-11-25T04:54:45Z`
+- **Batch Models Tested Today:** `10` | **Cumulative Total Trials (`N_trials`):** `25`
 - **Top-9 Ranking Rule:** `Net Realized Cashflow DESC -> Max MTM DD % ASC` | **Hard Gate:** `No Liquidation` & `Max DD <= 40%`
 
 ## 1. สรุปโมเดลที่ Mine วันนี้ (2026-11-24 — 10 โมเดล)
@@ -29,6 +29,6 @@
 | **#4** | `beta_019_rsi_reversion_21_40_60` | #19 | `2026-11-25` | **+3072.85** | 30.35% | 1.01x | -9.72% | NO |
 | **#5** | `beta_011_supertrend_7_2` | #11 | `2026-11-24` | **+3022.50** | 21.84% | 1.38x | -0.04% | NO |
 | **#6** | `beta_013_supertrend_10_2` | #13 | `2026-11-24` | **+2937.91** | 24.97% | 1.18x | -4.24% | NO |
-| **#7** | `beta_017_rsi_reversion_14_35_65` | #17 | `2026-11-25` | **+2895.34** | 30.57% | 0.95x | -11.19% | NO |
-| **#8** | `beta_006_ema_5_15` | #6 | `2026-11-24` | **+2868.13** | 21.84% | 1.31x | -0.70% | NO |
-| **#9** | `beta_014_supertrend_14_2_5` | #14 | `2026-11-24` | **+2795.97** | 24.73% | 1.13x | -5.06% | NO |
+| **#7** | `beta_024_rsi_trend_7_45_55` | #24 | `2026-11-25` | **+2897.12** | 22.57% | 1.28x | -1.77% | NO |
+| **#8** | `beta_017_rsi_reversion_14_35_65` | #17 | `2026-11-25` | **+2895.34** | 30.57% | 0.95x | -11.19% | NO |
+| **#9** | `beta_006_ema_5_15` | #6 | `2026-11-24` | **+2868.13** | 21.84% | 1.31x | -0.70% | NO |
