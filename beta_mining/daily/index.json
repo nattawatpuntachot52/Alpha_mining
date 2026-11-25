@@ -1,13 +1,38 @@
 {
   "schema_version": "1.0",
-  "generated_at_utc": "2026-11-24T11:27:17Z",
-  "latest_date": "2026-11-24",
-  "total_days": 2,
+  "generated_at_utc": "2026-11-25T00:16:13Z",
+  "latest_date": "2026-11-25",
+  "total_days": 3,
   "dates": [
+    "2026-11-25",
     "2026-11-24",
     "2026-11-23"
   ],
   "days": [
+    {
+      "batch_date": "2026-11-25",
+      "generated_at_utc": "2026-11-25T00:16:13Z",
+      "model_count": 5,
+      "qualified_count": 5,
+      "model_ids": [
+        "beta_016_rsi_reversion_14_30_70",
+        "beta_017_rsi_reversion_14_35_65",
+        "beta_018_rsi_reversion_7_30_70",
+        "beta_019_rsi_reversion_21_40_60",
+        "beta_020_rsi_reversion_21_35_65"
+      ],
+      "best_cashflow_model_id": "beta_018_rsi_reversion_7_30_70",
+      "best_cashflow_usd": 3137.62,
+      "lowest_dd_model_id": "beta_016_rsi_reversion_14_30_70",
+      "lowest_dd_pct": 26.59,
+      "window_start_utc": "2024-02-29T00:00:00Z",
+      "window_end_utc": "2026-11-23T23:59:00Z",
+      "days_covered": 999.0,
+      "has_dashboard": true,
+      "has_summary": true,
+      "dashboard_rel_path": "daily/2026-11-25/dashboard.html",
+      "summary_rel_path": "daily/2026-11-25/daily_summary.md"
+    },
     {
       "batch_date": "2026-11-24",
       "generated_at_utc": "2026-11-24T11:27:17Z",
