@@ -580,8 +580,8 @@ def render_dashboard_html(
 
         <div class="panel">
           <div class="panel-hdr">
-            <span class="panel-title">04 / Equity Drawdown</span>
-            <span id="sub-drawdown" class="panel-sub">% · 1m Running Peak, Daily Snapshots</span>
+            <span class="panel-title">04 / Max Drawdown %</span>
+            <span id="sub-drawdown" class="panel-sub">% · Bar Chart + Hard Gate Line</span>
           </div>
           <div class="canvas-box"><canvas id="chart-drawdown"></canvas></div>
         </div>
@@ -1112,7 +1112,7 @@ def render_dashboard_html(
       );
       setSub("sub-cumulative", win.isFull ? "USDT · Realized Profit Only" : "USDT · Window Realized CF (Rebased to $0)");
       setSub("sub-equity", win.isFull ? "% · Daily MTM + Dashed ETH Buy & Hold" : "% · Window Rebased to 0% + Dashed ETH");
-      setSub("sub-drawdown", win.isFull ? "% · 1m Running Peak, Daily Snapshots" : "% · Window Peak-to-Trough (Daily-Close Snapshots)");
+      setSub("sub-drawdown", win.isFull ? "% · Bar Chart (1m Running Peak) + Hard Gate" : "% · Bar Chart (Window Peak-to-Trough) + Hard Gate");
       setSub("sub-volume", win.isFull ? "ETH · Total BUY (Green) & SELL (Blue)" : "ETH · Full-Run Totals (per-day fills not stored)");
       setSub("sub-betacorr", win.isFull ? "Daily Simple Returns · Beta (Amber) & Corr (Violet)" : "Window Daily Returns · Beta (Amber) & Corr (Violet)");
       setSub("sub-heatmap", win.isFull ? "All Active Daily Models + ETH · RdBu Diverging [-1.0 .. +1.0]" : "Window Daily Returns (Active Models + ETH) · RdBu [-1.0 .. +1.0]");
@@ -1810,8 +1810,109 @@ def render_dashboard_html(
       canvas._hitMeta = {{ type: "heatmap", padL, padT, gridW, gridH, cellW, cellH, n, labels, fullLabels, mat }};
     }}
 
+    function drawDrawdownBars(canvasId, opts) {{
+      const canvas = document.getElementById(canvasId);
+      const setup = setupCanvas(canvas);
+      if (!setup) return;
+      const {{ ctx, w, h }} = setup;
+      const theme = getThemeColors();
+      const items = opts.items || [];
+      if (!items.length) {{
+        drawEmptyMsg(ctx, w, h, "Select at least 1 model to compare", theme);
+        canvas._hitMeta = null;
+        return;
+      }}
+
+      const gate = Number(opts.gate || 40);
+      const maxVal = Math.max(gate * 1.05, ...items.map(it => Number(it.ddPct || 0)), 10);
+      const {{ lo, hi, ticks }} = computeNiceTicks(0, maxVal * 1.14, 5);
+      const padL = 56, padR = 14, padT = 26, padB = 34;
+      const plotW = Math.max(20, w - padL - padR);
+      const plotH = Math.max(20, h - padT - padB);
+      const yAt = val => padT + (1 - (val - lo) / Math.max(1e-9, hi - lo)) * plotH;
+      const zeroY = yAt(0);
+
+      // Top mini-legend
+      ctx.font = "11px -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = theme.fg;
+      ctx.fillText(opts.isFull ? "Max MTM DD % (ต่ำกว่าเส้นแดง = ผ่านเกณฑ์)" : "Window Max DD % (ต่ำกว่าเส้นแดง = ผ่านเกณฑ์)", padL, 12);
+
+      // Grid & Y ticks
+      ctx.font = "11px ui-monospace, SFMono-Regular, Menlo, monospace";
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      ticks.forEach(t => {{
+        const y = yAt(t);
+        ctx.strokeStyle = theme.grid;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(padL, y);
+        ctx.lineTo(w - padR, y);
+        ctx.stroke();
+        ctx.fillStyle = theme.axis;
+        ctx.fillText(t.toFixed(0) + "%", padL - 7, y);
+      }});
+
+      const n = items.length;
+      const slotW = plotW / n;
+      const barW = Math.max(8, Math.min(48, slotW * 0.58));
+      const hIdx = hoverState[canvasId];
+
+      items.forEach((it, idx) => {{
+        const cx = padL + (idx + 0.5) * slotW;
+        const val = Math.max(0, Number(it.ddPct || 0));
+        const over = it.failedGate;
+        const yTop = yAt(val);
+        const bh = Math.max(2, zeroY - yTop);
+
+        if (hIdx === idx) {{
+          ctx.fillStyle = theme.isLight ? "rgba(37,99,235,0.08)" : "rgba(59,130,246,0.12)";
+          ctx.fillRect(padL + idx * slotW + 2, padT, slotW - 4, plotH);
+        }}
+
+        ctx.fillStyle = over ? "#ef4444" : (it.color || "#f59e0b");
+        ctx.fillRect(cx - barW / 2, yTop, barW, bh);
+
+        ctx.fillStyle = over ? "#fca5a5" : theme.fg;
+        ctx.font = "10px ui-monospace, SFMono-Regular, Menlo, monospace";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "bottom";
+        ctx.fillText(val.toFixed(1) + "%", cx, Math.max(padT + 10, yTop - 3));
+
+        ctx.fillStyle = theme.axis;
+        ctx.textBaseline = "top";
+        const maxChars = Math.max(5, Math.floor(slotW / 7));
+        const lbl = it.short.length > maxChars ? it.short.slice(0, maxChars - 1) + "…" : it.short;
+        ctx.fillText(lbl, cx, padT + plotH + 8);
+      }});
+
+      // Dashed Hard Gate reference line
+      if (gate > 0 && gate <= hi) {{
+        const gy = yAt(gate);
+        ctx.save();
+        ctx.strokeStyle = theme.gate;
+        ctx.setLineDash([6, 4]);
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(padL, gy);
+        ctx.lineTo(w - padR, gy);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = "#f87171";
+        ctx.font = "10px ui-monospace, SFMono-Regular, Menlo, monospace";
+        ctx.textAlign = "right";
+        ctx.textBaseline = "bottom";
+        ctx.fillText(`Hard Gate ≤ ${{gate}}%`, w - padR - 2, gy - 3);
+        ctx.restore();
+      }}
+
+      canvas._hitMeta = {{ type: "ddbar", padL, padT, plotW, plotH, items, gate, isFull: opts.isFull }};
+    }}
+
     function drawAllDailyCharts() {{
-      if (currentTab !== "daily") return;
+      if (currentTab !== "daily" && currentTab !== "top9") return;
       const win = getWindowData();
       const byM = win.byModel || {{}};
       const dates = win.dates || [];
@@ -1858,21 +1959,22 @@ def render_dashboard_html(
         valFmt: v => fmtPct(v)
       }});
 
-      // 04 / Equity Drawdown
-      drawLineChart("chart-drawdown", {{
-        dates,
-        forceMax: 0,
-        fillToZero: true,
-        refLine: -ddCap,
-        refColor: theme.gate,
-        refLabel: `Hard Gate -${{ddCap}}%`,
-        lines: active.filter(m => byM[m.model_id]).map(m => ({{
-          label: shortLabel(m.model_id),
-          color: MODEL_COLOR.get(m.model_id),
-          values: byM[m.model_id].dd || []
-        }})),
-        yFmt: v => v.toFixed(0) + "%",
-        valFmt: v => Number(v).toFixed(2) + "%"
+      // 04 / Max Drawdown % (Bar Chart + Hard Gate)
+      drawDrawdownBars("chart-drawdown", {{
+        gate: ddCap,
+        isFull: win.isFull,
+        items: active.map(m => {{
+          const st = win.stats[m.model_id] || {{}};
+          const ddPct = st.maxDdPct !== undefined ? Number(st.maxDdPct) : Number(m.max_drawdown_pct || 0);
+          return {{
+            id: m.model_id,
+            short: shortLabel(m.model_id),
+            color: MODEL_COLOR.get(m.model_id) || "#f59e0b",
+            ddPct,
+            failedGate: Boolean(m.would_liquidate) || ddPct > ddCap,
+            meta: m
+          }};
+        }})
       }});
 
       // 05 / Remaining Inventory
@@ -1950,7 +2052,7 @@ def render_dashboard_html(
     }}
 
     const DAILY_SYNC_IDS = [
-      "chart-cumulative", "chart-equity", "chart-drawdown", "chart-inventory", "chart-utilization"
+      "chart-cumulative", "chart-equity", "chart-inventory", "chart-utilization"
     ];
 
     function bindCanvasHover(canvasId) {{
@@ -2005,6 +2107,30 @@ def render_dashboard_html(
             value: fmtUsd(s.values[idx] || 0)
           }})).sort((a, b) => b.raw - a.raw);
           showTooltip(ev.clientX, ev.clientY, `ISO Week ${{meta.weeks[idx]}}`, rows);
+          return;
+        }}
+
+        if (meta.type === "ddbar") {{
+          if (mx < meta.padL || mx > meta.padL + meta.plotW || my < meta.padT || my > meta.padT + meta.plotH) {{
+            delete hoverState[canvasId];
+            hideTooltip();
+            drawAllDailyCharts();
+            return;
+          }}
+          const idx = Math.max(0, Math.min(meta.items.length - 1, Math.floor(((mx - meta.padL) / meta.plotW) * meta.items.length)));
+          if (hoverState[canvasId] !== idx) {{
+            hoverState[canvasId] = idx;
+            drawAllDailyCharts();
+          }}
+          const it = meta.items[idx];
+          const m = it.meta || {{}};
+          const crashDd = m.crash_stress ? `${{Number(m.crash_stress.max_drawdown_pct).toFixed(2)}}%` : "N/A";
+          showTooltip(ev.clientX, ev.clientY, it.id, [
+            {{ label: meta.isFull ? "Max MTM DD %" : "Window Max DD %", color: it.failedGate ? "#ef4444" : it.color, value: `${{it.ddPct.toFixed(2)}}%` }},
+            {{ label: "Max DD (USD, Full)", color: "#f59e0b", value: `$${{Number(m.max_drawdown_abs || 0).toLocaleString("en-US")}}` }},
+            {{ label: "Crash Stress DD", color: "#94a3b8", value: crashDd }},
+            {{ label: `Gate (≤ ${{meta.gate}}%)`, color: it.failedGate ? "#ef4444" : "#22c55e", value: it.failedGate ? "FAIL" : "PASS" }}
+          ]);
           return;
         }}
 

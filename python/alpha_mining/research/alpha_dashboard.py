@@ -119,6 +119,8 @@ button:hover,a.nav:hover{border-color:var(--pri)}button.active{background:var(--
 .card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px 14px}
 .kl{color:var(--mut);font-size:12px}.kv{font-size:20px;font-weight:700;font-family:ui-monospace,Menlo,monospace;margin-top:2px}
 .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px 14px}
+select.dnav{cursor:pointer;border:1px solid var(--bd);border-radius:8px;padding:6px 10px;font:600 12px ui-monospace,Menlo,monospace;background:var(--surf);color:var(--fg)}
+select.dnav:hover{border-color:var(--pri)}
 .pill{display:inline-flex;align-items:center;gap:7px;padding:5px 10px;border-radius:999px;border:1px solid var(--bd);background:var(--surf);font:600 12px ui-monospace,Menlo,monospace;cursor:pointer;user-select:none}
 .pill.off{opacity:.35}.dot{width:9px;height:9px;border-radius:50%}
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.wide{grid-column:1/-1}
@@ -248,6 +250,32 @@ function barChart(cv,labels,groups,yf,names){
   groups.forEach((g,k)=>{c.fillStyle=g.color;c.fillRect(ML+k*110,2,8,8);c.fillStyle="#94a3b8";c.textAlign="left";c.fillText(g.name,ML+k*110+11,10)});
   cv.onmousemove=e=>{const r=cv.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;const hit=hits.find(q=>mx>=q[0]&&mx<=q[0]+q[2]&&my>=q[1]-4&&my<=q[1]+q[3]+4);hit?showTip(e,hit[4]):hideTip()};cv.onmouseleave=hideTip;
 }
+function ddBarChart(cv,labels,ms,colorFn,names,gatePct){
+  const{c,w,h}=setup(cv);c.clearRect(0,0,w,h);const hits=[];
+  if(!labels.length){c.fillStyle="#8ea0b8";c.fillText("no data",ML,h/2);cv.onmousemove=null;return}
+  const vals=ms.map(m=>Math.max(0,Number(m.max_drawdown_pct||0)));
+  const maxV=Math.max(gatePct*1.05,...vals,10);
+  const y0=0,y1=maxV*1.12;
+  axes(c,w,h,0,1,y0,y1,null,v=>v.toFixed(0)+"%");
+  const Y=v=>h-MB-(v-y0)/(y1-y0)*(h-MB-MT),slot=(w-ML-MR)/labels.length,bw=Math.max(6,Math.min(48,slot*0.68));
+  const yBase=Y(0);
+  c.strokeStyle="rgba(148,163,184,.5)";c.beginPath();c.moveTo(ML,yBase);c.lineTo(w-MR,yBase);c.stroke();
+  if(gatePct>0&&gatePct<=y1){
+    const yg=Y(gatePct);
+    c.save();c.strokeStyle="rgba(239,68,68,.75)";c.setLineDash([5,4]);c.lineWidth=1.4;c.beginPath();c.moveTo(ML,yg);c.lineTo(w-MR,yg);c.stroke();
+    c.setLineDash([]);c.fillStyle="#f87171";c.font="10px ui-monospace,Menlo,monospace";c.textAlign="right";c.fillText("Gate ≤ "+gatePct+"%",w-MR-2,yg-4);c.restore();
+  }
+  labels.forEach((lb,i)=>{
+    const v=vals[i],m=ms[i],x=ML+slot*i+(slot-bw)/2,yt=Y(v),bh=Math.max(1,yBase-yt);
+    const over=gatePct>0&&v>gatePct;
+    c.fillStyle=over?"#ef4444":colorFn(m);c.fillRect(x,yt,bw,bh);
+    if(slot>=24){c.fillStyle=over?"#fca5a5":"#cbd5e1";c.font="10px ui-monospace,Menlo,monospace";c.textAlign="center";c.fillText(v.toFixed(1)+"%",x+bw/2,Math.max(MT+9,yt-4))}
+    c.fillStyle="#94a3b8";c.textAlign="center";c.font="10px ui-monospace,Menlo,monospace";if(slot>16||i%2===0)c.fillText(lb,ML+slot*i+slot/2,h-8);
+    const oosDd=m.oos_max_drawdown_pct!=null?`\nOOS Max DD: ${Number(m.oos_max_drawdown_pct).toFixed(1)}%`:"";
+    hits.push([x-2,yt-4,bw+4,bh+8,`${names[i]}\nMax DD: ${v.toFixed(1)}%${oosDd}\nGate (≤ ${gatePct}%): ${over?"เกินเกณฑ์":"ผ่าน"}`]);
+  });
+  cv.onmousemove=e=>{const r=cv.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;const hit=hits.find(q=>mx>=q[0]&&mx<=q[0]+q[2]&&my>=q[1]&&my<=q[1]+q[3]);hit?showTip(e,hit[4]):hideTip()};cv.onmouseleave=hideTip;
+}
 function scatter(cv,pts){
   const{c,w,h}=setup(cv);c.clearRect(0,0,w,h);
   if(!pts.length){c.fillStyle="#8ea0b8";c.fillText("no data",ML,h/2);cv.onmousemove=null;return}
@@ -269,7 +297,7 @@ function corrMatrix(models){
   return maps.map(a=>maps.map(b=>{if(a===b)return 1;const xs=[],ys=[];a.forEach((v,k)=>{if(b.has(k)){xs.push(v);ys.push(b.get(k))}});const n=xs.length;if(n<10)return 0;const mx=xs.reduce((s,v)=>s+v,0)/n,my=ys.reduce((s,v)=>s+v,0)/n;let sxy=0,sxx=0,syy=0;for(let i=0;i<n;i++){sxy+=(xs[i]-mx)*(ys[i]-my);sxx+=(xs[i]-mx)**2;syy+=(ys[i]-my)**2}return sxx>0&&syy>0?sxy/Math.sqrt(sxx*syy):0}))
 }
 const PANELS=[
- ["01 / Equity Return","% · daily compounded, 1x notional","eq"],["02 / Drawdown","% · running peak (daily)","dd"],
+ ["01 / Equity Return","% · daily compounded, 1x notional","eq"],["02 / Max Drawdown %","% · Bar Chart (Hard Gate ≤ "+((P.ranking&&P.ranking.ranking_rule&&P.ranking.ranking_rule.hard_gates&&P.ranking.ranking_rule.hard_gates.max_drawdown_pct_limit)||50)+"%)","dd"],
  ["03 / Net Return vs Buy & Hold","% · full window","ret"],["04 / In-Sample vs OOS Sharpe","annualised · OOS = last "+Math.round((P.oos_fraction||.3)*100)+"%","sh"],
  ["05 / Risk vs Return","x = Max DD %, y = CAGR %","rr"],["06 / Exposure & Win Rate","% of bars in market · % winning trades","ex"],
  ["07 / Trades & Profit Factor","count · gross win / gross loss","tr"],["08 / Beta & Correlation vs Underlying","daily returns","bc"],
@@ -280,7 +308,8 @@ function buildPanels(){buildPanelsInto("panels","cv-");buildPanelsInto("rank-pan
 function drawPanelsInto(prefix,ms,tagFn,colorFn){
   const labels=ms.map(tagFn),names=ms.map(m=>m.model_id+" ["+m.symbol+" "+m.timeframe+"]");
   const L=(key)=>ms.map(m=>{const c=curves(m.model_id);return c?{name:tagFn(m)+" "+m.symbol+" "+m.timeframe+" "+m.family,color:colorFn(m),xs:c.xs,ys:c[key]}:null}).filter(Boolean);
-  lineChart($(prefix+"eq"),L("eq"),v=>v.toFixed(0)+"%");lineChart($(prefix+"dd"),L("dd"),v=>v.toFixed(0)+"%");
+  const ddGate=Number((P.ranking&&P.ranking.ranking_rule&&P.ranking.ranking_rule.hard_gates&&P.ranking.ranking_rule.hard_gates.max_drawdown_pct_limit)||50);
+  lineChart($(prefix+"eq"),L("eq"),v=>v.toFixed(0)+"%");ddBarChart($(prefix+"dd"),labels,ms,colorFn,names,ddGate);
   barChart($(prefix+"ret"),labels,[{name:"Strategy",color:"#3b82f6",vals:ms.map(m=>m.total_return_pct)},{name:"Buy&Hold",color:"#64748b",vals:ms.map(m=>m.buy_hold_return_pct)}],v=>v.toFixed(0)+"%",names);
   barChart($(prefix+"sh"),labels,[{name:"IS Sharpe",color:"#f59e0b",vals:ms.map(m=>m.is_sharpe_ann)},{name:"OOS Sharpe",color:"#22c55e",vals:ms.map(m=>m.oos_sharpe_ann)}],v=>v.toFixed(2),names);
   scatter($(prefix+"rr"),ms.map(m=>({x:m.max_drawdown_pct,y:m.cagr_pct,color:colorFn(m),tag:tagFn(m),text:m.model_id+"\nMaxDD "+num(m.max_drawdown_pct)+"%  CAGR "+num(m.cagr_pct)+"%\nOOS Sharpe "+num(m.oos_sharpe_ann)})));
@@ -363,10 +392,29 @@ function renderLegend(){
   $("legend").querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{S.round=b.dataset.r;render()});
   $("allon").onclick=()=>{S.off.clear();render()};$("alloff").onclick=()=>{ms.forEach(m=>S.off.add(m.model_id));render()};
 }
+let LIVE_DATES=(P.available_dates||[]).slice();
+function navHash(){
+  const parts=[];
+  if(S.sym!=="ALL")parts.push("sym="+S.sym);
+  if(S.tab==="ranking")parts.push("tab=ranking");
+  return parts.length?"#"+parts.join("&"):"";
+}
 function renderNav(){
-  const h=S.sym!=="ALL"?`#sym=${S.sym}`:"";
-  const ds_=P.available_dates||[],i=ds_.findIndex(d=>d.batch_date===P.batch_date),older=ds_[i+1],newer=ds_[i-1];
-  $("nav").innerHTML=(older?`<a class="nav" href="../${esc(older.batch_date)}/dashboard.html${h}">◀ ${esc(older.batch_date)}</a>`:"")+`<span class="badge">${esc(P.batch_date)}</span>`+(newer?`<a class="nav" href="../${esc(newer.batch_date)}/dashboard.html${h}">${esc(newer.batch_date)} ▶</a>`:"");
+  const h=navHash();
+  const byDate=new Map();
+  LIVE_DATES.forEach(d=>{if(d&&/^\d{4}-\d{2}-\d{2}$/.test(String(d.batch_date||"")))byDate.set(d.batch_date,d)});
+  if(!byDate.has(P.batch_date))byDate.set(P.batch_date,{batch_date:P.batch_date,model_count:(P.batch_models||[]).length});
+  const ds_=[...byDate.values()].sort((a,b)=>String(b.batch_date).localeCompare(String(a.batch_date)));
+  const i=ds_.findIndex(d=>d.batch_date===P.batch_date),older=ds_[i+1],newer=ds_[i-1];
+  const opts=ds_.map(d=>`<option value="${esc(d.batch_date)}" ${d.batch_date===P.batch_date?"selected":""}>${esc(d.batch_date)}${d.model_count?" ("+d.model_count+")":""}</option>`).join("");
+  $("nav").innerHTML=(older?`<a class="nav" href="../${esc(older.batch_date)}/dashboard.html${h}">◀ ${esc(older.batch_date)}</a>`:"")+`<select id="date-sel" class="dnav" aria-label="เลือกวันที่">${opts}</select>`+(newer?`<a class="nav" href="../${esc(newer.batch_date)}/dashboard.html${h}">${esc(newer.batch_date)} ▶</a>`:"");
+  const sel=$("date-sel");
+  if(sel)sel.onchange=()=>{if(sel.value&&sel.value!==P.batch_date&&/^\d{4}-\d{2}-\d{2}$/.test(sel.value))location.href="../"+sel.value+"/dashboard.html"+navHash()};
+}
+if(typeof fetch==="function"&&location.protocol!=="file:"){
+  fetch("../index.json",{cache:"no-store"}).then(r=>r.ok?r.json():null).then(idx=>{
+    if(idx&&Array.isArray(idx.days)&&idx.days.length){LIVE_DATES=idx.days;renderNav()}
+  }).catch(()=>{});
 }
 function render(){
   syncHash();
