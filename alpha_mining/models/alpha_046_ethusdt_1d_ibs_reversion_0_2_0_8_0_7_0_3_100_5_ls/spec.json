@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_046_ethusdt_1d_ibs_reversion_0_2_0_8_0_7_0_3_100_5_ls",
+  "trial_number": 46,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"ibs_reversion\",\"params\":{\"exit_long\":0.7,\"exit_short\":0.3,\"high_threshold\":0.8,\"low_threshold\":0.2,\"max_hold\":5,\"trend_sma\":100},\"sl_pct\":0.0,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"1d\",\"tp_pct\":0.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "1d",
+  "family": "ibs_reversion",
+  "params": {
+    "low_threshold": 0.2,
+    "high_threshold": 0.8,
+    "exit_long": 0.7,
+    "exit_short": 0.3,
+    "trend_sma": 100,
+    "max_hold": 5
+  },
+  "direction": "long_short",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day03_r1_ibs",
+  "hypothesis": "Trend-aligned daily IBS buys dips above SMA100 and shorts euphoric closes below SMA100.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-25",
+  "updated_at_utc": "2026-11-25T08:15:17Z",
+  "spec_sha256": "sha256:f1c8cc10689a3c4a1173b2ca2851b034dfed9799689650de8dc1d3503ffab330"
+}

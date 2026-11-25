@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_049_ethusdt_15m_ibs_reversion_0_1_0_9_0_65_96_12_lo_sl1_5t",
+  "trial_number": 49,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"ibs_reversion\",\"params\":{\"exit_long\":0.65,\"high_threshold\":0.9,\"low_threshold\":0.1,\"max_hold\":12,\"trend_sma\":96},\"sl_pct\":1.5,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"15m\",\"tp_pct\":2.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "15m",
+  "family": "ibs_reversion",
+  "params": {
+    "low_threshold": 0.1,
+    "high_threshold": 0.9,
+    "exit_long": 0.65,
+    "trend_sma": 96,
+    "max_hold": 12
+  },
+  "direction": "long_only",
+  "sl_pct": 1.5,
+  "tp_pct": 2.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day03_r1_ibs",
+  "hypothesis": "M15 trend-filtered IBS reversion with hard 1.5% SL / 2.0% TP.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-25",
+  "updated_at_utc": "2026-11-25T08:15:18Z",
+  "spec_sha256": "sha256:8771312b78fe01de12a31fba34414dd198cd0c421502f10796fcb9af8ec66492"
+}

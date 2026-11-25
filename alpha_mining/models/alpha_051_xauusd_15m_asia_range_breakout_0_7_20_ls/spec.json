@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_051_xauusd_15m_asia_range_breakout_0_7_20_ls",
+  "trial_number": 51,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"asia_range_breakout\",\"params\":{\"eod_hour_utc\":20,\"range_end_hour_utc\":7,\"range_start_hour_utc\":0},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"15m\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "15m",
+  "family": "asia_range_breakout",
+  "params": {
+    "range_start_hour_utc": 0,
+    "range_end_hour_utc": 7,
+    "eod_hour_utc": 20
+  },
+  "direction": "long_short",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day03_r2_asia_session",
+  "hypothesis": "Classic Gold Asia-box (00-07 UTC) breakout during London/NY sessions, flat at 20:00 UTC.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-25",
+  "updated_at_utc": "2026-11-25T08:23:20Z",
+  "spec_sha256": "sha256:0d2008ff2e20af2520baf2699f966ffc58b19ed76c799cead15ad2fc4a8381e0"
+}

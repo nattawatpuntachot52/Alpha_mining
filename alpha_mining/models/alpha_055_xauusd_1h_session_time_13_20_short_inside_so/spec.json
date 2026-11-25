@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_055_xauusd_1h_session_time_13_20_short_inside_so",
+  "trial_number": 55,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"short_only\",\"family\":\"session_time\",\"params\":{\"end_hour_utc\":20,\"mode\":\"short_inside\",\"start_hour_utc\":13},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"1h\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "1h",
+  "family": "session_time",
+  "params": {
+    "start_hour_utc": 13,
+    "end_hour_utc": 20,
+    "mode": "short_inside"
+  },
+  "direction": "short_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day03_r2_asia_session",
+  "hypothesis": "NY COMEX afternoon fade hypothesis (13-20 UTC): tests whether gold systematically mean-reverts during US hours.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-25",
+  "updated_at_utc": "2026-11-25T08:23:21Z",
+  "spec_sha256": "sha256:a653244b30b3c0190c900911dfe35fb4ba9335593d4a9df05ab373aca106e096"
+}

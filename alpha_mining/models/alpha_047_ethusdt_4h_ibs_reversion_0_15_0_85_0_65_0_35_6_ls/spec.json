@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_047_ethusdt_4h_ibs_reversion_0_15_0_85_0_65_0_35_6_ls",
+  "trial_number": 47,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"ibs_reversion\",\"params\":{\"exit_long\":0.65,\"exit_short\":0.35,\"high_threshold\":0.85,\"low_threshold\":0.15,\"max_hold\":6},\"sl_pct\":0.0,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"4h\",\"tp_pct\":0.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "4h",
+  "family": "ibs_reversion",
+  "params": {
+    "low_threshold": 0.15,
+    "high_threshold": 0.85,
+    "exit_long": 0.65,
+    "exit_short": 0.35,
+    "max_hold": 6
+  },
+  "direction": "long_short",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day03_r1_ibs",
+  "hypothesis": "H4 two-way IBS fades leveraged funding squeezes inside 4-hour candles.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-25",
+  "updated_at_utc": "2026-11-25T08:15:17Z",
+  "spec_sha256": "sha256:bdc83c811429eb0f516ba93f3139714b87bd6e1dad0b1211a25d6c67f90b9f39"
+}
