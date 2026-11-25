@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_040_ethusdt_15m_donchian_breakout_80_20_14_0_85_ls",
+  "trial_number": 40,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"donchian_breakout\",\"params\":{\"atr_period\":14,\"entry\":80,\"exit\":20,\"squeeze_ratio\":0.85},\"sl_pct\":0.0,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"15m\",\"tp_pct\":0.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "15m",
+  "family": "donchian_breakout",
+  "params": {
+    "entry": 80,
+    "exit": 20,
+    "atr_period": 14,
+    "squeeze_ratio": 0.85
+  },
+  "direction": "long_short",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day02_r2_donchian",
+  "hypothesis": "M15 20-hour squeeze Donchian requires tight volatility before entering breakout.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-25",
+  "updated_at_utc": "2026-11-25T04:35:20Z",
+  "spec_sha256": "sha256:561eb162083675a4f25a3a129abf8226233eb3c9212ae1d52283cadbc52fe96a"
+}

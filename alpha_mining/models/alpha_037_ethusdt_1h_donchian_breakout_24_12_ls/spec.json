@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_037_ethusdt_1h_donchian_breakout_24_12_ls",
+  "trial_number": 37,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"donchian_breakout\",\"params\":{\"entry\":24,\"exit\":12},\"sl_pct\":0.0,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"1h\",\"tp_pct\":0.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "1h",
+  "family": "donchian_breakout",
+  "params": {
+    "entry": 24,
+    "exit": 12
+  },
+  "direction": "long_short",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day02_r2_donchian",
+  "hypothesis": "24h/12h H1 Donchian captures daily range breaks in both directions.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-25",
+  "updated_at_utc": "2026-11-25T04:35:18Z",
+  "spec_sha256": "sha256:cd2d71d9a66d49a40fba9a924402fe03d12fcadafef15fff760d29839f62bbdf"
+}

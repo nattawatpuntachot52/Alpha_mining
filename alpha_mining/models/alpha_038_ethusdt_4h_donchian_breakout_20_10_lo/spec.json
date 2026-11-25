@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_038_ethusdt_4h_donchian_breakout_20_10_lo",
+  "trial_number": 38,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"donchian_breakout\",\"params\":{\"entry\":20,\"exit\":10},\"sl_pct\":0.0,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"4h\",\"tp_pct\":0.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "4h",
+  "family": "donchian_breakout",
+  "params": {
+    "entry": 20,
+    "exit": 10
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day02_r2_donchian",
+  "hypothesis": "Turtle 20/10 on H4 ETHUSDT balances trade count against 5 bps taker cost.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-25",
+  "updated_at_utc": "2026-11-25T04:35:19Z",
+  "spec_sha256": "sha256:6f193ef9403149c96d328c58fbb2678759fa92eca69b190bb20a18aec2f1931b"
+}

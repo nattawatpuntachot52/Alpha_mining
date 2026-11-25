@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_031_xauusd_30m_donchian_breakout_40_10_ls",
+  "trial_number": 31,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"donchian_breakout\",\"params\":{\"entry\":40,\"exit\":10},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"30m\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "30m",
+  "family": "donchian_breakout",
+  "params": {
+    "entry": 40,
+    "exit": 10
+  },
+  "direction": "long_short",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day02_r2_donchian_squeeze",
+  "hypothesis": "Two-way M30 Donchian 40/10 tests whether short breakouts add uncorrelated alpha to gold.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-25",
+  "updated_at_utc": "2026-11-25T04:35:15Z",
+  "spec_sha256": "sha256:7f8d449319de0c7879afdc290f6ba1fb79c83e097377eec52ddfb3d3c326a7f8"
+}

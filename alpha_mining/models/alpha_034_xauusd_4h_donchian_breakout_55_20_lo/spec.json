@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_034_xauusd_4h_donchian_breakout_55_20_lo",
+  "trial_number": 34,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"donchian_breakout\",\"params\":{\"entry\":55,\"exit\":20},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"4h\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "4h",
+  "family": "donchian_breakout",
+  "params": {
+    "entry": 55,
+    "exit": 20
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day02_r2_donchian_squeeze",
+  "hypothesis": "Classic Turtle System-2 Donchian 55/20 on H4 targets major multi-week gold breakouts.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-25",
+  "updated_at_utc": "2026-11-25T04:35:16Z",
+  "spec_sha256": "sha256:88c115137c576148a896924a4c01a0a7eed0cb058b435ef1f3dd780057a48729"
+}
