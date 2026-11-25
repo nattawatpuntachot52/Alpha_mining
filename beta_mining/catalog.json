@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
-  "updated_at_utc": "2026-11-25T00:16:13Z",
-  "total_trials": 20,
+  "updated_at_utc": "2026-11-25T04:40:48Z",
+  "total_trials": 25,
   "models": {
     "beta_001_ha_1m": {
       "model_id": "beta_001_ha_1m",
@@ -302,6 +302,81 @@
       "evidence_status": "reproducible",
       "spec_sha256": "sha256:74981ec2cea8a29ab79a2594d7897865ec66bbf34f9faa1d11ec4041088c0230",
       "updated_at_utc": "2026-11-25T00:16:13Z"
+    },
+    "beta_021_rsi_trend_14_50_50": {
+      "model_id": "beta_021_rsi_trend_14_50_50",
+      "trial_number": 21,
+      "folder": "models/beta_021_rsi_trend_14_50_50",
+      "signal_spec": "rsi_trend_14_50_50",
+      "signal_name": "rsi_trend_14_50_50",
+      "symbol": "ETHUSDT",
+      "product_type": "USD_M",
+      "created_batch_date": "2026-11-25",
+      "latest_batch_date": "2026-11-25",
+      "latest_run_id": "2026-11-25_run01",
+      "evidence_status": "reproducible",
+      "spec_sha256": "sha256:a06474f3e8b05beb80cbd60c0172c6f710c34b69c9ec5a8124e1cf5083477ab0",
+      "updated_at_utc": "2026-11-25T04:39:34Z"
+    },
+    "beta_022_rsi_trend_14_45_55": {
+      "model_id": "beta_022_rsi_trend_14_45_55",
+      "trial_number": 22,
+      "folder": "models/beta_022_rsi_trend_14_45_55",
+      "signal_spec": "rsi_trend_14_45_55",
+      "signal_name": "rsi_trend_14_45_55",
+      "symbol": "ETHUSDT",
+      "product_type": "USD_M",
+      "created_batch_date": "2026-11-25",
+      "latest_batch_date": "2026-11-25",
+      "latest_run_id": "2026-11-25_run01",
+      "evidence_status": "reproducible",
+      "spec_sha256": "sha256:c867121cea5ac76327150efa353b8c756b47c0767af0885e102a80dddb32fc22",
+      "updated_at_utc": "2026-11-25T04:39:54Z"
+    },
+    "beta_023_rsi_trend_21_50_50": {
+      "model_id": "beta_023_rsi_trend_21_50_50",
+      "trial_number": 23,
+      "folder": "models/beta_023_rsi_trend_21_50_50",
+      "signal_spec": "rsi_trend_21_50_50",
+      "signal_name": "rsi_trend_21_50_50",
+      "symbol": "ETHUSDT",
+      "product_type": "USD_M",
+      "created_batch_date": "2026-11-25",
+      "latest_batch_date": "2026-11-25",
+      "latest_run_id": "2026-11-25_run01",
+      "evidence_status": "reproducible",
+      "spec_sha256": "sha256:165f70d75ab5412513596a5e9d3a4cbff9de8275dad84421e649a731a55a1bf6",
+      "updated_at_utc": "2026-11-25T04:40:10Z"
+    },
+    "beta_024_rsi_trend_7_45_55": {
+      "model_id": "beta_024_rsi_trend_7_45_55",
+      "trial_number": 24,
+      "folder": "models/beta_024_rsi_trend_7_45_55",
+      "signal_spec": "rsi_trend_7_45_55",
+      "signal_name": "rsi_trend_7_45_55",
+      "symbol": "ETHUSDT",
+      "product_type": "USD_M",
+      "created_batch_date": "2026-11-25",
+      "latest_batch_date": "2026-11-25",
+      "latest_run_id": "2026-11-25_run01",
+      "evidence_status": "reproducible",
+      "spec_sha256": "sha256:893c84a8d8668338b3b6f8d09633d1430cf0cceb4da268b0a421692218945edf",
+      "updated_at_utc": "2026-11-25T04:40:34Z"
+    },
+    "beta_025_rsi_trend_28_50_50": {
+      "model_id": "beta_025_rsi_trend_28_50_50",
+      "trial_number": 25,
+      "folder": "models/beta_025_rsi_trend_28_50_50",
+      "signal_spec": "rsi_trend_28_50_50",
+      "signal_name": "rsi_trend_28_50_50",
+      "symbol": "ETHUSDT",
+      "product_type": "USD_M",
+      "created_batch_date": "2026-11-25",
+      "latest_batch_date": "2026-11-25",
+      "latest_run_id": "2026-11-25_run01",
+      "evidence_status": "reproducible",
+      "spec_sha256": "sha256:604c4eb68798b16cea91156b4ff708032e3579ef021458250d8456e554607238",
+      "updated_at_utc": "2026-11-25T04:40:48Z"
     }
   }
 }
