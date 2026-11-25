@@ -1,12 +1,12 @@
 # Alpha_mining — Alpha Mining Daily Summary (2026-11-25)
 
-- **Generated (UTC):** `2026-11-25T05:51:03Z`
-- **Models Tested Today:** `20` (`ETHUSDT`: 10, `XAUUSD`: 10) | **Rounds:** `[1, 2]` | **Cumulative Trials (`N_trials`):** `40`
+- **Generated (UTC):** `2026-11-25T08:15:19Z`
+- **Models Tested Today:** `30` (`ETHUSDT`: 15, `XAUUSD`: 15) | **Rounds:** `[1, 2, 3]` | **Cumulative Trials (`N_trials`):** `50`
 - **Top-9 Rule:** `OOS Sharpe DESC -> Max DD ASC` | **Hard Gates:** `no liquidation`, `trades >= 30`, `OOS profit > 0`, `Max DD <= 50%`
-- **Multiple-testing:** expected max daily Sharpe under H0 for `N=40` trials = `0.107742`; `DSR≈` is the probability a model beats that haircut.
+- **Multiple-testing:** expected max daily Sharpe under H0 for `N=50` trials = `0.229921`; `DSR≈` is the probability a model beats that haircut.
 - **XAUUSD data:** public feed is `PAXGUSDT` (gold-backed, 24/7) as a PROXY for broker XAUUSD; costs 2 bps/side. ETHUSDT = Binance USD-M perp, 5 bps/side.
 
-## 1. โมเดลที่ Mine วันนี้ (2026-11-25 — 20 โมเดล)
+## 1. โมเดลที่ Mine วันนี้ (2026-11-25 — 30 โมเดล)
 
 | Model ID | Sym | TF | Dir | Return | CAGR | Max DD | Sharpe | IS Sh | OOS Sh | OOS Ret | Trades | Win% | PF | B&H |
 |---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
@@ -30,6 +30,16 @@
 | `alpha_038_ethusdt_4h_donchian_breakout_20_10_lo` | ETHUSDT | 4h | long_only | -15.5% | -3.3% | 54.6% | 0.11 | 0.07 | 0.22 | +2.1% | 151 | 28.5% | 1.08 | -61.4% |
 | `alpha_039_ethusdt_1d_donchian_breakout_20_10_ls` | ETHUSDT | 1d | long_short | +88.5% | +11.2% | 80.0% | 0.48 | 0.63 | 0.06 | -16.8% | 62 | 40.3% | 1.53 | +228.7% |
 | `alpha_040_ethusdt_15m_donchian_breakout_80_20_14_0_85_ls` | ETHUSDT | 15m | long_short | +0.0% | +0.0% | 0.0% | 0.00 | 0.00 | 0.00 | +0.0% | 0 | 0.0% | 0.00 | -53.6% |
+| `alpha_041_xauusd_1d_ibs_reversion_0_2_0_85_0_7_5_lo` | XAUUSD | 1d | long_only | +17.6% | +2.7% | 18.8% | 0.31 | 0.56 | -0.00 | -1.9% | 223 | 63.2% | 1.17 | +94.3% |
+| `alpha_042_xauusd_1d_ibs_reversion_0_25_0_8_0_75_100_5_lo` | XAUUSD | 1d | long_only | +24.2% | +3.7% | 11.0% | 0.46 | 0.40 | 0.57 | +11.2% | 160 | 62.5% | 1.30 | +94.3% |
+| `alpha_043_xauusd_4h_ibs_reversion_0_15_0_85_0_65_0_35_6_ls` | XAUUSD | 4h | long_short | -66.6% | -19.7% | 67.8% | -1.35 | -1.06 | -1.85 | -46.6% | 2,109 | 55.8% | 0.79 | +97.0% |
+| `alpha_044_xauusd_1h_ibs_reversion_0_12_0_88_0_6_200_8_lo` | XAUUSD | 1h | long_only | -9.5% | -2.5% | 13.7% | -0.41 | -0.04 | -1.17 | -8.6% | 1,847 | 54.7% | 0.94 | +102.2% |
+| `alpha_045_xauusd_15m_ibs_reversion_0_1_0_9_0_65_100_12_lo_sl0_6t` | XAUUSD | 15m | long_only | -84.2% | -52.7% | 84.2% | -10.11 | -9.36 | -11.91 | -48.0% | 5,704 | 35.8% | 0.48 | +53.6% |
+| `alpha_046_ethusdt_1d_ibs_reversion_0_2_0_8_0_7_0_3_100_5_ls` | ETHUSDT | 1d | long_short | -73.9% | -20.1% | 82.3% | -0.29 | -0.49 | 0.29 | +6.5% | 214 | 58.9% | 0.86 | +222.8% |
+| `alpha_047_ethusdt_4h_ibs_reversion_0_15_0_85_0_65_0_35_6_ls` | ETHUSDT | 4h | long_short | -90.2% | -37.1% | 91.4% | -0.77 | -0.83 | -0.59 | -35.9% | 1,900 | 59.2% | 0.88 | -62.1% |
+| `alpha_048_ethusdt_1h_ibs_reversion_0_12_0_88_0_65_200_8_lo` | ETHUSDT | 1h | long_only | -43.4% | -13.3% | 45.2% | -0.86 | -0.45 | -1.94 | -28.8% | 1,185 | 54.1% | 0.84 | +39.3% |
+| `alpha_049_ethusdt_15m_ibs_reversion_0_1_0_9_0_65_96_12_lo_sl1_5t` | ETHUSDT | 15m | long_only | -94.9% | -70.2% | 95.0% | -7.75 | -6.61 | -10.91 | -67.9% | 3,336 | 43.9% | 0.51 | -54.4% |
+| `alpha_050_ethusdt_1d_ibs_reversion_0_15_0_85_0_75_4_lo` | ETHUSDT | 1d | long_only | -76.8% | -21.7% | 81.9% | -0.48 | -0.42 | -0.77 | -31.8% | 148 | 51.4% | 0.73 | +222.8% |
 
 ## 2. Cumulative Top-9 Ranking Board (OOS Sharpe สูงสุด → DD ต่ำสุด)
 
@@ -48,6 +58,7 @@
 ### โมเดลวันนี้ที่ไม่ผ่าน Hard Gate
 
 - `alpha_030_ethusdt_1d_momentum_roc_30_ls`: เหตุผล `MAX_DD_EXCEEDS_50PCT`
+- `alpha_046_ethusdt_1d_ibs_reversion_0_2_0_8_0_7_0_3_100_5_ls`: เหตุผล `MAX_DD_EXCEEDS_50PCT`
 - `alpha_038_ethusdt_4h_donchian_breakout_20_10_lo`: เหตุผล `MAX_DD_EXCEEDS_50PCT`
 - `alpha_037_ethusdt_1h_donchian_breakout_24_12_ls`: เหตุผล `MAX_DD_EXCEEDS_50PCT, OOS_NOT_PROFITABLE`
 - `alpha_023_xauusd_4h_momentum_roc_48_ls`: เหตุผล `OOS_NOT_PROFITABLE`
@@ -56,8 +67,16 @@
 - `alpha_033_xauusd_1h_donchian_breakout_40_15_14_0_9_lo`: เหตุผล `TRADES_LT_30, OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
 - `alpha_035_xauusd_15m_donchian_breakout_60_20_14_0_85_lo`: เหตุผล `TRADES_LT_30, OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
 - `alpha_040_ethusdt_15m_donchian_breakout_80_20_14_0_85_ls`: เหตุผล `TRADES_LT_30, OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
+- `alpha_041_xauusd_1d_ibs_reversion_0_2_0_85_0_7_5_lo`: เหตุผล `OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
 - `alpha_036_ethusdt_30m_donchian_breakout_40_10_ls`: เหตุผล `MAX_DD_EXCEEDS_50PCT, OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
 - `alpha_021_xauusd_1h_momentum_roc_14_ls`: เหตุผล `MAX_DD_EXCEEDS_50PCT, OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
 - `alpha_028_ethusdt_4h_momentum_roc_42_ls`: เหตุผล `MAX_DD_EXCEEDS_50PCT, OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
+- `alpha_047_ethusdt_4h_ibs_reversion_0_15_0_85_0_65_0_35_6_ls`: เหตุผล `MAX_DD_EXCEEDS_50PCT, OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
 - `alpha_027_ethusdt_4h_momentum_roc_18_lo`: เหตุผล `MAX_DD_EXCEEDS_50PCT, OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
+- `alpha_050_ethusdt_1d_ibs_reversion_0_15_0_85_0_75_4_lo`: เหตุผล `MAX_DD_EXCEEDS_50PCT, OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
 - `alpha_026_ethusdt_1h_momentum_roc_24_ls`: เหตุผล `MAX_DD_EXCEEDS_50PCT, OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
+- `alpha_044_xauusd_1h_ibs_reversion_0_12_0_88_0_6_200_8_lo`: เหตุผล `OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
+- `alpha_043_xauusd_4h_ibs_reversion_0_15_0_85_0_65_0_35_6_ls`: เหตุผล `MAX_DD_EXCEEDS_50PCT, OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
+- `alpha_048_ethusdt_1h_ibs_reversion_0_12_0_88_0_65_200_8_lo`: เหตุผล `OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
+- `alpha_049_ethusdt_15m_ibs_reversion_0_1_0_9_0_65_96_12_lo_sl1_5t`: เหตุผล `MAX_DD_EXCEEDS_50PCT, OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
+- `alpha_045_xauusd_15m_ibs_reversion_0_1_0_9_0_65_100_12_lo_sl0_6t`: เหตุผล `MAX_DD_EXCEEDS_50PCT, OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`

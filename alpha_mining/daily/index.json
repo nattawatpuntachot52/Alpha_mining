@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "generated_at_utc": "2026-11-25T05:51:03Z",
+  "generated_at_utc": "2026-11-25T08:15:19Z",
   "latest_date": "2026-11-25",
   "total_days": 2,
   "dates": [
@@ -10,15 +10,16 @@
   "days": [
     {
       "batch_date": "2026-11-25",
-      "generated_at_utc": "2026-11-25T05:51:03Z",
-      "model_count": 20,
+      "generated_at_utc": "2026-11-25T08:15:19Z",
+      "model_count": 30,
       "rounds": [
         1,
-        2
+        2,
+        3
       ],
       "by_symbol": {
-        "XAUUSD": 10,
-        "ETHUSDT": 10
+        "XAUUSD": 15,
+        "ETHUSDT": 15
       },
       "model_ids": [
         "alpha_021_xauusd_1h_momentum_roc_14_ls",
@@ -40,11 +41,21 @@
         "alpha_037_ethusdt_1h_donchian_breakout_24_12_ls",
         "alpha_038_ethusdt_4h_donchian_breakout_20_10_lo",
         "alpha_039_ethusdt_1d_donchian_breakout_20_10_ls",
-        "alpha_040_ethusdt_15m_donchian_breakout_80_20_14_0_85_ls"
+        "alpha_040_ethusdt_15m_donchian_breakout_80_20_14_0_85_ls",
+        "alpha_041_xauusd_1d_ibs_reversion_0_2_0_85_0_7_5_lo",
+        "alpha_042_xauusd_1d_ibs_reversion_0_25_0_8_0_75_100_5_lo",
+        "alpha_043_xauusd_4h_ibs_reversion_0_15_0_85_0_65_0_35_6_ls",
+        "alpha_044_xauusd_1h_ibs_reversion_0_12_0_88_0_6_200_8_lo",
+        "alpha_045_xauusd_15m_ibs_reversion_0_1_0_9_0_65_100_12_lo_sl0_6t",
+        "alpha_046_ethusdt_1d_ibs_reversion_0_2_0_8_0_7_0_3_100_5_ls",
+        "alpha_047_ethusdt_4h_ibs_reversion_0_15_0_85_0_65_0_35_6_ls",
+        "alpha_048_ethusdt_1h_ibs_reversion_0_12_0_88_0_65_200_8_lo",
+        "alpha_049_ethusdt_15m_ibs_reversion_0_1_0_9_0_65_96_12_lo_sl1_5t",
+        "alpha_050_ethusdt_1d_ibs_reversion_0_15_0_85_0_75_4_lo"
       ],
       "best_oos_sharpe_model_id": "alpha_030_ethusdt_1d_momentum_roc_30_ls",
       "best_oos_sharpe": 1.842,
-      "profitable_oos_count": 8,
+      "profitable_oos_count": 10,
       "has_dashboard": true,
       "has_summary": true,
       "dashboard_rel_path": "daily/2026-11-25/dashboard.html",

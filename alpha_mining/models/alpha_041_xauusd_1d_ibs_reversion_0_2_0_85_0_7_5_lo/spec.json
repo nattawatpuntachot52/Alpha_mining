@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_041_xauusd_1d_ibs_reversion_0_2_0_85_0_7_5_lo",
+  "trial_number": 41,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"ibs_reversion\",\"params\":{\"exit_long\":0.7,\"high_threshold\":0.85,\"low_threshold\":0.2,\"max_hold\":5},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"1d\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "1d",
+  "family": "ibs_reversion",
+  "params": {
+    "low_threshold": 0.2,
+    "high_threshold": 0.85,
+    "exit_long": 0.7,
+    "max_hold": 5
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day03_r1_ibs_reversion",
+  "hypothesis": "Daily IBS <= 0.20 buys weak gold closes expecting next-day institutional dip-buying.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-25",
+  "updated_at_utc": "2026-11-25T08:15:16Z",
+  "spec_sha256": "sha256:434d294a7a147050c009d733f7f2802bc475d91b227c29adf0519d43855f0fbf"
+}
