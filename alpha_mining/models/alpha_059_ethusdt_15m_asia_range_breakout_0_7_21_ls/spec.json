@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_059_ethusdt_15m_asia_range_breakout_0_7_21_ls",
+  "trial_number": 59,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"asia_range_breakout\",\"params\":{\"eod_hour_utc\":21,\"range_end_hour_utc\":7,\"range_start_hour_utc\":0},\"sl_pct\":0.0,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"15m\",\"tp_pct\":0.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "15m",
+  "family": "asia_range_breakout",
+  "params": {
+    "range_start_hour_utc": 0,
+    "range_end_hour_utc": 7,
+    "eod_hour_utc": 21
+  },
+  "direction": "long_short",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day03_r2_sessions",
+  "hypothesis": "ETH M15 Asia range (00-07 UTC) breakout during EU/US liquidity hours.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-25",
+  "updated_at_utc": "2026-11-25T08:23:22Z",
+  "spec_sha256": "sha256:9d39709e23c80959db43ca53d1ffb82449f56dddee770398e2b07acb6461cbd8"
+}

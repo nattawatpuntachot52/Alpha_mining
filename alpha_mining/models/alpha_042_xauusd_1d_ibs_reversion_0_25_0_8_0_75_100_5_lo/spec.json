@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_042_xauusd_1d_ibs_reversion_0_25_0_8_0_75_100_5_lo",
+  "trial_number": 42,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"ibs_reversion\",\"params\":{\"exit_long\":0.75,\"high_threshold\":0.8,\"low_threshold\":0.25,\"max_hold\":5,\"trend_sma\":100},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"1d\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "1d",
+  "family": "ibs_reversion",
+  "params": {
+    "low_threshold": 0.25,
+    "high_threshold": 0.8,
+    "exit_long": 0.75,
+    "trend_sma": 100,
+    "max_hold": 5
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day03_r1_ibs_reversion",
+  "hypothesis": "Trend-filtered daily IBS (Close > SMA100) avoids catching falling knives in bear regimes.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-25",
+  "updated_at_utc": "2026-11-25T08:15:16Z",
+  "spec_sha256": "sha256:38452ea270f329aaef7fb062db788465998dfc54f717a0be1fe729d13560c308"
+}

@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_048_ethusdt_1h_ibs_reversion_0_12_0_88_0_65_200_8_lo",
+  "trial_number": 48,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"ibs_reversion\",\"params\":{\"exit_long\":0.65,\"high_threshold\":0.88,\"low_threshold\":0.12,\"max_hold\":8,\"trend_sma\":200},\"sl_pct\":0.0,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"1h\",\"tp_pct\":0.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "1h",
+  "family": "ibs_reversion",
+  "params": {
+    "low_threshold": 0.12,
+    "high_threshold": 0.88,
+    "exit_long": 0.65,
+    "trend_sma": 200,
+    "max_hold": 8
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day03_r1_ibs",
+  "hypothesis": "H1 extreme IBS dip-buying above 200h SMA catches liquidation-wick rebounds.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-25",
+  "updated_at_utc": "2026-11-25T08:15:18Z",
+  "spec_sha256": "sha256:84d8bdc0b4c7acd7518000a7d1d5625081ac13dd2079b533c60a2d1da4bdc7f6"
+}
