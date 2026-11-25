@@ -347,9 +347,13 @@ def render_dashboard_html(
     .grid-4 {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }}
     .card {{
       background: var(--bm-card); border: 1px solid var(--bm-border); border-radius: 12px; padding: 14px;
+      min-width: 0; overflow: hidden;
     }}
     .kpi-label {{ font-size: 12px; color: var(--bm-muted); }}
-    .kpi-val {{ font-size: 20px; font-weight: 700; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; margin: 3px 0; }}
+    .kpi-val {{
+      font-size: 20px; font-weight: 700; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; margin: 3px 0;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }}
     .controls {{
       display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px;
       background: var(--bm-card); border: 1px solid var(--bm-border); border-radius: 12px; padding: 11px 14px;
@@ -415,7 +419,15 @@ def render_dashboard_html(
     }}
     .pill-mini:hover {{ color: var(--bm-fg); border-color: var(--bm-primary); }}
     .pill-mini.active {{ background: var(--bm-primary); color: var(--bm-primary-fg); border-color: var(--bm-primary); }}
-    .batch-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 10px; }}
+    .batch-grid {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(265px, 1fr)); gap: 12px; }}
+    .m-card-id {{
+      font-weight: 700; font-size: 12px; margin-bottom: 2px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }}
+    .m-card-sub {{
+      font-size: 11px; margin-bottom: 6px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }}
     .table-wrap {{ overflow-x: auto; }}
     table {{ width: 100%; border-collapse: collapse; font-size: 12px; }}
     th, td {{ padding: 8px 10px; border-bottom: 1px solid var(--bm-border); text-align: left; white-space: nowrap; }}
@@ -435,8 +447,11 @@ def render_dashboard_html(
     .badge-pass {{ background: rgba(34, 197, 94, 0.16); color: var(--bm-success); }}
     .badge-fail {{ background: rgba(239, 68, 68, 0.18); color: var(--bm-error); }}
     .badge-today {{ background: rgba(59, 130, 246, 0.18); color: var(--bm-code-fg); }}
-    .kv-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; }}
-    .kv-box {{ background: var(--bm-surface); border: 1px solid var(--bm-border); border-radius: 8px; padding: 9px 11px; }}
+    .kv-grid {{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 10px 0; }}
+    .kv-box {{
+      background: var(--bm-surface); border: 1px solid var(--bm-border); border-radius: 8px; padding: 10px 12px;
+      min-width: 0; overflow: hidden;
+    }}
     pre {{
       background: var(--bm-surface); border: 1px solid var(--bm-border); border-radius: 8px;
       padding: 10px; overflow-x: auto; font-size: 12px; color: var(--bm-code-fg); margin: 6px 0 0;
@@ -1261,7 +1276,7 @@ def render_dashboard_html(
       setSub("th-util", win.isFull ? "Max Util %" : "Win Util % (Daily)");
       const tblTitle = document.getElementById("perf-table-title");
       const scopeTag = activePanelScope === "top9"
-        ? `Top-${{PAYLOAD.top_n}} Cumulative Leaders`
+        ? `Top-${{BETA_GATES.topN}} Cumulative Leaders`
         : `Daily Batch (${{PAYLOAD.batch_date}})`;
       if (tblTitle) {{
         tblTitle.textContent = win.isFull
@@ -1271,7 +1286,7 @@ def render_dashboard_html(
       const legLbl = document.getElementById("legend-scope-label");
       if (legLbl) {{
         legLbl.textContent = activePanelScope === "top9"
-          ? `Top-${{PAYLOAD.top_n}} Leaders:`
+          ? `Top-${{BETA_GATES.topN}} Leaders:`
           : `Models (${{PAYLOAD.batch_date}}):`;
       }}
     }}
@@ -2434,18 +2449,19 @@ def render_dashboard_html(
         }});
         const cardBadge = activePanelScope === "top9" ? `Top #${{i + 1}}/${{pool.length}}` : `Model ${{i + 1}}/${{pool.length}}`;
         el.innerHTML = `
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:4px;">
             <span class="muted mono">${{cardBadge}}</span>
-            <span class="badge ${{pass ? 'badge-pass' : 'badge-fail'}}" title="Gate (Max DD ≤ ${{BETA_GATES.ddCap}}%${{BETA_GATES.noLiq ? ' · No Liq' : ''}}${{BETA_GATES.minCf > 0 ? ' · CF ≥ $' + BETA_GATES.minCf : ''}})">${{pass ? 'PASS' : 'FAIL'}}</span>
+            <span class="badge ${{pass ? 'badge-pass' : 'badge-fail'}}" title="Gate (Max DD ≤ ${{BETA_GATES.ddCap}}% · Vol ≤ ${{BETA_GATES.maxVol}}% · R² ≥ ${{Number(BETA_GATES.minR2).toFixed(2)}}${{BETA_GATES.noLiq ? ' · No Liq' : ''}}${{BETA_GATES.minCf > 0 ? ' · CF ≥ $' + BETA_GATES.minCf : ''}})">${{pass ? 'PASS' : 'FAIL'}}</span>
           </div>
-          <div class="mono" style="font-weight:700;margin-bottom:1px;">${{escHtml(m.model_id)}}</div>
-          <div class="muted" style="font-size:11px;margin-bottom:6px;">${{escHtml(m.signal_name)}}</div>
+          <div class="mono m-card-id" title="${{escHtml(m.model_id)}}">${{escHtml(m.model_id)}}</div>
+          <div class="muted m-card-sub" title="${{escHtml(m.signal_name)}}">${{escHtml(m.signal_name)}}</div>
           <div class="mono" style="font-size:12px;display:flex;flex-direction:column;gap:2px;">
-            <div style="display:flex;justify-content:space-between;"><span>${{cfLbl}}</span><strong class="${{st.cashflow >= 0 ? 'pos' : 'neg'}}">${{fmtUsd(st.cashflow)}}</strong></div>
-            <div style="display:flex;justify-content:space-between;"><span>AVG Weekly</span><span class="${{st.avgWeekly >= 0 ? 'pos' : 'neg'}}">${{fmtUsd(st.avgWeekly)}}</span></div>
-            <div style="display:flex;justify-content:space-between;"><span>${{ddLbl}}</span><strong class="warn">${{Number(st.maxDdPct).toFixed(2)}}%</strong></div>
-            <div style="display:flex;justify-content:space-between;"><span>${{retLbl}}</span><span class="${{st.returnPct >= 0 ? 'pos' : 'neg'}}">${{fmtPct(st.returnPct)}}</span></div>
-            <div style="display:flex;justify-content:space-between;"><span>Beta / Corr</span><span>${{Number(st.beta).toFixed(2)}} / ${{Number(st.corr).toFixed(2)}}</span></div>
+            <div style="display:flex;justify-content:space-between;gap:8px;"><span>${{cfLbl}}</span><strong class="${{st.cashflow >= 0 ? 'pos' : 'neg'}}">${{fmtUsd(st.cashflow)}}</strong></div>
+            <div style="display:flex;justify-content:space-between;gap:8px;"><span>AVG Weekly</span><span class="${{st.avgWeekly >= 0 ? 'pos' : 'neg'}}">${{fmtUsd(st.avgWeekly)}}</span></div>
+            <div style="display:flex;justify-content:space-between;gap:8px;"><span>${{ddLbl}}</span><strong class="warn">${{Number(st.maxDdPct).toFixed(2)}}%</strong></div>
+            <div style="display:flex;justify-content:space-between;gap:8px;"><span>${{retLbl}}</span><span class="${{st.returnPct >= 0 ? 'pos' : 'neg'}}">${{fmtPct(st.returnPct)}}</span></div>
+            <div style="display:flex;justify-content:space-between;gap:8px;"><span>Vol / R²</span><span>${{Number(m.ann_vol_pct || 0).toFixed(1)}}% / ${{Number(m.equity_r2 || 0).toFixed(2)}}</span></div>
+            <div style="display:flex;justify-content:space-between;gap:8px;"><span>Beta / Corr</span><span>${{Number(st.beta).toFixed(2)}} / ${{Number(st.corr).toFixed(2)}}</span></div>
           </div>
         `;
         cards.appendChild(el);
