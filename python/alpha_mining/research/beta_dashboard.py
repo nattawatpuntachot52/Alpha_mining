@@ -222,7 +222,12 @@ def render_dashboard_html(
     top_n = int(rule.get("top_n", 9))
     batch_ids = [m["model_id"] for m in batch_metrics]
     top_ids = [m["model_id"] for m in (ranking_board.get("top_ranked") or []) if m.get("model_id")]
-    series_ids = list(dict.fromkeys([*batch_ids, *top_ids]))
+    extra_ids = [
+        str(m["model_id"])
+        for m in sorted(all_models_metrics, key=lambda x: -float(x.get("cashflow_net_usd", 0.0)))[:25]
+        if m.get("model_id")
+    ]
+    series_ids = list(dict.fromkeys([*batch_ids, *top_ids, *extra_ids]))
     active_tab = default_tab if default_tab in {"daily", "ranking", "all"} else "daily"
 
     resolved_corr = corr_matrix
@@ -541,6 +546,44 @@ def render_dashboard_html(
         </div>
       </div>
 
+      <div id="top9-gate-bar" class="controls hidden" style="margin-bottom:0;">
+        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+          <label>
+            <span class="muted">Ranking:</span>
+            <select id="t9-rank-mode">
+              <option value="cashflow_dd" selected>Cashflow → Max DD</option>
+              <option value="efficiency">CF / Max DD</option>
+              <option value="mtm">MTM Return</option>
+            </select>
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;">
+            <span class="muted">Max DD ≤</span>
+            <input id="t9-dd-slider" type="range" min="5" max="80" step="1" value="{int(round(default_dd_cap))}" />
+            <strong id="t9-dd-label" class="mono">≤ {int(round(default_dd_cap))}%</strong>
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;">
+            <span class="muted">Min CF ($)</span>
+            <input id="t9-min-cf" type="number" min="-5000" max="50000" step="100" value="0" style="width:76px;" />
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;">
+            <span class="muted">Top</span>
+            <input id="t9-topn" type="number" min="3" max="15" step="1" value="{top_n}" style="width:52px;" />
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;">
+            <input id="t9-no-liq" type="checkbox" checked />
+            <span>No Liq</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;">
+            <input id="t9-only-today" type="checkbox" />
+            <span>เฉพาะวันนี้</span>
+          </label>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span id="t9-gate-summary" class="muted mono" style="font-size:11px;"></span>
+          <button id="t9-gate-reset" type="button" class="pill-mini">Reset Gate</button>
+        </div>
+      </div>
+
       <div class="legend-bar">
         <span id="legend-scope-label" class="muted" style="font-weight:700;margin-right:4px;">Models ({safe_date}):</span>
         <div id="daily-legend-pills" style="display:flex;flex-wrap:wrap;gap:7px;flex:1;"></div>
@@ -671,14 +714,27 @@ def render_dashboard_html(
             </select>
           </label>
           <label style="display:flex;align-items:center;gap:6px;">
+            <span class="muted">Min CF ($):</span>
+            <input id="min-cf-input" type="number" min="-5000" max="50000" step="100" value="0" style="width:78px;" />
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;">
+            <span class="muted">Top:</span>
+            <input id="rank-topn" type="number" min="3" max="15" step="1" value="{top_n}" style="width:52px;" />
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;">
+            <input id="no-liq-only" type="checkbox" checked />
+            <span>ไม่แตกพอร์ต (No Liq)</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;">
             <input id="only-today" type="checkbox" />
             <span>เฉพาะ Batch วันนี้ ({safe_date})</span>
           </label>
         </div>
         <div style="display:flex;align-items:center;gap:10px;">
           <span class="muted">Max DD Gate:</span>
-          <input id="dd-slider" type="range" min="10" max="50" step="1" value="{int(round(default_dd_cap))}" />
+          <input id="dd-slider" type="range" min="5" max="80" step="1" value="{int(round(default_dd_cap))}" />
           <strong id="dd-label" class="mono">≤ {int(round(default_dd_cap))}%</strong>
+          <button id="btn-gate-reset" type="button" class="pill-mini">Reset Gate</button>
         </div>
       </div>
 
@@ -789,13 +845,53 @@ def render_dashboard_html(
           .slice(0, Number(PAYLOAD.top_n || 9)));
 
     const MODEL_COLOR = new Map();
-    [...DAILY_MODELS, ...TOP_RANK_MODELS].forEach((m, idx) => {{
-      if (!MODEL_COLOR.has(m.model_id)) MODEL_COLOR.set(m.model_id, PALETTE[idx % PALETTE.length]);
+    [...DAILY_MODELS, ...TOP_RANK_MODELS, ...(PAYLOAD.models || [])].forEach((m, idx) => {{
+      if (m && m.model_id && !MODEL_COLOR.has(m.model_id)) {{
+        MODEL_COLOR.set(m.model_id, PALETTE[MODEL_COLOR.size % PALETTE.length]);
+      }}
     }});
+
+    const DEFAULT_BETA_GATES = {{
+      mode: "cashflow_dd",
+      ddCap: Number(PAYLOAD.default_dd_cap || 40),
+      minCf: 0,
+      noLiq: true,
+      onlyToday: false,
+      topN: Number(PAYLOAD.top_n || 9)
+    }};
+    const BETA_GATES = Object.assign({{}}, DEFAULT_BETA_GATES);
+
+    function computeBetaRankedPool() {{
+      const pool = (PAYLOAD.models || []).filter(m => !BETA_GATES.onlyToday || BATCH_SET.has(m.model_id));
+      const rows = pool.map(m => {{
+        const liqOk = !BETA_GATES.noLiq || !m.would_liquidate;
+        const ddOk = Number(m.max_drawdown_pct || 0) <= BETA_GATES.ddCap;
+        const cfOk = Number(m.cashflow_net_usd || 0) >= BETA_GATES.minCf;
+        return Object.assign({{}}, m, {{ passGate: liqOk && ddOk && cfOk }});
+      }});
+      rows.sort((a, b) => {{
+        if (a.passGate !== b.passGate) return a.passGate ? -1 : 1;
+        if (BETA_GATES.mode === "cashflow_dd") {{
+          if (Math.abs(b.cashflow_net_usd - a.cashflow_net_usd) > 1e-6) return b.cashflow_net_usd - a.cashflow_net_usd;
+          return a.max_drawdown_pct - b.max_drawdown_pct;
+        }}
+        if (BETA_GATES.mode === "efficiency") {{
+          if (Math.abs(b.cashflow_to_dd_ratio - a.cashflow_to_dd_ratio) > 1e-6) return b.cashflow_to_dd_ratio - a.cashflow_to_dd_ratio;
+          return b.cashflow_net_usd - a.cashflow_net_usd;
+        }}
+        return b.mtm_return_pct - a.mtm_return_pct;
+      }});
+      const qual = rows.filter(r => r.passGate);
+      return {{ rows, qual, top: qual.slice(0, Math.max(1, BETA_GATES.topN)) }};
+    }}
 
     let activePanelScope = "daily"; // "daily" | "top9"
     function getPoolModels() {{
-      return (activePanelScope === "top9" && TOP_RANK_MODELS.length) ? TOP_RANK_MODELS : DAILY_MODELS;
+      if (activePanelScope === "top9") {{
+        const top = computeBetaRankedPool().top;
+        return top.length ? top : [];
+      }}
+      return DAILY_MODELS;
     }}
 
     const visibleIds = new Set(DAILY_MODELS.map(m => m.model_id));
@@ -892,7 +988,8 @@ def render_dashboard_html(
       const nAll = ALL_DATES.length;
       const s = nAll ? Math.max(0, Math.min(rangeStartIdx, nAll - 1)) : 0;
       const e = nAll ? Math.max(s, Math.min(rangeEndIdx, nAll - 1)) : -1;
-      const key = `${{activePanelScope}}:${{s}}:${{e}}`;
+      const poolSig = pool.map(m => m.model_id).join(",");
+      const key = `${{activePanelScope}}:${{s}}:${{e}}:${{poolSig}}`;
       if (cachedWindowData && cachedWindowKey === key) return cachedWindowData;
 
       const byMRaw = RAW_SERIES.by_model || {{}};
@@ -1013,15 +1110,22 @@ def render_dashboard_html(
         }};
       }});
 
-      let corrMatrix = (activePanelScope === "top9" && PAYLOAD.top_corr_matrix && (PAYLOAD.top_corr_matrix.labels || []).length)
-        ? PAYLOAD.top_corr_matrix
-        : (PAYLOAD.corr_matrix || {{ labels: [], matrix: [] }});
-      if (!isFull) {{
+      let corrMatrix = PAYLOAD.corr_matrix || {{ labels: [], matrix: [] }};
+      if (!isFull || activePanelScope === "top9") {{
         const vecs = [];
         pool.forEach(m => {{
-          const r = modelRetsMap[m.model_id];
+          let r = modelRetsMap[m.model_id];
+          if (!r) {{
+            const ms = byMRaw[m.model_id];
+            if (ms && Array.isArray(ms.equity) && ms.equity.length >= 2) {{
+              r = deriveSimpleReturns(ms.equity, s, e);
+            }}
+          }}
           if (r && r.length >= 2) vecs.push([m.model_id, r]);
         }});
+        if (!ethRets.length && rawEth.length >= 2) {{
+          ethRets = deriveSimpleReturns(rawEth, s, e);
+        }}
         if (ethRets.length >= 2) vecs.push(["ETH", ethRets]);
         const labels = vecs.map(v => v[0]);
         const matrix = vecs.map((vi, r) => vecs.map((vj, c) => (
@@ -1918,7 +2022,7 @@ def render_dashboard_html(
       const dates = win.dates || [];
       const active = getActiveModels();
       const theme = getThemeColors();
-      const ddCap = Number(PAYLOAD.default_dd_cap || 40);
+      const ddCap = Number(BETA_GATES.ddCap || PAYLOAD.default_dd_cap || 40);
       const initCap = (active[0] && Number(active[0].initial_capital)) || 10000;
 
       // 01 / Weekly Realized CF
@@ -2204,6 +2308,8 @@ def render_dashboard_html(
     function switchTab(target) {{
       currentTab = target;
       const isPanelView = (target === "daily" || target === "top9");
+      const gateBar = document.getElementById("top9-gate-bar");
+      if (gateBar) gateBar.classList.toggle("hidden", target !== "top9");
       if (isPanelView) {{
         const nextScope = target === "top9" ? "top9" : "daily";
         if (activePanelScope !== nextScope) {{
@@ -2265,7 +2371,7 @@ def render_dashboard_html(
       pool.forEach((m, i) => {{
         const color = MODEL_COLOR.get(m.model_id);
         const isOn = visibleIds.has(m.model_id);
-        const pass = !m.would_liquidate && Number(m.max_drawdown_pct) <= Number(PAYLOAD.default_dd_cap || 40);
+        const pass = (!BETA_GATES.noLiq || !m.would_liquidate) && Number(m.max_drawdown_pct) <= BETA_GATES.ddCap && Number(m.cashflow_net_usd || 0) >= BETA_GATES.minCf;
         const st = win.stats[m.model_id] || {{
           isFull: true,
           cashflow: Number(m.cashflow_net_usd || 0),
@@ -2293,7 +2399,7 @@ def render_dashboard_html(
         el.innerHTML = `
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
             <span class="muted mono">${{cardBadge}}</span>
-            <span class="badge ${{pass ? 'badge-pass' : 'badge-fail'}}" title="Full-run Hard Gate (No Liq + Max DD ≤ ${{Number(PAYLOAD.default_dd_cap || 40)}}%)">${{pass ? 'PASS' : 'FAIL'}}</span>
+            <span class="badge ${{pass ? 'badge-pass' : 'badge-fail'}}" title="Gate (Max DD ≤ ${{BETA_GATES.ddCap}}%${{BETA_GATES.noLiq ? ' · No Liq' : ''}}${{BETA_GATES.minCf > 0 ? ' · CF ≥ $' + BETA_GATES.minCf : ''}})">${{pass ? 'PASS' : 'FAIL'}}</span>
           </div>
           <div class="mono" style="font-weight:700;margin-bottom:1px;">${{escHtml(m.model_id)}}</div>
           <div class="muted" style="font-size:11px;margin-bottom:6px;">${{escHtml(m.signal_name)}}</div>
@@ -2312,7 +2418,7 @@ def render_dashboard_html(
       perfBody.innerHTML = "";
       pool.forEach(m => {{
         const color = MODEL_COLOR.get(m.model_id);
-        const pass = !m.would_liquidate && Number(m.max_drawdown_pct) <= Number(PAYLOAD.default_dd_cap || 40);
+        const pass = (!BETA_GATES.noLiq || !m.would_liquidate) && Number(m.max_drawdown_pct) <= BETA_GATES.ddCap && Number(m.cashflow_net_usd || 0) >= BETA_GATES.minCf;
         const st = win.stats[m.model_id] || {{
           isFull: true,
           cashflow: Number(m.cashflow_net_usd || 0),
@@ -2328,7 +2434,7 @@ def render_dashboard_html(
         const fullNote = win.isFull ? "" : ' title="Full-run total (per-day breakdown not stored)"';
         const ddNote = win.isFull ? "" : ' title="Window peak-to-trough DD computed from daily-close snapshots (lower bound vs 1m intra-bar DD)"';
         const utilNote = win.isFull ? "" : ' title="Window peak capital utilization from daily-close snapshots"';
-        const gateTitle = `Full-run Hard Gate (No Liq + Max DD ≤ ${{Number(PAYLOAD.default_dd_cap || 40)}}%)`;
+        const gateTitle = `Gate (Max DD ≤ ${{BETA_GATES.ddCap}}%${{BETA_GATES.noLiq ? ' · No Liq' : ''}}${{BETA_GATES.minCf > 0 ? ' · CF ≥ $' + BETA_GATES.minCf : ''}})`;
         const tr = document.createElement("tr");
         tr.className = "data-row";
         if (!visibleIds.has(m.model_id)) tr.style.opacity = "0.45";
@@ -2378,36 +2484,80 @@ def render_dashboard_html(
         `BetaModelStore(Path("beta_mining")).load_model("${{m.model_id}}")`;
     }}
 
+    function syncBetaGateUi() {{
+      const g = BETA_GATES;
+      const setVal = (id, v) => {{ const el = document.getElementById(id); if (el) el.value = String(v); }};
+      const setChk = (id, v) => {{ const el = document.getElementById(id); if (el) el.checked = Boolean(v); }};
+      const setTxt = (id, v) => {{ const el = document.getElementById(id); if (el) el.textContent = v; }};
+      setVal("rank-mode", g.mode); setVal("t9-rank-mode", g.mode);
+      setVal("dd-slider", g.ddCap); setVal("t9-dd-slider", g.ddCap);
+      setTxt("dd-label", `≤ ${{g.ddCap}}%`); setTxt("t9-dd-label", `≤ ${{g.ddCap}}%`);
+      setVal("min-cf-input", g.minCf); setVal("t9-min-cf", g.minCf);
+      setVal("rank-topn", g.topN); setVal("t9-topn", g.topN);
+      setChk("no-liq-only", g.noLiq); setChk("t9-no-liq", g.noLiq);
+      setChk("only-today", g.onlyToday); setChk("t9-only-today", g.onlyToday);
+    }}
+
+    function applyBetaGatesFromSource(src) {{
+      const read = (rkId, t9Id) => document.getElementById(src === "t9" ? t9Id : rkId);
+      const modeEl = read("rank-mode", "t9-rank-mode");
+      const ddEl = read("dd-slider", "t9-dd-slider");
+      const cfEl = read("min-cf-input", "t9-min-cf");
+      const tnEl = read("rank-topn", "t9-topn");
+      const nlEl = read("no-liq-only", "t9-no-liq");
+      const tdEl = read("only-today", "t9-only-today");
+      if (modeEl) BETA_GATES.mode = modeEl.value || "cashflow_dd";
+      if (ddEl) BETA_GATES.ddCap = Math.max(5, Math.min(80, Number(ddEl.value || 40)));
+      if (cfEl) BETA_GATES.minCf = Number(cfEl.value || 0);
+      if (tnEl) BETA_GATES.topN = Math.max(1, Math.min(15, Number(tnEl.value || 9)));
+      if (nlEl) BETA_GATES.noLiq = Boolean(nlEl.checked);
+      if (tdEl) BETA_GATES.onlyToday = Boolean(tdEl.checked);
+      syncBetaGateUi();
+      renderRanking();
+      if (activePanelScope === "top9") {{
+        cachedWindowData = null;
+        cachedWindowKey = "";
+        visibleIds.clear();
+        getPoolModels().forEach(m => visibleIds.add(m.model_id));
+        updateLookbackUi();
+        renderDailyPillsAndTables();
+        drawAllDailyCharts();
+      }} else if (currentTab === "daily") {{
+        renderDailyPillsAndTables();
+        drawAllDailyCharts();
+      }}
+    }}
+
+    function resetBetaGates() {{
+      Object.assign(BETA_GATES, DEFAULT_BETA_GATES);
+      syncBetaGateUi();
+      renderRanking();
+      if (activePanelScope === "top9") {{
+        cachedWindowData = null;
+        cachedWindowKey = "";
+        visibleIds.clear();
+        getPoolModels().forEach(m => visibleIds.add(m.model_id));
+        updateLookbackUi();
+        renderDailyPillsAndTables();
+        drawAllDailyCharts();
+      }} else if (currentTab === "daily") {{
+        renderDailyPillsAndTables();
+        drawAllDailyCharts();
+      }}
+    }}
+
     function renderRanking() {{
-      const mode = document.getElementById("rank-mode").value;
-      const ddCap = Number(document.getElementById("dd-slider").value);
-      const onlyToday = document.getElementById("only-today").checked;
-      document.getElementById("dd-label").textContent = `≤ ${{ddCap}}%`;
+      const g = BETA_GATES;
+      const ddCap = g.ddCap;
+      syncBetaGateUi();
+      const {{ rows, qual }} = computeBetaRankedPool();
+      const t9Sum = document.getElementById("t9-gate-summary");
+      if (t9Sum) t9Sum.textContent = `ผ่านเกณฑ์ ${{qual.length}}/${{rows.length}} โมเดล`;
 
-      const pool = (PAYLOAD.models || []).filter(m => !onlyToday || BATCH_SET.has(m.model_id));
-      const rows = pool.map(m => ({{
-        ...m,
-        passGate: !m.would_liquidate && Number(m.max_drawdown_pct) <= ddCap
-      }}));
-
-      rows.sort((a, b) => {{
-        if (a.passGate !== b.passGate) return a.passGate ? -1 : 1;
-        if (mode === "cashflow_dd") {{
-          if (Math.abs(b.cashflow_net_usd - a.cashflow_net_usd) > 1e-6) return b.cashflow_net_usd - a.cashflow_net_usd;
-          return a.max_drawdown_pct - b.max_drawdown_pct;
-        }}
-        if (mode === "efficiency") {{
-          if (Math.abs(b.cashflow_to_dd_ratio - a.cashflow_to_dd_ratio) > 1e-6) return b.cashflow_to_dd_ratio - a.cashflow_to_dd_ratio;
-          return b.cashflow_net_usd - a.cashflow_net_usd;
-        }}
-        return b.mtm_return_pct - a.mtm_return_pct;
-      }});
-
-      const qual = rows.filter(r => r.passGate);
       document.getElementById("kpi-trials").textContent = String(PAYLOAD.total_trials);
       document.getElementById("kpi-today").textContent = `Today Batch: ${{BATCH_SET.size}} models · Stored: ${{(PAYLOAD.models || []).length}}`;
       document.getElementById("kpi-qual").textContent = `${{qual.length}} / ${{rows.length}}`;
-      document.getElementById("kpi-gate").textContent = `No Liquidation · Max DD ≤ ${{ddCap}}%`;
+      document.getElementById("kpi-gate").textContent = `${{g.noLiq ? "No Liq · " : ""}}Max DD ≤ ${{ddCap}}%${{g.minCf > 0 ? " · CF ≥ $" + g.minCf : ""}}`;
       if (qual.length > 0) {{
         document.getElementById("kpi-top1").textContent = qual[0].model_id;
         document.getElementById("kpi-top1-sub").textContent = `CF ${{fmtUsd(qual[0].cashflow_net_usd)}} · DD ${{Number(qual[0].max_drawdown_pct).toFixed(2)}}%`;
@@ -2416,7 +2566,7 @@ def render_dashboard_html(
         document.getElementById("kpi-lowdd-sub").textContent = `DD ${{Number(low.max_drawdown_pct).toFixed(2)}}% · CF ${{fmtUsd(low.cashflow_net_usd)}}`;
       }} else {{
         document.getElementById("kpi-top1").textContent = "None";
-        document.getElementById("kpi-top1-sub").textContent = "No model passes DD gate";
+        document.getElementById("kpi-top1-sub").textContent = "No model passes current gate";
         document.getElementById("kpi-lowdd").textContent = "None";
         document.getElementById("kpi-lowdd-sub").textContent = "-";
       }}
@@ -2424,16 +2574,19 @@ def render_dashboard_html(
       const tbody = document.getElementById("rank-body");
       tbody.innerHTML = "";
       let rk = 0;
-      rows.slice(0, PAYLOAD.top_n).forEach(m => {{
+      rows.slice(0, Math.max(1, g.topN)).forEach(m => {{
         if (m.passGate) rk += 1;
         const tr = document.createElement("tr");
         tr.className = "data-row" + (m.model_id === selectedId ? " selected" : "");
         tr.addEventListener("click", () => {{ renderInspector(m); renderRanking(); }});
         const crashDd = m.crash_stress ? `${{Number(m.crash_stress.max_drawdown_pct).toFixed(2)}}%` : "N/A";
         const todayTag = BATCH_SET.has(m.model_id) ? ` <span class="badge badge-today">TODAY</span>` : "";
+        const failReason = (g.noLiq && m.would_liquidate)
+          ? "LIQ"
+          : (Number(m.max_drawdown_pct || 0) > ddCap ? "DD>" + ddCap + "%" : "CF<$" + g.minCf);
         const gateTag = m.passGate
           ? `<span class="badge badge-pass">PASS</span>`
-          : `<span class="badge badge-fail">${{m.would_liquidate ? "LIQ" : "DD>" + ddCap + "%"}}</span>`;
+          : `<span class="badge badge-fail">${{failReason}}</span>`;
         tr.innerHTML = `
           <td class="mono" style="font-weight:700;">${{m.passGate ? "#" + rk : "—"}}</td>
           <td>
@@ -2554,9 +2707,24 @@ def render_dashboard_html(
       drawAllDailyCharts();
     }});
 
-    document.getElementById("rank-mode").addEventListener("change", renderRanking);
-    document.getElementById("dd-slider").addEventListener("input", renderRanking);
-    document.getElementById("only-today").addEventListener("change", renderRanking);
+    ["rank-mode", "dd-slider", "min-cf-input", "rank-topn", "no-liq-only", "only-today"].forEach(id => {{
+      const el = document.getElementById(id);
+      if (el) {{
+        el.addEventListener("input", () => applyBetaGatesFromSource("rank"));
+        el.addEventListener("change", () => applyBetaGatesFromSource("rank"));
+      }}
+    }});
+    ["t9-rank-mode", "t9-dd-slider", "t9-min-cf", "t9-topn", "t9-no-liq", "t9-only-today"].forEach(id => {{
+      const el = document.getElementById(id);
+      if (el) {{
+        el.addEventListener("input", () => applyBetaGatesFromSource("t9"));
+        el.addEventListener("change", () => applyBetaGatesFromSource("t9"));
+      }}
+    }});
+    ["btn-gate-reset", "t9-gate-reset"].forEach(id => {{
+      const el = document.getElementById(id);
+      if (el) el.addEventListener("click", resetBetaGates);
+    }});
 
     [
       "chart-weekly", "chart-cumulative", "chart-equity", "chart-drawdown",

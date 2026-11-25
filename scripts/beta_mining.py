@@ -365,7 +365,12 @@ def _cmd_run_daily(args: argparse.Namespace) -> int:
     all_metrics = [m.latest_metrics for m in store.load_all_models()]
     batch_ids = [m["model_id"] for m in batch_metrics]
     top_ids = [r["model_id"] for r in board.get("top_ranked", []) if r.get("model_id")]
-    batch_series = store.load_batch_series(list(dict.fromkeys([*batch_ids, *top_ids])))
+    extra_ids = [
+        str(m["model_id"])
+        for m in sorted(all_metrics, key=lambda x: -float(x.get("cashflow_net_usd", 0.0)))[:25]
+        if m.get("model_id")
+    ]
+    batch_series = store.load_batch_series(list(dict.fromkeys([*batch_ids, *top_ids, *extra_ids])))
     corr_matrix = compute_return_correlation_matrix(batch_ids, batch_series)
     existing_days = store.load_daily_batches_summary(max_dd_pct=args.max_dd_gate)
     summary_md = render_daily_summary_markdown(
@@ -477,7 +482,12 @@ def _rebuild_one_daily_date(
         loader_meta = None
     batch_ids = [m["model_id"] for m in batch_metrics]
     top_ids = [r["model_id"] for r in board.get("top_ranked", []) if r.get("model_id")]
-    batch_series = store.load_batch_series(list(dict.fromkeys([*batch_ids, *top_ids])))
+    extra_ids = [
+        str(m["model_id"])
+        for m in sorted(all_metrics, key=lambda x: -float(x.get("cashflow_net_usd", 0.0)))[:25]
+        if m.get("model_id")
+    ]
+    batch_series = store.load_batch_series(list(dict.fromkeys([*batch_ids, *top_ids, *extra_ids])))
     corr_matrix = compute_return_correlation_matrix(batch_ids, batch_series)
     summary_md = render_daily_summary_markdown(
         batch_date=bdate, batch_metrics=batch_metrics, ranking_board=board

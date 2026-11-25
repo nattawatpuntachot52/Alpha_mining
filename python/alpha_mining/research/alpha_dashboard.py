@@ -119,6 +119,12 @@ button:hover,a.nav:hover{border-color:var(--pri)}button.active{background:var(--
 .card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px 14px}
 .kl{color:var(--mut);font-size:12px}.kv{font-size:20px;font-weight:700;font-family:ui-monospace,Menlo,monospace;margin-top:2px}
 .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px 14px}
+.gate-bar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px 14px;margin-bottom:14px}
+.gate-grp{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.gate-lbl{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--fg)}
+.gate-lbl input[type="number"]{width:66px;padding:4px 6px;border-radius:6px;border:1px solid var(--bd);background:var(--surf);color:var(--fg);font:600 12px ui-monospace,Menlo,monospace}
+.gate-lbl input[type="range"]{width:120px;accent-color:var(--pri)}
+.gate-lbl select{padding:5px 8px;border-radius:6px;border:1px solid var(--bd);background:var(--surf);color:var(--fg);font:600 12px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
 select.dnav{cursor:pointer;border:1px solid var(--bd);border-radius:8px;padding:6px 10px;font:600 12px ui-monospace,Menlo,monospace;background:var(--surf);color:var(--fg)}
 select.dnav:hover{border-color:var(--pri)}
 .pill{display:inline-flex;align-items:center;gap:7px;padding:5px 10px;border-radius:999px;border:1px solid var(--bd);background:var(--surf);font:600 12px ui-monospace,Menlo,monospace;cursor:pointer;user-select:none}
@@ -169,6 +175,39 @@ th{cursor:pointer;color:var(--mut);position:sticky;top:0;background:var(--card)}
     <div class="card" style="margin-top:14px"><div class="pt" style="margin-bottom:8px">ตารางสรุปผลทุกโมเดลในหมวดนี้</div><div class="tw" id="tbl-daily"></div></div>
   </div>
   <div id="tab-ranking" class="hidden">
+    <div class="gate-bar" id="alpha-gate-bar">
+      <div class="gate-grp">
+        <label class="gate-lbl"><span class="mut">จัดเรียง:</span>
+          <select id="g-mode">
+            <option value="oos_sharpe" selected>OOS Sharpe → Max DD (ค่าเริ่มต้น)</option>
+            <option value="oos_return">กำไร OOS % สูงสุด</option>
+            <option value="total_return">กำไรรวม % สูงสุด</option>
+            <option value="calmar">CAGR / Max DD สูงสุด</option>
+          </select>
+        </label>
+        <label class="gate-lbl"><span class="mut">Max DD ≤</span>
+          <input id="g-dd" type="range" min="10" max="100" step="1" value="50" />
+          <b id="g-dd-val" style="font-family:ui-monospace,Menlo,monospace;min-width:40px">50%</b>
+        </label>
+        <label class="gate-lbl"><span class="mut">เทรด ≥</span>
+          <input id="g-trades" type="number" min="0" max="500" step="5" value="30" />
+        </label>
+        <label class="gate-lbl"><span class="mut">OOS Sharpe ≥</span>
+          <input id="g-sharpe" type="number" min="-5" max="10" step="0.1" value="0" />
+        </label>
+        <label class="gate-lbl">
+          <input id="g-oos-pos" type="checkbox" checked />
+          <span>บังคับกำไร OOS &gt; 0%</span>
+        </label>
+        <label class="gate-lbl"><span class="mut">Top</span>
+          <input id="g-topn" type="number" min="3" max="20" step="1" value="9" style="width:52px" />
+        </label>
+      </div>
+      <div class="gate-grp">
+        <span class="note" id="g-summary"></span>
+        <button id="g-reset" type="button">รีเซ็ต Gate</button>
+      </div>
+    </div>
     <div class="card" style="margin-bottom:14px">
       <div class="ph" style="margin-bottom:10px">
         <span class="pt" id="rank-panels-title">กราฟ 9-Panel — อันดับ Top 9 สะสม</span>
@@ -186,7 +225,15 @@ th{cursor:pointer;color:var(--mut);position:sticky;top:0;background:var(--card)}
 <script>
 const P = __PAYLOAD__;
 const COLORS=["#3b82f6","#f59e0b","#22c55e","#ef4444","#a855f7","#14b8a6","#f472b6","#eab308","#60a5fa","#fb923c","#4ade80","#f87171","#c084fc","#2dd4bf","#f9a8d4","#facc15","#93c5fd","#fdba74","#86efac","#fca5a5"];
-const S={tab:P.default_tab||"daily",sym:"ALL",round:"ALL",off:new Set(),rankOff:new Set(),sort:{daily:["oos_sharpe_ann",-1],all:["oos_sharpe_ann",-1]}};
+const DEFAULT_GATES={
+  dd:Number((P.ranking&&P.ranking.ranking_rule&&P.ranking.ranking_rule.hard_gates&&P.ranking.ranking_rule.hard_gates.max_drawdown_pct_limit)||50),
+  trades:Number((P.ranking&&P.ranking.ranking_rule&&P.ranking.ranking_rule.hard_gates&&P.ranking.ranking_rule.hard_gates.min_trades)||30),
+  minSharpe:0,
+  requireOosPos:true,
+  mode:"oos_sharpe",
+  topN:Number(P.top_n||9)
+};
+const S={tab:P.default_tab||"daily",sym:"ALL",round:"ALL",off:new Set(),rankOff:new Set(),gates:Object.assign({},DEFAULT_GATES),sort:{daily:["oos_sharpe_ann",-1],all:["oos_sharpe_ann",-1]}};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const num=(v,d=2)=>(v===null||v===undefined||Number.isNaN(Number(v)))?"–":Number(v).toFixed(d);
@@ -199,8 +246,44 @@ const colorOf={};P.batch_models.forEach((m,i)=>{colorOf[m.model_id]=COLORS[i%COL
 const idxOf={};P.batch_models.forEach((m,i)=>{idxOf[m.model_id]=String(i+1).padStart(2,"0")});
 const visible=m=>(S.sym==="ALL"||m.symbol===S.sym)&&(S.round==="ALL"||String(m.round_no||1)===S.round);
 const shown=()=>P.batch_models.filter(m=>visible(m)&&!S.off.has(m.model_id));
+function evalAlphaRanking(){
+  const g=S.gates;
+  const pool=(P.models&&P.models.length)?P.models:(P.batch_models||[]);
+  const qual=[],disq=[];
+  pool.forEach(m=>{
+    const reasons=[];
+    const dd=Number(m.max_drawdown_pct||0),tr=Number(m.trades||0),osh=Number(m.oos_sharpe_ann||0),oret=Number(m.oos_return_pct||0);
+    if(tr<g.trades)reasons.push(`TRADES<${g.trades}`);
+    if(g.requireOosPos&&oret<=0)reasons.push("OOS_RET<=0%");
+    if(g.minSharpe===0?(osh<=0):(osh<g.minSharpe))reasons.push(`OOS_SHARPE<${g.minSharpe}`);
+    if(dd>g.dd)reasons.push(`MAX_DD>${g.dd}%`);
+    if(reasons.length)disq.push(Object.assign({},m,{disqualify_reasons:reasons}));
+    else qual.push(Object.assign({},m));
+  });
+  const score=(m)=>{
+    if(g.mode==="oos_return")return Number(m.oos_return_pct||0);
+    if(g.mode==="total_return")return Number(m.total_return_pct||0);
+    if(g.mode==="calmar"){const dd=Math.max(0.5,Number(m.max_drawdown_pct||0));return Number(m.cagr_pct||0)/dd}
+    return Number(m.oos_sharpe_ann||0);
+  };
+  const cmp=(a,b)=>{
+    const d=score(b)-score(a);
+    if(Math.abs(d)>1e-9)return d;
+    return Number(a.max_drawdown_pct||0)-Number(b.max_drawdown_pct||0);
+  };
+  qual.sort(cmp);
+  disq.sort(cmp);
+  const topN=Math.max(1,Number(g.topN||9));
+  const topAll=qual.slice(0,topN).map((m,i)=>Object.assign({},m,{rank:i+1}));
+  const bySym={};
+  const syms=[...new Set(pool.map(m=>m.symbol).filter(Boolean))].sort();
+  syms.forEach(sym=>{
+    bySym[sym]=qual.filter(m=>m.symbol===sym).slice(0,topN).map((m,i)=>Object.assign({},m,{rank:i+1}));
+  });
+  return {qualified_count:qual.length,qualified_by_symbol:Object.fromEntries(syms.map(s=>[s,qual.filter(m=>m.symbol===s).length])),top_ranked:topAll,top_ranked_by_symbol:bySym,disqualified:disq};
+}
 function topRankModels(){
-  const rr=P.ranking||{};
+  const rr=evalAlphaRanking();
   const rows=S.sym==="ALL"?(rr.top_ranked||[]):((rr.top_ranked_by_symbol||{})[S.sym]||[]);
   return rows.map((r,i)=>{
     const full=MODEL_BY_ID[r.model_id]||{};
@@ -305,10 +388,12 @@ const PANELS=[
 ];
 function buildPanelsInto(hostId,prefix){const el=$(hostId);el.innerHTML=PANELS.map(p=>`<div class="panel ${p[3]||""}"><div class="ph"><span class="pt">${p[0]}</span><span class="ps">${p[1]}</span></div><div class="cv" style="${p[3]?"height:380px":""}"><canvas id="${prefix}${p[2]}"></canvas></div></div>`).join("")}
 function buildPanels(){buildPanelsInto("panels","cv-");buildPanelsInto("rank-panels","rcv-")}
-function drawPanelsInto(prefix,ms,tagFn,colorFn){
+function drawPanelsInto(prefix,ms,tagFn,colorFn,ddGateOverride){
   const labels=ms.map(tagFn),names=ms.map(m=>m.model_id+" ["+m.symbol+" "+m.timeframe+"]");
   const L=(key)=>ms.map(m=>{const c=curves(m.model_id);return c?{name:tagFn(m)+" "+m.symbol+" "+m.timeframe+" "+m.family,color:colorFn(m),xs:c.xs,ys:c[key]}:null}).filter(Boolean);
-  const ddGate=Number((P.ranking&&P.ranking.ranking_rule&&P.ranking.ranking_rule.hard_gates&&P.ranking.ranking_rule.hard_gates.max_drawdown_pct_limit)||50);
+  const ddGate=ddGateOverride!=null?Number(ddGateOverride):Number(S.gates.dd||50);
+  const subEl=$(prefix+"dd")&&$(prefix+"dd").closest(".panel")&&$(prefix+"dd").closest(".panel").querySelector(".ps");
+  if(subEl)subEl.textContent=`% · Bar Chart (Hard Gate ≤ ${ddGate}%)`;
   lineChart($(prefix+"eq"),L("eq"),v=>v.toFixed(0)+"%");ddBarChart($(prefix+"dd"),labels,ms,colorFn,names,ddGate);
   barChart($(prefix+"ret"),labels,[{name:"Strategy",color:"#3b82f6",vals:ms.map(m=>m.total_return_pct)},{name:"Buy&Hold",color:"#64748b",vals:ms.map(m=>m.buy_hold_return_pct)}],v=>v.toFixed(0)+"%",names);
   barChart($(prefix+"sh"),labels,[{name:"IS Sharpe",color:"#f59e0b",vals:ms.map(m=>m.is_sharpe_ann)},{name:"OOS Sharpe",color:"#22c55e",vals:ms.map(m=>m.oos_sharpe_ann)}],v=>v.toFixed(2),names);
@@ -318,23 +403,23 @@ function drawPanelsInto(prefix,ms,tagFn,colorFn){
   barChart($(prefix+"bc"),labels,[{name:"Beta",color:"#60a5fa",vals:ms.map(m=>m.beta_to_underlying)},{name:"Corr",color:"#fb923c",vals:ms.map(m=>m.corr_to_underlying)}],v=>v.toFixed(2),names);
   heat($(prefix+"cm"),labels,corrMatrix(ms),names);
 }
-function drawPanels(){drawPanelsInto("cv-",shown(),m=>idxOf[m.model_id],m=>colorOf[m.model_id])}
+function drawPanels(){drawPanelsInto("cv-",shown(),m=>idxOf[m.model_id],m=>colorOf[m.model_id],S.gates.dd)}
 function drawRankPanels(){
   const allTop=topRankModels();
   const catTxt=S.sym==="ALL"?"รวมทุกสินทรัพย์":S.sym;
-  $("rank-panels-title").textContent=`กราฟ 9-Panel — อันดับ Top-${P.top_n} สะสม (${catTxt})`;
+  $("rank-panels-title").textContent=`กราฟ 9-Panel — อันดับ Top-${S.gates.topN} สะสม (${catTxt})`;
   const active=allTop.filter(m=>!S.rankOff.has(m.model_id));
   $("rank-legend").innerHTML=allTop.length
     ? allTop.map(m=>`<span class="pill ${S.rankOff.has(m.model_id)?"off":""}" data-rm="${esc(m.model_id)}" title="${esc(m.model_id+" — "+(m.hypothesis||""))}"><span class="dot" style="background:${m._rkColor}"></span>${esc(m._rkTag)} ${esc(m.label||m.family)}</span>`).join("")+`<button id="rank-allon">เปิดทั้งหมด</button><button id="rank-alloff">ซ่อนทั้งหมด</button>`
-    : `<span class="note">ยังไม่มีโมเดลในหมวดนี้ที่ผ่าน Hard Gate ครบทุกข้อ</span>`;
+    : `<span class="note">ยังไม่มีโมเดลในหมวดนี้ที่ผ่าน Gate ปัจจุบัน — ลองปรับแถบ Gate ด้านบนเพื่อสำรวจเพิ่ม</span>`;
   $("rank-legend").querySelectorAll("[data-rm]").forEach(p=>p.onclick=()=>{const id=p.dataset.rm;S.rankOff.has(id)?S.rankOff.delete(id):S.rankOff.add(id);drawRankPanels()});
   const onBtn=$("rank-allon"),offBtn=$("rank-alloff");
   if(onBtn)onBtn.onclick=()=>{S.rankOff.clear();drawRankPanels()};
   if(offBtn)offBtn.onclick=()=>{allTop.forEach(m=>S.rankOff.add(m.model_id));drawRankPanels()};
-  drawPanelsInto("rcv-",active,m=>m._rkTag,m=>m._rkColor);
+  drawPanelsInto("rcv-",active,m=>m._rkTag,m=>m._rkColor,S.gates.dd);
 }
 const COLS=[["label","โมเดล","l"],["symbol","สินทรัพย์"],["timeframe","TF"],["direction","ฝั่ง"],["oos_return_pct","กำไร OOS"],["oos_sharpe_ann","OOS Sharpe"],["total_return_pct","กำไรรวม"],["max_drawdown_pct","Max DD"],["trades","จำนวนเทรด"],["win_rate_pct","Win%"],["profit_factor","PF"],["rank","อันดับ"]];
-const RK={};(P.ranking.top_ranked||[]).forEach(r=>RK[r.model_id]=r.rank);const DSR={};[...(P.ranking.top_ranked||[]),...(P.ranking.disqualified||[])].forEach(r=>DSR[r.model_id]=r.dsr_approx);
+let RK={};const DSR={};[...(P.ranking.top_ranked||[]),...(P.ranking.disqualified||[])].forEach(r=>DSR[r.model_id]=r.dsr_approx);
 function cell(m,k){
   const v=m[k];
   if(k==="label")return `<td class="l" title="${esc(m.model_id+" — "+(m.hypothesis||""))}"><b>${esc(v||m.model_id)}</b></td>`;
@@ -353,20 +438,37 @@ function table(el,rows,key){
   el.querySelectorAll("th").forEach(th=>th.onclick=()=>{const k=th.dataset.k;S.sort[key]=[k,S.sort[key][0]===k?-S.sort[key][1]:-1];render()});
 }
 function rankTable(rows){return `<table><thead><tr><th>อันดับ</th><th class="l">โมเดล</th><th>สินทรัพย์</th><th>TF</th><th>OOS Sharpe</th><th>กำไร OOS</th><th>Max DD</th><th>เทรด</th><th>วันที่ทดสอบ</th></tr></thead><tbody>${rows.map(r=>`<tr><td>#${r.rank}</td><td class="l" title="${esc(r.model_id+" — "+(r.hypothesis||""))}"><b>${esc(r.label||r.model_id)}</b></td><td>${symBadge(r.symbol)}</td><td>${esc(r.timeframe)}</td><td>${num(r.oos_sharpe_ann)}</td><td>${sgn(r.oos_return_pct)}</td><td>${num(r.max_drawdown_pct,1)}%</td><td>${r.trades}</td><td>${esc(r.batch_date)}</td></tr>`).join("")||'<tr><td colspan="9" class="mut">ยังไม่มีโมเดลในหมวดนี้ที่ผ่านเกณฑ์ทั้งหมด</td></tr>'}</tbody></table>`}
+function syncGateUi(){
+  const g=S.gates;
+  if($("g-dd"))$("g-dd").value=String(g.dd);
+  if($("g-dd-val"))$("g-dd-val").textContent=g.dd+"%";
+  if($("g-trades"))$("g-trades").value=String(g.trades);
+  if($("g-sharpe"))$("g-sharpe").value=String(g.minSharpe);
+  if($("g-oos-pos"))$("g-oos-pos").checked=Boolean(g.requireOosPos);
+  if($("g-mode"))$("g-mode").value=g.mode;
+  if($("g-topn"))$("g-topn").value=String(g.topN);
+}
 function renderRanking(){
-  const rr=P.ranking;
+  const rr=evalAlphaRanking();
+  RK={};(rr.top_ranked||[]).forEach(r=>{RK[r.model_id]=r.rank});
+  const g=S.gates;
+  const qualSym=S.sym==="ALL"?rr.qualified_count:((rr.qualified_by_symbol||{})[S.sym]||0);
+  const totSym=((P.models&&P.models.length)?P.models:P.batch_models).filter(m=>S.sym==="ALL"||m.symbol===S.sym).length;
+  if($("g-summary"))$("g-summary").textContent=`ผ่านเกณฑ์ ${qualSym}/${totSym} โมเดล`;
+  const gateDesc=`เกณฑ์ปัจจุบัน: ${g.requireOosPos?"OOS > 0%, ":""}OOS Sharpe ${g.minSharpe===0?"> 0":"≥ "+g.minSharpe}, เทรด ≥ ${g.trades} ครั้ง, Max DD ≤ ${g.dd}%`;
   let h="";
   if(S.sym==="ALL"){
-    h+=`<div class="card"><div class="pt" style="margin-bottom:6px">อันดับ Top-${P.top_n} สะสมรวม</div><div class="note" style="margin-bottom:8px">เกณฑ์คัดกรอง: กำไรนอกกลุ่มตัวอย่าง (OOS) > 0, เทรด ≥ ${(rr.ranking_rule.hard_gates||{}).min_trades} ครั้ง, Max DD ≤ ${(rr.ranking_rule.hard_gates||{}).max_drawdown_pct_limit}%</div><div class="tw">${rankTable(rr.top_ranked||[])}</div></div>`;
+    h+=`<div class="card"><div class="pt" style="margin-bottom:6px">อันดับ Top-${g.topN} สะสมรวม</div><div class="note" style="margin-bottom:8px">${esc(gateDesc)}</div><div class="tw">${rankTable(rr.top_ranked||[])}</div></div>`;
   }
-  Object.entries(rr.top_ranked_by_symbol||{}).filter(([s])=>S.sym==="ALL"||S.sym===s).forEach(([s,rows])=>{h+=`<div class="card" style="margin-top:14px"><div class="pt" style="margin-bottom:8px">${symBadge(s)} อันดับ Top-${P.top_n} เฉพาะสินทรัพย์นี้</div><div class="tw">${rankTable(rows)}</div></div>`});
+  Object.entries(rr.top_ranked_by_symbol||{}).filter(([s])=>S.sym==="ALL"||S.sym===s).forEach(([s,rows])=>{h+=`<div class="card" style="margin-top:14px"><div class="pt" style="margin-bottom:8px">${symBadge(s)} อันดับ Top-${g.topN} เฉพาะสินทรัพย์นี้</div><div class="note" style="margin-bottom:8px">${esc(gateDesc)}</div><div class="tw">${rankTable(rows)}</div></div>`});
   const dq=(rr.disqualified||[]).filter(d=>S.sym==="ALL"||d.symbol===S.sym);
   h+=`<div class="card" style="margin-top:14px"><div class="pt" style="margin-bottom:8px">โมเดลที่ยังไม่ผ่านเกณฑ์ (${dq.length})</div><div class="tw"><table><thead><tr><th class="l">โมเดล</th><th>สินทรัพย์</th><th>TF</th><th>OOS Sharpe</th><th>กำไร OOS</th><th>Max DD</th><th class="l">สาเหตุ</th></tr></thead><tbody>${dq.map(d=>`<tr><td class="l" title="${esc(d.model_id)}">${esc(d.label||d.model_id)}</td><td>${symBadge(d.symbol)}</td><td>${esc(d.timeframe)}</td><td>${num(d.oos_sharpe_ann)}</td><td>${sgn(d.oos_return_pct)}</td><td>${num(d.max_drawdown_pct,1)}%</td><td class="l mut">${esc((d.disqualify_reasons||[]).join(", "))}</td></tr>`).join("")}</tbody></table></div></div>`;
   $("rank-tables").innerHTML=h;
 }
 function renderKpis(){
   const ms=P.batch_models.filter(visible),oos=ms.filter(m=>m.oos_return_pct>0).length,best=ms.reduce((a,m)=>(!a||m.oos_sharpe_ann>a.oos_sharpe_ann)?m:a,null);
-  const qualSym=S.sym==="ALL"?P.ranking.qualified_count:((P.ranking.top_ranked_by_symbol||{})[S.sym]||[]).length;
+  const rr=evalAlphaRanking();
+  const qualSym=S.sym==="ALL"?rr.qualified_count:((rr.qualified_by_symbol||{})[S.sym]||0);
   const k=[["โมเดลในหน้านี้",ms.length+" โมเดล"],["กำไร OOS เป็นบวก",oos+" / "+ms.length],["OOS Sharpe สูงสุด",best?num(best.oos_sharpe_ann)+" ("+(best.label||best.family)+")":"–"],["ผ่านเกณฑ์ขึ้นบอร์ด",qualSym+" โมเดล"]];
   $("kpis").innerHTML=k.map(x=>`<div class="card"><div class="kl">${x[0]}</div><div class="kv" style="font-size:17px">${esc(x[1])}</div></div>`).join("");
 }
@@ -427,9 +529,24 @@ function render(){
 }
 $("sub").textContent="คลิกชื่อโมเดลด้านล่างเพื่อเปิด/ปิดเส้นกราฟ · OOS = ช่วงทดสอบนอกกลุ่มตัวอย่าง 30% ล่าสุด";
 $("foot").textContent="ข้อมูลวิจัยเชิงทดลองแบบ Causal (ตัดสินใจเมื่อปิดแท่ง → เข้าที่ราคาเปิดแท่งถัดไป หักค่าธรรมเนียมต่อขาแล้ว)";
+function onGateChange(){
+  S.gates.dd=Math.max(1,Math.min(100,Number($("g-dd").value||50)));
+  S.gates.trades=Math.max(0,Number($("g-trades").value||0));
+  S.gates.minSharpe=Number($("g-sharpe").value||0);
+  S.gates.requireOosPos=Boolean($("g-oos-pos").checked);
+  S.gates.mode=$("g-mode").value||"oos_sharpe";
+  S.gates.topN=Math.max(1,Math.min(20,Number($("g-topn").value||9)));
+  $("g-dd-val").textContent=S.gates.dd+"%";
+  render();
+}
+["g-dd","g-trades","g-sharpe","g-oos-pos","g-mode","g-topn"].forEach(id=>{
+  const el=$(id);
+  if(el){el.addEventListener("input",onGateChange);el.addEventListener("change",onGateChange)}
+});
+if($("g-reset"))$("g-reset").onclick=()=>{S.gates=Object.assign({},DEFAULT_GATES);S.rankOff.clear();syncGateUi();render()};
 document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;if(location.hash.includes("tab=")){history.replaceState(null,"",location.hash.replace(/&?tab=(daily|ranking|all)/i,"")||"#");}render()});
 addEventListener("hashchange",()=>render());
-buildPanels();render();
+buildPanels();syncGateUi();render();
 addEventListener("resize",()=>{if(S.tab==="daily")drawPanels();else if(S.tab==="ranking")drawRankPanels()});
 </script>
 </body>
@@ -471,7 +588,18 @@ def render_dashboard_html(
     top_ids = [r["model_id"] for r in ranking_board.get("top_ranked", []) if r.get("model_id")]
     for rows in (ranking_board.get("top_ranked_by_symbol") or {}).values():
         top_ids.extend(r["model_id"] for r in rows if r.get("model_id"))
-    series_ids = list(dict.fromkeys([*batch_ids, *top_ids]))
+    # Include top candidates per symbol across all_models_metrics so interactive Gate loosening still plots curves.
+    by_sym_all: dict[str, list[dict[str, Any]]] = {}
+    for m in all_models_metrics:
+        by_sym_all.setdefault(str(m.get("symbol", "")), []).append(m)
+    extra_ids: list[str] = []
+    for sym_rows in by_sym_all.values():
+        ranked_sym = sorted(
+            sym_rows,
+            key=lambda x: (-float(x.get("oos_sharpe_ann", -999.0)), float(x.get("max_drawdown_pct", 999.0))),
+        )
+        extra_ids.extend(str(m["model_id"]) for m in ranked_sym[:30] if m.get("model_id"))
+    series_ids = list(dict.fromkeys([*batch_ids, *top_ids, *extra_ids]))
     payload = {
         "batch_date": batch_date,
         "generated_at_utc": ranking_board.get("generated_at_utc", ""),
