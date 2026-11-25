@@ -166,7 +166,17 @@ th{cursor:pointer;color:var(--mut);position:sticky;top:0;background:var(--card)}
     <div class="grid" id="panels"></div>
     <div class="card" style="margin-top:14px"><div class="pt" style="margin-bottom:8px">ตารางสรุปผลทุกโมเดลในหมวดนี้</div><div class="tw" id="tbl-daily"></div></div>
   </div>
-  <div id="tab-ranking" class="hidden"></div>
+  <div id="tab-ranking" class="hidden">
+    <div class="card" style="margin-bottom:14px">
+      <div class="ph" style="margin-bottom:10px">
+        <span class="pt" id="rank-panels-title">กราฟ 9-Panel — อันดับ Top 9 สะสม</span>
+        <span class="ps" id="rank-panels-sub">เปรียบเทียบโมเดลอันดับสูงสุดทุกวันพร้อมกัน (คลิกชื่อเพื่อเปิด/ปิดเส้น)</span>
+      </div>
+      <div class="bar" id="rank-legend" style="margin-bottom:12px"></div>
+      <div class="grid" id="rank-panels"></div>
+    </div>
+    <div id="rank-tables"></div>
+  </div>
   <div id="tab-all" class="hidden"><div class="card"><div class="tw" id="tbl-all"></div></div></div>
   <div class="note" id="foot"></div>
 </div>
@@ -174,7 +184,7 @@ th{cursor:pointer;color:var(--mut);position:sticky;top:0;background:var(--card)}
 <script>
 const P = __PAYLOAD__;
 const COLORS=["#3b82f6","#f59e0b","#22c55e","#ef4444","#a855f7","#14b8a6","#f472b6","#eab308","#60a5fa","#fb923c","#4ade80","#f87171","#c084fc","#2dd4bf","#f9a8d4","#facc15","#93c5fd","#fdba74","#86efac","#fca5a5"];
-const S={tab:P.default_tab||"daily",sym:"ALL",round:"ALL",off:new Set(),sort:{daily:["oos_sharpe_ann",-1],all:["oos_sharpe_ann",-1]}};
+const S={tab:P.default_tab||"daily",sym:"ALL",round:"ALL",off:new Set(),rankOff:new Set(),sort:{daily:["oos_sharpe_ann",-1],all:["oos_sharpe_ann",-1]}};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const num=(v,d=2)=>(v===null||v===undefined||Number.isNaN(Number(v)))?"–":Number(v).toFixed(d);
@@ -182,10 +192,19 @@ const sgn=(v,d=1,suf="%")=>{const n=Number(v);if(Number.isNaN(n))return "–";re
 const pd=s=>{const[a,b,c]=s.split("-").map(Number);return Math.floor(Date.UTC(a,b-1,c)/864e5)};
 const ds=n=>new Date(n*864e5).toISOString().slice(0,10);
 const symBadge=s=>`<span class="badge ${s==="XAUUSD"?"xau":"eth"}">${esc(s)}</span>`;
+const MODEL_BY_ID={};(P.models||[]).forEach(m=>{MODEL_BY_ID[m.model_id]=m});(P.batch_models||[]).forEach(m=>{if(!MODEL_BY_ID[m.model_id])MODEL_BY_ID[m.model_id]=m});
 const colorOf={};P.batch_models.forEach((m,i)=>{colorOf[m.model_id]=COLORS[i%COLORS.length]});
 const idxOf={};P.batch_models.forEach((m,i)=>{idxOf[m.model_id]=String(i+1).padStart(2,"0")});
 const visible=m=>(S.sym==="ALL"||m.symbol===S.sym)&&(S.round==="ALL"||String(m.round_no||1)===S.round);
 const shown=()=>P.batch_models.filter(m=>visible(m)&&!S.off.has(m.model_id));
+function topRankModels(){
+  const rr=P.ranking||{};
+  const rows=S.sym==="ALL"?(rr.top_ranked||[]):((rr.top_ranked_by_symbol||{})[S.sym]||[]);
+  return rows.map((r,i)=>{
+    const full=MODEL_BY_ID[r.model_id]||{};
+    return Object.assign({},full,r,{_rkTag:"#"+(r.rank||(i+1)),_rkColor:COLORS[i%COLORS.length]});
+  });
+}
 const tip=$("tip");
 function showTip(e,t){tip.style.display="block";tip.textContent=t;const x=Math.min(e.clientX+14,innerWidth-tip.offsetWidth-8);tip.style.left=x+"px";tip.style.top=(e.clientY+14)+"px"}
 function hideTip(){tip.style.display="none"}
@@ -256,18 +275,34 @@ const PANELS=[
  ["07 / Trades & Profit Factor","count · gross win / gross loss","tr"],["08 / Beta & Correlation vs Underlying","daily returns","bc"],
  ["09 / Daily-Return Correlation Matrix","Pearson, overlapping days","cm","wide"]
 ];
-function buildPanels(){const el=$("panels");el.innerHTML=PANELS.map(p=>`<div class="panel ${p[3]||""}"><div class="ph"><span class="pt">${p[0]}</span><span class="ps">${p[1]}</span></div><div class="cv" style="${p[3]?"height:380px":""}"><canvas id="cv-${p[2]}"></canvas></div></div>`).join("")}
-function drawPanels(){
-  const ms=shown(),labels=ms.map(m=>idxOf[m.model_id]),names=ms.map(m=>m.model_id+" ["+m.symbol+" "+m.timeframe+"]");
-  const L=(key)=>ms.map(m=>{const c=curves(m.model_id);return c?{name:idxOf[m.model_id]+" "+m.symbol+" "+m.timeframe+" "+m.family,color:colorOf[m.model_id],xs:c.xs,ys:c[key]}:null}).filter(Boolean);
-  lineChart($("cv-eq"),L("eq"),v=>v.toFixed(0)+"%");lineChart($("cv-dd"),L("dd"),v=>v.toFixed(0)+"%");
-  barChart($("cv-ret"),labels,[{name:"Strategy",color:"#3b82f6",vals:ms.map(m=>m.total_return_pct)},{name:"Buy&Hold",color:"#64748b",vals:ms.map(m=>m.buy_hold_return_pct)}],v=>v.toFixed(0)+"%",names);
-  barChart($("cv-sh"),labels,[{name:"IS Sharpe",color:"#f59e0b",vals:ms.map(m=>m.is_sharpe_ann)},{name:"OOS Sharpe",color:"#22c55e",vals:ms.map(m=>m.oos_sharpe_ann)}],v=>v.toFixed(2),names);
-  scatter($("cv-rr"),ms.map(m=>({x:m.max_drawdown_pct,y:m.cagr_pct,color:colorOf[m.model_id],tag:idxOf[m.model_id],text:m.model_id+"\nMaxDD "+num(m.max_drawdown_pct)+"%  CAGR "+num(m.cagr_pct)+"%\nOOS Sharpe "+num(m.oos_sharpe_ann)})));
-  barChart($("cv-ex"),labels,[{name:"Exposure %",color:"#14b8a6",vals:ms.map(m=>m.exposure_pct)},{name:"Win rate %",color:"#a855f7",vals:ms.map(m=>m.win_rate_pct)}],v=>v.toFixed(0)+"%",names);
-  barChart($("cv-tr"),labels,[{name:"Trades/10",color:"#eab308",vals:ms.map(m=>m.trades/10)},{name:"Profit factor",color:"#f472b6",vals:ms.map(m=>Math.min(m.profit_factor,10))}],v=>v.toFixed(1),names);
-  barChart($("cv-bc"),labels,[{name:"Beta",color:"#60a5fa",vals:ms.map(m=>m.beta_to_underlying)},{name:"Corr",color:"#fb923c",vals:ms.map(m=>m.corr_to_underlying)}],v=>v.toFixed(2),names);
-  heat($("cv-cm"),labels,corrMatrix(ms),names);
+function buildPanelsInto(hostId,prefix){const el=$(hostId);el.innerHTML=PANELS.map(p=>`<div class="panel ${p[3]||""}"><div class="ph"><span class="pt">${p[0]}</span><span class="ps">${p[1]}</span></div><div class="cv" style="${p[3]?"height:380px":""}"><canvas id="${prefix}${p[2]}"></canvas></div></div>`).join("")}
+function buildPanels(){buildPanelsInto("panels","cv-");buildPanelsInto("rank-panels","rcv-")}
+function drawPanelsInto(prefix,ms,tagFn,colorFn){
+  const labels=ms.map(tagFn),names=ms.map(m=>m.model_id+" ["+m.symbol+" "+m.timeframe+"]");
+  const L=(key)=>ms.map(m=>{const c=curves(m.model_id);return c?{name:tagFn(m)+" "+m.symbol+" "+m.timeframe+" "+m.family,color:colorFn(m),xs:c.xs,ys:c[key]}:null}).filter(Boolean);
+  lineChart($(prefix+"eq"),L("eq"),v=>v.toFixed(0)+"%");lineChart($(prefix+"dd"),L("dd"),v=>v.toFixed(0)+"%");
+  barChart($(prefix+"ret"),labels,[{name:"Strategy",color:"#3b82f6",vals:ms.map(m=>m.total_return_pct)},{name:"Buy&Hold",color:"#64748b",vals:ms.map(m=>m.buy_hold_return_pct)}],v=>v.toFixed(0)+"%",names);
+  barChart($(prefix+"sh"),labels,[{name:"IS Sharpe",color:"#f59e0b",vals:ms.map(m=>m.is_sharpe_ann)},{name:"OOS Sharpe",color:"#22c55e",vals:ms.map(m=>m.oos_sharpe_ann)}],v=>v.toFixed(2),names);
+  scatter($(prefix+"rr"),ms.map(m=>({x:m.max_drawdown_pct,y:m.cagr_pct,color:colorFn(m),tag:tagFn(m),text:m.model_id+"\nMaxDD "+num(m.max_drawdown_pct)+"%  CAGR "+num(m.cagr_pct)+"%\nOOS Sharpe "+num(m.oos_sharpe_ann)})));
+  barChart($(prefix+"ex"),labels,[{name:"Exposure %",color:"#14b8a6",vals:ms.map(m=>m.exposure_pct)},{name:"Win rate %",color:"#a855f7",vals:ms.map(m=>m.win_rate_pct)}],v=>v.toFixed(0)+"%",names);
+  barChart($(prefix+"tr"),labels,[{name:"Trades/10",color:"#eab308",vals:ms.map(m=>m.trades/10)},{name:"Profit factor",color:"#f472b6",vals:ms.map(m=>Math.min(m.profit_factor,10))}],v=>v.toFixed(1),names);
+  barChart($(prefix+"bc"),labels,[{name:"Beta",color:"#60a5fa",vals:ms.map(m=>m.beta_to_underlying)},{name:"Corr",color:"#fb923c",vals:ms.map(m=>m.corr_to_underlying)}],v=>v.toFixed(2),names);
+  heat($(prefix+"cm"),labels,corrMatrix(ms),names);
+}
+function drawPanels(){drawPanelsInto("cv-",shown(),m=>idxOf[m.model_id],m=>colorOf[m.model_id])}
+function drawRankPanels(){
+  const allTop=topRankModels();
+  const catTxt=S.sym==="ALL"?"รวมทุกสินทรัพย์":S.sym;
+  $("rank-panels-title").textContent=`กราฟ 9-Panel — อันดับ Top-${P.top_n} สะสม (${catTxt})`;
+  const active=allTop.filter(m=>!S.rankOff.has(m.model_id));
+  $("rank-legend").innerHTML=allTop.length
+    ? allTop.map(m=>`<span class="pill ${S.rankOff.has(m.model_id)?"off":""}" data-rm="${esc(m.model_id)}" title="${esc(m.model_id+" — "+(m.hypothesis||""))}"><span class="dot" style="background:${m._rkColor}"></span>${esc(m._rkTag)} ${esc(m.label||m.family)}</span>`).join("")+`<button id="rank-allon">เปิดทั้งหมด</button><button id="rank-alloff">ซ่อนทั้งหมด</button>`
+    : `<span class="note">ยังไม่มีโมเดลในหมวดนี้ที่ผ่าน Hard Gate ครบทุกข้อ</span>`;
+  $("rank-legend").querySelectorAll("[data-rm]").forEach(p=>p.onclick=()=>{const id=p.dataset.rm;S.rankOff.has(id)?S.rankOff.delete(id):S.rankOff.add(id);drawRankPanels()});
+  const onBtn=$("rank-allon"),offBtn=$("rank-alloff");
+  if(onBtn)onBtn.onclick=()=>{S.rankOff.clear();drawRankPanels()};
+  if(offBtn)offBtn.onclick=()=>{allTop.forEach(m=>S.rankOff.add(m.model_id));drawRankPanels()};
+  drawPanelsInto("rcv-",active,m=>m._rkTag,m=>m._rkColor);
 }
 const COLS=[["label","โมเดล","l"],["symbol","สินทรัพย์"],["timeframe","TF"],["direction","ฝั่ง"],["oos_return_pct","กำไร OOS"],["oos_sharpe_ann","OOS Sharpe"],["total_return_pct","กำไรรวม"],["max_drawdown_pct","Max DD"],["trades","จำนวนเทรด"],["win_rate_pct","Win%"],["profit_factor","PF"],["rank","อันดับ"]];
 const RK={};(P.ranking.top_ranked||[]).forEach(r=>RK[r.model_id]=r.rank);const DSR={};[...(P.ranking.top_ranked||[]),...(P.ranking.disqualified||[])].forEach(r=>DSR[r.model_id]=r.dsr_approx);
@@ -298,7 +333,7 @@ function renderRanking(){
   Object.entries(rr.top_ranked_by_symbol||{}).filter(([s])=>S.sym==="ALL"||S.sym===s).forEach(([s,rows])=>{h+=`<div class="card" style="margin-top:14px"><div class="pt" style="margin-bottom:8px">${symBadge(s)} อันดับ Top-${P.top_n} เฉพาะสินทรัพย์นี้</div><div class="tw">${rankTable(rows)}</div></div>`});
   const dq=(rr.disqualified||[]).filter(d=>S.sym==="ALL"||d.symbol===S.sym);
   h+=`<div class="card" style="margin-top:14px"><div class="pt" style="margin-bottom:8px">โมเดลที่ยังไม่ผ่านเกณฑ์ (${dq.length})</div><div class="tw"><table><thead><tr><th class="l">โมเดล</th><th>สินทรัพย์</th><th>TF</th><th>OOS Sharpe</th><th>กำไร OOS</th><th>Max DD</th><th class="l">สาเหตุ</th></tr></thead><tbody>${dq.map(d=>`<tr><td class="l" title="${esc(d.model_id)}">${esc(d.label||d.model_id)}</td><td>${symBadge(d.symbol)}</td><td>${esc(d.timeframe)}</td><td>${num(d.oos_sharpe_ann)}</td><td>${sgn(d.oos_return_pct)}</td><td>${num(d.max_drawdown_pct,1)}%</td><td class="l mut">${esc((d.disqualify_reasons||[]).join(", "))}</td></tr>`).join("")}</tbody></table></div></div>`;
-  $("tab-ranking").innerHTML=h;
+  $("rank-tables").innerHTML=h;
 }
 function renderKpis(){
   const ms=P.batch_models.filter(visible),oos=ms.filter(m=>m.oos_return_pct>0).length,best=ms.reduce((a,m)=>(!a||m.oos_sharpe_ann>a.oos_sharpe_ann)?m:a,null);
@@ -307,8 +342,11 @@ function renderKpis(){
   $("kpis").innerHTML=k.map(x=>`<div class="card"><div class="kl">${x[0]}</div><div class="kv" style="font-size:17px">${esc(x[1])}</div></div>`).join("");
 }
 function syncHash(){
-  const m=(location.hash||"").match(/sym=(XAUUSD|ETHUSDT|ALL)/i);
+  const rawHash=location.hash||"";
+  const m=rawHash.match(/sym=(XAUUSD|ETHUSDT|ALL)/i);
   if(m)S.sym=m[1].toUpperCase();
+  const tm=rawHash.match(/tab=(daily|ranking|all)/i);
+  if(tm)S.tab=tm[1].toLowerCase();
   document.querySelectorAll("#top-cats [data-sym]").forEach(a=>{
     const s=a.dataset.sym;
     a.className="pp"+(S.sym===s?(s==="XAUUSD"?" xau-on":s==="ETHUSDT"?" eth-on":" all-on"):"");
@@ -336,14 +374,15 @@ function render(){
   ["daily","ranking","all"].forEach(t=>$("tab-"+t).classList.toggle("hidden",t!==S.tab));
   renderNav();renderKpis();renderRanking();
   if(S.tab==="daily"){renderLegend();drawPanels();table($("tbl-daily"),P.batch_models.filter(visible),"daily")}
+  if(S.tab==="ranking"){drawRankPanels()}
   if(S.tab==="all")table($("tbl-all"),P.models.filter(m=>S.sym==="ALL"||m.symbol===S.sym),"all");
 }
 $("sub").textContent="คลิกชื่อโมเดลด้านล่างเพื่อเปิด/ปิดเส้นกราฟ · OOS = ช่วงทดสอบนอกกลุ่มตัวอย่าง 30% ล่าสุด";
 $("foot").textContent="ข้อมูลวิจัยเชิงทดลองแบบ Causal (ตัดสินใจเมื่อปิดแท่ง → เข้าที่ราคาเปิดแท่งถัดไป หักค่าธรรมเนียมต่อขาแล้ว)";
-document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;render()});
+document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;if(location.hash.includes("tab=")){history.replaceState(null,"",location.hash.replace(/&?tab=(daily|ranking|all)/i,"")||"#");}render()});
 addEventListener("hashchange",()=>render());
 buildPanels();render();
-addEventListener("resize",()=>{if(S.tab==="daily")drawPanels()});
+addEventListener("resize",()=>{if(S.tab==="daily")drawPanels();else if(S.tab==="ranking")drawRankPanels()});
 </script>
 </body>
 </html>
@@ -381,6 +420,10 @@ def render_dashboard_html(
     dates.sort(key=lambda d: d["batch_date"], reverse=True)
     rounds = sorted({int(m["round_no"]) for m in batch_metrics if m.get("round_no") is not None}) or [1]
     batch_ids = [m["model_id"] for m in batch_metrics]
+    top_ids = [r["model_id"] for r in ranking_board.get("top_ranked", []) if r.get("model_id")]
+    for rows in (ranking_board.get("top_ranked_by_symbol") or {}).values():
+        top_ids.extend(r["model_id"] for r in rows if r.get("model_id"))
+    series_ids = list(dict.fromkeys([*batch_ids, *top_ids]))
     payload = {
         "batch_date": batch_date,
         "generated_at_utc": ranking_board.get("generated_at_utc", ""),
@@ -392,7 +435,7 @@ def render_dashboard_html(
         "beta_hub_href": beta_hub_href,
         "batch_models": [_slim(m, keep_hyp=True) for m in batch_metrics],
         "models": [_slim(m, keep_hyp=True) for m in all_models_metrics],
-        "series": {mid: batch_series[mid] for mid in batch_ids if mid in batch_series},
+        "series": {mid: batch_series[mid] for mid in series_ids if mid in batch_series},
         "ranking": ranking_slim,
         "available_dates": dates,
     }

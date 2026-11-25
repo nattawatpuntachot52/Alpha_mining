@@ -1,9 +1,9 @@
 # Alpha_mining — Alpha Mining Daily Summary (2026-11-24)
 
-- **Generated (UTC):** `2026-11-24T11:27:16Z`
-- **Models Tested Today:** `20` (`ETHUSDT`: 10, `XAUUSD`: 10) | **Rounds:** `[1, 2]` | **Cumulative Trials (`N_trials`):** `20`
+- **Generated (UTC):** `2026-11-25T04:30:38Z`
+- **Models Tested Today:** `20` (`ETHUSDT`: 10, `XAUUSD`: 10) | **Rounds:** `[1, 2]` | **Cumulative Trials (`N_trials`):** `30`
 - **Top-9 Rule:** `OOS Sharpe DESC -> Max DD ASC` | **Hard Gates:** `no liquidation`, `trades >= 30`, `OOS profit > 0`, `Max DD <= 50%`
-- **Multiple-testing:** expected max daily Sharpe under H0 for `N=20` trials = `0.076038`; `DSR≈` is the probability a model beats that haircut.
+- **Multiple-testing:** expected max daily Sharpe under H0 for `N=30` trials = `0.114821`; `DSR≈` is the probability a model beats that haircut.
 - **XAUUSD data:** public feed is `PAXGUSDT` (gold-backed, 24/7) as a PROXY for broker XAUUSD; costs 2 bps/side. ETHUSDT = Binance USD-M perp, 5 bps/side.
 
 ## 1. โมเดลที่ Mine วันนี้ (2026-11-24 — 20 โมเดล)
@@ -35,11 +35,14 @@
 
 | Rank | Model ID | Sym | TF | OOS Sharpe | OOS Ret | Max DD | Trades | DSR≈ | Batch |
 |---:|---|---|---|---:|---:|---:|---:|---:|---|
-| **#1** | `alpha_011_xauusd_4h_ma_cross_ema_5_20_ls` | XAUUSD | 4h | 1.11 | +42.4% | 34.8% | 621 | 0.02 | `2026-11-24` |
-| **#2** | `alpha_013_xauusd_1h_session_time_19_2_long_inside_lo` | XAUUSD | 1h | 0.71 | +12.2% | 23.2% | 1,461 | 0.00 | `2026-11-24` |
-| **#3** | `alpha_015_xauusd_1d_calendar_turn_x_long_lo` | XAUUSD | 1d | 0.60 | +7.8% | 6.9% | 72 | 0.05 | `2026-11-24` |
-| **#4** | `alpha_005_xauusd_30m_donchian_breakout_40_10_lo` | XAUUSD | 30m | 0.56 | +6.8% | 22.1% | 443 | 0.03 | `2026-11-24` |
-| **#5** | `alpha_012_xauusd_1h_session_time_20_4_long_inside_lo` | XAUUSD | 1h | 0.32 | +4.7% | 20.7% | 1,461 | 0.01 | `2026-11-24` |
+| **#1** | `alpha_024_xauusd_1d_momentum_roc_20_lo` | XAUUSD | 1d | 1.22 | +52.2% | 16.0% | 100 | 0.00 | `2026-11-25` |
+| **#2** | `alpha_011_xauusd_4h_ma_cross_ema_5_20_ls` | XAUUSD | 4h | 1.11 | +42.4% | 34.8% | 621 | 0.00 | `2026-11-24` |
+| **#3** | `alpha_022_xauusd_4h_momentum_roc_24_lo` | XAUUSD | 4h | 1.11 | +33.3% | 22.5% | 468 | 0.00 | `2026-11-25` |
+| **#4** | `alpha_029_ethusdt_1d_momentum_roc_14_lo` | ETHUSDT | 1d | 0.72 | +50.9% | 46.2% | 126 | 0.00 | `2026-11-25` |
+| **#5** | `alpha_013_xauusd_1h_session_time_19_2_long_inside_lo` | XAUUSD | 1h | 0.71 | +12.2% | 23.2% | 1,461 | 0.00 | `2026-11-24` |
+| **#6** | `alpha_015_xauusd_1d_calendar_turn_x_long_lo` | XAUUSD | 1d | 0.60 | +7.8% | 6.9% | 72 | 0.00 | `2026-11-24` |
+| **#7** | `alpha_005_xauusd_30m_donchian_breakout_40_10_lo` | XAUUSD | 30m | 0.56 | +6.8% | 22.1% | 443 | 0.00 | `2026-11-24` |
+| **#8** | `alpha_012_xauusd_1h_session_time_20_4_long_inside_lo` | XAUUSD | 1h | 0.32 | +4.7% | 20.7% | 1,461 | 0.00 | `2026-11-24` |
 
 ### โมเดลวันนี้ที่ไม่ผ่าน Hard Gate
 

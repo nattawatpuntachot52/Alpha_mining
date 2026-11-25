@@ -364,7 +364,8 @@ def _cmd_run_daily(args: argparse.Namespace) -> int:
     )
     all_metrics = [m.latest_metrics for m in store.load_all_models()]
     batch_ids = [m["model_id"] for m in batch_metrics]
-    batch_series = store.load_batch_series(batch_ids)
+    top_ids = [r["model_id"] for r in board.get("top_ranked", []) if r.get("model_id")]
+    batch_series = store.load_batch_series(list(dict.fromkeys([*batch_ids, *top_ids])))
     corr_matrix = compute_return_correlation_matrix(batch_ids, batch_series)
     existing_days = store.load_daily_batches_summary(max_dd_pct=args.max_dd_gate)
     summary_md = render_daily_summary_markdown(
@@ -475,7 +476,8 @@ def _rebuild_one_daily_date(
         batch_metrics = [m for m in all_metrics if m.get("batch_date") == bdate] or all_metrics
         loader_meta = None
     batch_ids = [m["model_id"] for m in batch_metrics]
-    batch_series = store.load_batch_series(batch_ids)
+    top_ids = [r["model_id"] for r in board.get("top_ranked", []) if r.get("model_id")]
+    batch_series = store.load_batch_series(list(dict.fromkeys([*batch_ids, *top_ids])))
     corr_matrix = compute_return_correlation_matrix(batch_ids, batch_series)
     summary_md = render_daily_summary_markdown(
         batch_date=bdate, batch_metrics=batch_metrics, ranking_board=board
@@ -594,7 +596,7 @@ def _build_parser() -> argparse.ArgumentParser:
     rd.add_argument("--queue-file", type=Path, default=None, help="Optional daily mining queue JSON file (auto-selects next unmined models).")
     rd.add_argument("--batch-size", type=int, default=5, help="Number of models to draw per round when using --queue-file (default: 5).")
     rd.add_argument("--round", type=int, default=0, help="Round number within the day (default: auto = next round after those already saved for --date).")
-    rd.add_argument("--max-rounds", type=int, default=2, help="Auto mode only: skip when the date already has this many rounds (default: 2).")
+    rd.add_argument("--max-rounds", type=int, default=4, help="Auto mode only: skip when the date already has this many rounds (default: 4).")
     rd.add_argument(
         "--signals",
         default=None,

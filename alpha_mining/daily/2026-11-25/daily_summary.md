@@ -1,6 +1,6 @@
 # Alpha_mining — Alpha Mining Daily Summary (2026-11-25)
 
-- **Generated (UTC):** `2026-11-25T00:15:18Z`
+- **Generated (UTC):** `2026-11-25T04:30:38Z`
 - **Models Tested Today:** `10` (`ETHUSDT`: 5, `XAUUSD`: 5) | **Rounds:** `[1]` | **Cumulative Trials (`N_trials`):** `30`
 - **Top-9 Rule:** `OOS Sharpe DESC -> Max DD ASC` | **Hard Gates:** `no liquidation`, `trades >= 30`, `OOS profit > 0`, `Max DD <= 50%`
 - **Multiple-testing:** expected max daily Sharpe under H0 for `N=30` trials = `0.114821`; `DSR≈` is the probability a model beats that haircut.

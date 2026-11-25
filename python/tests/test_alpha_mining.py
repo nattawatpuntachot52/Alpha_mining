@@ -261,6 +261,8 @@ class TestAlphaQueueAndTwoRoundCLI(unittest.TestCase):
                 self.assertNotIn("http://", text)
             self.assertIn("alpha_001_xauusd", dash_html)
             self.assertIn("alpha_008_ethusdt", dash_html)
+            self.assertIn("rank-panels", dash_html)
+            self.assertIn("drawRankPanels", dash_html)
 
             # Ranking board records N_trials=8 and DSR
             store = AlphaModelStore(store_dir)
@@ -268,10 +270,39 @@ class TestAlphaQueueAndTwoRoundCLI(unittest.TestCase):
             self.assertEqual(ranking["total_trials"], 8)
             self.assertIn("top_ranked_by_symbol", ranking)
 
-            # Auto mode refuses a 3rd round (max 2/day)
-            r3 = subprocess.run(cli, capture_output=True, text=True, check=False)
-            self.assertEqual(r3.returncode, 0, r3.stderr)
-            self.assertIn("nothing to mine", r3.stdout)
+            # Explicit --max-rounds 2 refuses a 3rd round; default (4 rounds/day) allows rounds 1-4 and skips round 5.
+            r3_cap2 = subprocess.run(cli + ["--max-rounds", "2"], capture_output=True, text=True, check=False)
+            self.assertEqual(r3_cap2.returncode, 0, r3_cap2.stderr)
+            self.assertIn("nothing to mine", r3_cap2.stdout)
+
+            store4 = tmp_path / "alpha_mining_4r"
+            cli4 = [
+                sys.executable,
+                str(REPO_ROOT / "scripts" / "alpha_mining.py"),
+                "--store-dir",
+                str(store4),
+                "run-daily",
+                "--date",
+                "2026-11-25",
+                "--queue-file",
+                str(mini_queue),
+                "--per-symbol",
+                "1",
+                "--local-dir",
+                str(local_dir),
+                "--min-trades",
+                "1",
+            ]
+            for expected_round in (1, 2, 3, 4):
+                rx = subprocess.run(cli4, capture_output=True, text=True, check=False)
+                self.assertEqual(rx.returncode, 0, rx.stderr)
+                bx = json.loads((store4 / "daily" / "2026-11-25" / "batch.json").read_text(encoding="utf-8"))
+                self.assertEqual(bx["rounds"], list(range(1, expected_round + 1)))
+                self.assertEqual(bx["model_count"], expected_round * 2)
+
+            r5 = subprocess.run(cli4, capture_output=True, text=True, check=False)
+            self.assertEqual(r5.returncode, 0, r5.stderr)
+            self.assertIn("nothing to mine", r5.stdout)
 
 
 if __name__ == "__main__":

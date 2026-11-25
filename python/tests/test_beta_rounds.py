@@ -91,18 +91,33 @@ class TestBetaTwoRoundsPerDay(unittest.TestCase):
             )
             self.assertEqual([m["round_no"] for m in batch2["models"]], [1, 1, 2, 2])
 
-            # Dashboard + summary reflect all 4 models of the day.
+            # Dashboard + summary reflect all 4 models of the day and include Top-9 9-panel controls.
             dash = (store_dir / "daily" / "2026-11-24" / "dashboard.html").read_text(encoding="utf-8")
             self.assertIn("beta_003_ema_12_26", dash)
             self.assertIn("beta_001_ha_1m", dash)
+            self.assertIn("btn-open-top9-panels", dash)
+            self.assertIn("top_ranked_ids", dash)
 
-            # Auto mode refuses a 3rd round (max 2/day) without touching the store.
+            # Explicit --max-rounds 2 refuses a 3rd round without touching the store.
             before = (store_dir / "daily" / "2026-11-24" / "batch.json").read_text(encoding="utf-8")
-            r3 = run_round("rsi_trend_14_45_55")
-            self.assertEqual(r3.returncode, 0, r3.stderr)
-            self.assertIn("nothing to mine", r3.stdout)
+            r3_cap2 = run_round("rsi_trend_14_45_55", "--max-rounds", "2")
+            self.assertEqual(r3_cap2.returncode, 0, r3_cap2.stderr)
+            self.assertIn("nothing to mine", r3_cap2.stdout)
             after = (store_dir / "daily" / "2026-11-24" / "batch.json").read_text(encoding="utf-8")
             self.assertEqual(before, after)
+
+            # Default 4 rounds/day accumulates Rounds 3 & 4 and auto-skips Round 5.
+            r3 = run_round("rsi_trend_14_45_55")
+            self.assertEqual(r3.returncode, 0, r3.stderr)
+            r4 = run_round("rsi_reversion_14_40_60")
+            self.assertEqual(r4.returncode, 0, r4.stderr)
+            batch4 = json.loads((store_dir / "daily" / "2026-11-24" / "batch.json").read_text(encoding="utf-8"))
+            self.assertEqual(batch4["rounds"], [1, 2, 3, 4])
+            self.assertEqual(batch4["model_count"], 6)
+
+            r5 = run_round("ema_5_15")
+            self.assertEqual(r5.returncode, 0, r5.stderr)
+            self.assertIn("nothing to mine", r5.stdout)
 
 
 if __name__ == "__main__":

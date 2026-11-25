@@ -59,6 +59,9 @@ class TestUnifiedPortalHub(unittest.TestCase):
             self.assertIn("beta/index.html", text)
             self.assertIn(f"alpha/daily/{payload['alpha']['latest_date']}/dashboard.html", text)
             self.assertIn(f"beta/daily/{payload['beta']['latest_date']}/dashboard.html", text)
+            self.assertIn("#sym=XAUUSD&amp;tab=ranking", text)
+            self.assertIn("#sym=ETHUSDT&amp;tab=ranking", text)
+            self.assertIn("#mode=top9", text)
 
             # Verify inline JS syntax if Node.js is available
             node_bin = shutil.which("node")
