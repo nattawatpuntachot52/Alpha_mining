@@ -8,6 +8,8 @@ on:
       - "beta_mining/**"
       - "alpha_mining/**"
       - "python/alpha_mining/research/portal_hub.py"
+      - "python/alpha_mining/research/model_library.py"
+      - "python/alpha_mining/research/stability.py"
       - "scripts/build_portal.py"
       - ".github/workflows/deploy-beta-pages.yml"
   workflow_dispatch:
@@ -49,14 +51,16 @@ jobs:
           mkdir -p pages_site/beta/daily pages_site/daily
           touch pages_site/.nojekyll
 
-          # 1. Build Unified Central Portal at site root (separating Alpha & Beta cleanly)
+          # 1. Build Unified Central Portal & Model Library at site root (separating Alpha & Beta cleanly)
           PYTHONDONTWRITEBYTECODE=1 python3 scripts/build_portal.py \
             --alpha-dir alpha_mining \
             --beta-dir beta_mining \
             --alpha-prefix alpha \
             --beta-prefix beta \
-            --out pages_site/index.html
+            --out pages_site/index.html \
+            --library-out pages_site/library.html
           test -f pages_site/index.html
+          test -f pages_site/library.html
 
           # 2. Stage Beta Track under pages_site/beta/ (+ legacy /daily/<date>/ redirect for existing bookmarks)
           cp beta_mining/index.html pages_site/beta/index.html

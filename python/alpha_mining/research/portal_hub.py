@@ -395,6 +395,20 @@ def render_unified_portal_html(payload: dict[str, Any]) -> str:
     }}
     .h-btn.a {{ background: var(--gold-soft); color: var(--gold); }}
     .h-btn.b {{ background: var(--blue-soft); color: var(--blue); }}
+    .lib-banner {{
+      background: var(--card); border: 1px solid var(--bd); border-radius: 14px;
+      padding: 16px 20px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14);
+    }}
+    .lib-banner-l {{ display: flex; flex-direction: column; gap: 4px; }}
+    .lib-banner-t {{ font-size: 16px; font-weight: 800; }}
+    .lib-banner-s {{ font-size: 13px; color: var(--mut); }}
+    .lib-banner-btn {{
+      display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 10px;
+      background: var(--surf); border: 1px solid var(--bd); color: var(--fg);
+      text-decoration: none; font-weight: 800; font-size: 13px; white-space: nowrap;
+    }}
+    .lib-banner-btn:hover {{ border-color: var(--cyan); color: var(--cyan); }}
   </style>
 </head>
 <body>
@@ -404,6 +418,7 @@ def render_unified_portal_html(payload: dict[str, Any]) -> str:
       <a class="brand" href="index.html">Alpha_mining</a>
       <div class="menu">
         <a class="m-link active" href="index.html">หน้าหลัก</a>
+        <a class="m-link" href="library.html">ห้องสมุดโมเดล</a>
         <a class="m-link" href="{a_base}#sym=XAUUSD">ALPHA · ทองคำ (XAUUSD)</a>
         <a class="m-link" href="{a_base}#sym=ETHUSDT">ALPHA · ETH</a>
         <a class="m-link" href="{b_base}">BETA · ETH Grid</a>
@@ -472,6 +487,14 @@ def render_unified_portal_html(payload: dict[str, Any]) -> str:
           <a class="cta sub-cta" href="{b_base}#mode=top9">ดูอันดับ Top 9 แบบ 9-Panel →</a>
         </div>
       </article>
+    </section>
+
+    <section class="lib-banner">
+      <div class="lib-banner-l">
+        <div class="lib-banner-t">ห้องสมุดโมเดล (Model Library · Report &amp; Strategy Conditions)</div>
+        <div class="lib-banner-s">ค้นหาและเปิดดูผลทดสอบครบทุกตัวของ Alpha + Beta พร้อมค่าความแกว่งพอร์ต (Vol / Ulcer / R²) เงื่อนไขกลยุทธ์ และลิงก์ไปกราฟ 9 ช่อง</div>
+      </div>
+      <a class="lib-banner-btn" href="library.html">เปิดห้องสมุดโมเดลทั้งหมด →</a>
     </section>
 
     <section class="history">

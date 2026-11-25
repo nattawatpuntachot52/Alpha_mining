@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "generated_at_utc": "2026-11-25T05:10:17Z",
+  "generated_at_utc": "2026-11-25T05:29:40Z",
   "ranking_rule": {
     "primary": "oos_sharpe_ann DESC",
     "secondary": "max_drawdown_pct ASC",
