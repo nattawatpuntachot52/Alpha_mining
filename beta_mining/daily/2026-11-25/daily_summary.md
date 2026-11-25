@@ -1,10 +1,10 @@
 # Alpha_mining — Beta Mining Daily Summary (2026-11-25)
 
-- **Generated (UTC):** `2026-11-25T05:51:04Z`
-- **Batch Models Tested Today:** `10` | **Cumulative Total Trials (`N_trials`):** `25`
+- **Generated (UTC):** `2026-11-25T08:15:58Z`
+- **Batch Models Tested Today:** `15` | **Cumulative Total Trials (`N_trials`):** `30`
 - **Top-9 Ranking Rule:** `Net Realized Cashflow DESC -> Max MTM DD % ASC` | **Hard Gate:** `No Liquidation` & `Max DD <= 40%`
 
-## 1. สรุปโมเดลที่ Mine วันนี้ (2026-11-25 — 10 โมเดล)
+## 1. สรุปโมเดลที่ Mine วันนี้ (2026-11-25 — 15 โมเดล)
 
 | Model ID | Signal | Realized Cashflow | AVG Weekly | Max DD (%) | CF / DD | MTM Return | Beta / Corr | Crash -46% DD | Trades (Win%) |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|
@@ -18,6 +18,11 @@
 | `beta_023_rsi_trend_21_50_50` | `rsi_trend_21_50_50` | +2594.29 (+25.94%) | +18.02 | 18.22% | 1.42x | +1.78% | 0.20 / 0.93 | 4.84% | 9,797 (98.2%) |
 | `beta_024_rsi_trend_7_45_55` | `rsi_trend_7_45_55` | +2897.12 (+28.97%) | +20.12 | 22.57% | 1.28x | -1.77% | 0.26 / 0.93 | 5.43% | 12,342 (98.0%) |
 | `beta_025_rsi_trend_28_50_50` | `rsi_trend_28_50_50` | +2441.48 (+24.41%) | +16.95 | 15.79% | 1.55x | +3.26% | 0.19 / 0.94 | 4.28% | 8,764 (98.0%) |
+| `beta_026_ema_21_55` | `ema_21_55` | +2417.63 (+24.18%) | +16.79 | 17.63% | 1.37x | +0.96% | 0.19 / 0.92 | 4.21% | 8,758 (98.2%) |
+| `beta_027_ema_50_100` | `ema_50_100` | +2294.17 (+22.94%) | +15.93 | 17.15% | 1.34x | +0.07% | 0.18 / 0.93 | 3.34% | 7,217 (98.0%) |
+| `beta_028_ema_50_200` | `ema_50_200` | +2064.22 (+20.64%) | +14.33 | 16.90% | 1.22x | -0.32% | 0.15 / 0.91 | 3.54% | 5,989 (98.3%) |
+| `beta_029_supertrend_20_3` | `supertrend_20_3` | +2695.92 (+26.96%) | +18.72 | 24.40% | 1.11x | -5.16% | 0.25 / 0.92 | 6.38% | 11,584 (97.9%) |
+| `beta_030_supertrend_20_4` | `supertrend_20_4` | +2541.56 (+25.42%) | +17.65 | 22.02% | 1.15x | -2.78% | 0.22 / 0.91 | 6.83% | 9,949 (98.0%) |
 
 ## 2. Cumulative Top-9 Ranking Board (Cashflow สูงสุด → DD ต่ำสุด)
 

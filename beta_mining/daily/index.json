@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "generated_at_utc": "2026-11-25T05:51:04Z",
+  "generated_at_utc": "2026-11-25T08:15:58Z",
   "latest_date": "2026-11-25",
   "total_days": 3,
   "dates": [
@@ -11,9 +11,9 @@
   "days": [
     {
       "batch_date": "2026-11-25",
-      "generated_at_utc": "2026-11-25T05:51:04Z",
-      "model_count": 10,
-      "qualified_count": 10,
+      "generated_at_utc": "2026-11-25T08:15:58Z",
+      "model_count": 15,
+      "qualified_count": 15,
       "model_ids": [
         "beta_016_rsi_reversion_14_30_70",
         "beta_017_rsi_reversion_14_35_65",
@@ -24,7 +24,12 @@
         "beta_022_rsi_trend_14_45_55",
         "beta_023_rsi_trend_21_50_50",
         "beta_024_rsi_trend_7_45_55",
-        "beta_025_rsi_trend_28_50_50"
+        "beta_025_rsi_trend_28_50_50",
+        "beta_026_ema_21_55",
+        "beta_027_ema_50_100",
+        "beta_028_ema_50_200",
+        "beta_029_supertrend_20_3",
+        "beta_030_supertrend_20_4"
       ],
       "best_cashflow_model_id": "beta_018_rsi_reversion_7_30_70",
       "best_cashflow_usd": 3137.62,
