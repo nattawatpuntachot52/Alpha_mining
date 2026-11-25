@@ -117,8 +117,8 @@ h1{margin:0;font-size:19px}.sub{color:var(--mut);font-size:12px;margin-top:3px}
 button,a.nav{cursor:pointer;border:1px solid var(--bd);border-radius:8px;padding:7px 12px;font-size:12px;font-weight:600;background:var(--card);color:var(--fg);text-decoration:none}
 button:hover,a.nav:hover{border-color:var(--pri)}button.active{background:var(--pri);border-color:var(--pri);color:#fff}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
-.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px 14px}
-.kl{color:var(--mut);font-size:12px}.kv{font-size:20px;font-weight:700;font-family:ui-monospace,Menlo,monospace;margin-top:2px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px 14px;min-width:0;overflow:hidden}
+.kl{color:var(--mut);font-size:12px}.kv{font-size:20px;font-weight:700;font-family:ui-monospace,Menlo,monospace;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px 14px}
 .gate-bar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px 14px;margin-bottom:14px}
 .gate-grp{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
