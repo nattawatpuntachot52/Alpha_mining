@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_021_xauusd_1h_momentum_roc_14_ls",
+  "trial_number": 21,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"momentum_roc\",\"params\":{\"lookback\":14},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"1h\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "1h",
+  "family": "momentum_roc",
+  "params": {
+    "lookback": 14
+  },
+  "direction": "long_short",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day02_r1_momentum_mtf",
+  "hypothesis": "Test whether adding short leg to Alpha005 H1 14-bar momentum improves Sharpe or suffers drag.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-25",
+  "updated_at_utc": "2026-11-25T00:15:16Z",
+  "spec_sha256": "sha256:6c96f158f161ef9f58dc2183e9da137dde92e2410239152aba7ba2d73659d2f7"
+}

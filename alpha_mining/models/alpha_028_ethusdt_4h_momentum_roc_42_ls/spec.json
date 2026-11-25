@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_028_ethusdt_4h_momentum_roc_42_ls",
+  "trial_number": 28,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"momentum_roc\",\"params\":{\"lookback\":42},\"sl_pct\":0.0,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"4h\",\"tp_pct\":0.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "4h",
+  "family": "momentum_roc",
+  "params": {
+    "lookback": 42
+  },
+  "direction": "long_short",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day02_r1_momentum_mtf",
+  "hypothesis": "7-day H4 two-way momentum tracks weekly crypto trend regimes.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-25",
+  "updated_at_utc": "2026-11-25T00:15:18Z",
+  "spec_sha256": "sha256:05e830e16e335f50257e9fe0238c47980fbb80f496661c9773baef5aadd24979"
+}
