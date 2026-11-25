@@ -30,6 +30,11 @@ CONTRACT_CRITICAL_PREFIXES = (
     ".github/workflows/",
 )
 
+ISOLATED_FACTORY_DATA_PREFIXES = (
+    "alpha_mining/",
+    "beta_mining/",
+)
+
 _FAIL_CONCLUSIONS = frozenset(
     {
         "FAILURE",
@@ -53,6 +58,16 @@ def _is_contract_file(path: str) -> bool:
     if path.endswith(".schema.json") or "schema" in Path(path).name.lower():
         return True
     return any(path == prefix or path.startswith(prefix) for prefix in CONTRACT_CRITICAL_PREFIXES)
+
+
+def _isolated_factory_domain(files: tuple[str, ...]) -> str | None:
+    """Return the factory prefix if all PR files stay strictly inside one non-contract data factory directory."""
+    if not files:
+        return None
+    for prefix in ISOLATED_FACTORY_DATA_PREFIXES:
+        if all(f.startswith(prefix) and not _is_contract_file(f) for f in files):
+            return prefix
+    return None
 
 
 def _normalize_stem(segment: str) -> str:
@@ -538,22 +553,48 @@ def audit_pull_requests(
                         )
                     )
                 elif not overlap and not sibling_pairs:
-                    findings_map[a.number].append(
-                        AuditFinding(
-                            "PARALLEL_SAME_BASE",
-                            "warning",
-                            f"Parallel branch off same base SHA ({a.base_ref_oid[:7]}) as PR #{b.number}; reconcile order before batch-merging",
-                            related_prs=(b.number,),
+                    domain_a = _isolated_factory_domain(a.files)
+                    domain_b = _isolated_factory_domain(b.files)
+                    if domain_a is not None and domain_b is not None and domain_a != domain_b:
+                        findings_map[a.number].append(
+                            AuditFinding(
+                                "PARALLEL_DISJOINT_FACTORY_DATA",
+                                "info",
+                                (
+                                    f"Parallel branch off same base SHA ({a.base_ref_oid[:7]}) as PR #{b.number}; "
+                                    f"strictly isolated disjoint data domains ({domain_a} vs {domain_b})"
+                                ),
+                                related_prs=(b.number,),
+                            )
                         )
-                    )
-                    findings_map[b.number].append(
-                        AuditFinding(
-                            "PARALLEL_SAME_BASE",
-                            "warning",
-                            f"Parallel branch off same base SHA ({b.base_ref_oid[:7]}) as PR #{a.number}; reconcile order before batch-merging",
-                            related_prs=(a.number,),
+                        findings_map[b.number].append(
+                            AuditFinding(
+                                "PARALLEL_DISJOINT_FACTORY_DATA",
+                                "info",
+                                (
+                                    f"Parallel branch off same base SHA ({b.base_ref_oid[:7]}) as PR #{a.number}; "
+                                    f"strictly isolated disjoint data domains ({domain_b} vs {domain_a})"
+                                ),
+                                related_prs=(a.number,),
+                            )
                         )
-                    )
+                    else:
+                        findings_map[a.number].append(
+                            AuditFinding(
+                                "PARALLEL_SAME_BASE",
+                                "warning",
+                                f"Parallel branch off same base SHA ({a.base_ref_oid[:7]}) as PR #{b.number}; reconcile order before batch-merging",
+                                related_prs=(b.number,),
+                            )
+                        )
+                        findings_map[b.number].append(
+                            AuditFinding(
+                                "PARALLEL_SAME_BASE",
+                                "warning",
+                                f"Parallel branch off same base SHA ({b.base_ref_oid[:7]}) as PR #{a.number}; reconcile order before batch-merging",
+                                related_prs=(a.number,),
+                            )
+                        )
 
     # 3. Assign initial verdicts and transitively propagate blocks across multi-hop stacked PRs
     verdict_by_num: dict[int, str] = {}
