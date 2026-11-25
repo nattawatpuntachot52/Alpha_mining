@@ -12,6 +12,10 @@ PYTHON_SRC = REPO_ROOT / "python"
 if str(PYTHON_SRC) not in sys.path:
     sys.path.insert(0, str(PYTHON_SRC))
 
+from alpha_mining.research.model_library import (  # noqa: E402
+    collect_model_library_payload,
+    render_model_library_html,
+)
 from alpha_mining.research.portal_hub import (  # noqa: E402
     collect_unified_portal_payload,
     render_unified_portal_html,
@@ -20,13 +24,14 @@ from alpha_mining.research.portal_hub import (  # noqa: E402
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Build unified Alpha + Beta central portal index.html for GitHub Pages."
+        description="Build unified Alpha + Beta central portal index.html (and optional Model Library) for GitHub Pages."
     )
     parser.add_argument("--alpha-dir", type=Path, default=REPO_ROOT / "alpha_mining")
     parser.add_argument("--beta-dir", type=Path, default=REPO_ROOT / "beta_mining")
     parser.add_argument("--alpha-prefix", default="alpha")
     parser.add_argument("--beta-prefix", default="beta")
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--library-out", type=Path, default=None)
     args = parser.parse_args(argv)
 
     payload = collect_unified_portal_payload(
@@ -43,6 +48,22 @@ def main(argv: list[str] | None = None) -> int:
         f"(Alpha: {payload['alpha']['total_models']} models / {payload['alpha']['total_days']}d, "
         f"Beta: {payload['beta']['total_models']} models / {payload['beta']['total_days']}d)"
     )
+
+    if args.library_out is not None:
+        lib_payload = collect_model_library_payload(
+            alpha_dir=args.alpha_dir,
+            beta_dir=args.beta_dir,
+            alpha_prefix=args.alpha_prefix,
+            beta_prefix=args.beta_prefix,
+        )
+        lib_html = render_model_library_html(lib_payload)
+        args.library_out.parent.mkdir(parents=True, exist_ok=True)
+        args.library_out.write_text(lib_html, encoding="utf-8", newline="\n")
+        print(
+            f"Built model library {args.library_out} "
+            f"(Total: {lib_payload['total_models']} models; "
+            f"Alpha: {lib_payload['alpha_count']}, Beta: {lib_payload['beta_count']})"
+        )
     return 0
 
 

@@ -17,6 +17,7 @@ import re
 from typing import Any, Sequence
 
 from .portal_hub import humanize_alpha_model
+from .stability import stability_from_alpha_series
 
 _SAFE_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 DEFAULT_CENTRAL_HUB_HREF = "../../../index.html"
@@ -153,6 +154,7 @@ th{cursor:pointer;color:var(--mut);position:sticky;top:0;background:var(--card)}
   <nav class="portal-bar" aria-label="Unified Research Portal Navigation">
     <div class="portal-pills" id="top-cats">
       <a class="pp" href="../../../index.html">หน้าหลัก</a>
+      <a class="pp" href="../../../library.html">ห้องสมุดโมเดล</a>
       <a class="pp" data-sym="XAUUSD" href="#sym=XAUUSD">ALPHA · ทองคำ (XAUUSD)</a>
       <a class="pp" data-sym="ETHUSDT" href="#sym=ETHUSDT">ALPHA · ETH</a>
       <a class="pp" data-sym="ALL" href="#sym=ALL">ALPHA · ทั้งหมด</a>
@@ -180,6 +182,7 @@ th{cursor:pointer;color:var(--mut);position:sticky;top:0;background:var(--card)}
         <label class="gate-lbl"><span class="mut">จัดเรียง:</span>
           <select id="g-mode">
             <option value="oos_sharpe" selected>OOS Sharpe → Max DD (ค่าเริ่มต้น)</option>
+            <option value="stable_sharpe">ความนิ่ง (OOS Sharpe × R²)</option>
             <option value="oos_return">กำไร OOS % สูงสุด</option>
             <option value="total_return">กำไรรวม % สูงสุด</option>
             <option value="calmar">CAGR / Max DD สูงสุด</option>
@@ -188,6 +191,14 @@ th{cursor:pointer;color:var(--mut);position:sticky;top:0;background:var(--card)}
         <label class="gate-lbl"><span class="mut">Max DD ≤</span>
           <input id="g-dd" type="range" min="10" max="100" step="1" value="50" />
           <b id="g-dd-val" style="font-family:ui-monospace,Menlo,monospace;min-width:40px">50%</b>
+        </label>
+        <label class="gate-lbl"><span class="mut">ความแกว่ง Vol ≤</span>
+          <input id="g-vol" type="range" min="5" max="100" step="1" value="60" />
+          <b id="g-vol-val" style="font-family:ui-monospace,Menlo,monospace;min-width:40px">60%</b>
+        </label>
+        <label class="gate-lbl"><span class="mut">ความนิ่ง R² ≥</span>
+          <input id="g-r2" type="range" min="0" max="0.95" step="0.05" value="0.25" />
+          <b id="g-r2-val" style="font-family:ui-monospace,Menlo,monospace;min-width:38px">0.25</b>
         </label>
         <label class="gate-lbl"><span class="mut">เทรด ≥</span>
           <input id="g-trades" type="number" min="0" max="500" step="5" value="30" />
@@ -227,6 +238,8 @@ const P = __PAYLOAD__;
 const COLORS=["#3b82f6","#f59e0b","#22c55e","#ef4444","#a855f7","#14b8a6","#f472b6","#eab308","#60a5fa","#fb923c","#4ade80","#f87171","#c084fc","#2dd4bf","#f9a8d4","#facc15","#93c5fd","#fdba74","#86efac","#fca5a5"];
 const DEFAULT_GATES={
   dd:Number((P.ranking&&P.ranking.ranking_rule&&P.ranking.ranking_rule.hard_gates&&P.ranking.ranking_rule.hard_gates.max_drawdown_pct_limit)||50),
+  maxVol:60,
+  minR2:0.25,
   trades:Number((P.ranking&&P.ranking.ranking_rule&&P.ranking.ranking_rule.hard_gates&&P.ranking.ranking_rule.hard_gates.min_trades)||30),
   minSharpe:0,
   requireOosPos:true,
@@ -253,14 +266,18 @@ function evalAlphaRanking(){
   pool.forEach(m=>{
     const reasons=[];
     const dd=Number(m.max_drawdown_pct||0),tr=Number(m.trades||0),osh=Number(m.oos_sharpe_ann||0),oret=Number(m.oos_return_pct||0);
+    const vol=Number(m.ann_vol_pct||0),r2=Number(m.equity_r2||0);
     if(tr<g.trades)reasons.push(`TRADES<${g.trades}`);
     if(g.requireOosPos&&oret<=0)reasons.push("OOS_RET<=0%");
     if(g.minSharpe===0?(osh<=0):(osh<g.minSharpe))reasons.push(`OOS_SHARPE<${g.minSharpe}`);
     if(dd>g.dd)reasons.push(`MAX_DD>${g.dd}%`);
+    if(g.maxVol<100&&vol>g.maxVol)reasons.push(`VOL>${g.maxVol}%`);
+    if(g.minR2>0&&r2<g.minR2)reasons.push(`R2<${g.minR2.toFixed(2)}`);
     if(reasons.length)disq.push(Object.assign({},m,{disqualify_reasons:reasons}));
     else qual.push(Object.assign({},m));
   });
   const score=(m)=>{
+    if(g.mode==="stable_sharpe")return Number(m.oos_sharpe_ann||0)*Math.max(0.05,Number(m.equity_r2||0));
     if(g.mode==="oos_return")return Number(m.oos_return_pct||0);
     if(g.mode==="total_return")return Number(m.total_return_pct||0);
     if(g.mode==="calmar"){const dd=Math.max(0.5,Number(m.max_drawdown_pct||0));return Number(m.cagr_pct||0)/dd}
@@ -418,7 +435,7 @@ function drawRankPanels(){
   if(offBtn)offBtn.onclick=()=>{allTop.forEach(m=>S.rankOff.add(m.model_id));drawRankPanels()};
   drawPanelsInto("rcv-",active,m=>m._rkTag,m=>m._rkColor,S.gates.dd);
 }
-const COLS=[["label","โมเดล","l"],["symbol","สินทรัพย์"],["timeframe","TF"],["direction","ฝั่ง"],["oos_return_pct","กำไร OOS"],["oos_sharpe_ann","OOS Sharpe"],["total_return_pct","กำไรรวม"],["max_drawdown_pct","Max DD"],["trades","จำนวนเทรด"],["win_rate_pct","Win%"],["profit_factor","PF"],["rank","อันดับ"]];
+const COLS=[["label","โมเดล","l"],["symbol","สินทรัพย์"],["timeframe","TF"],["direction","ฝั่ง"],["oos_return_pct","กำไร OOS"],["oos_sharpe_ann","OOS Sharpe"],["total_return_pct","กำไรรวม"],["max_drawdown_pct","Max DD"],["ann_vol_pct","Vol/ปี"],["equity_r2","R² นิ่ง"],["trades","จำนวนเทรด"],["win_rate_pct","Win%"],["profit_factor","PF"],["rank","อันดับ"]];
 let RK={};const DSR={};[...(P.ranking.top_ranked||[]),...(P.ranking.disqualified||[])].forEach(r=>DSR[r.model_id]=r.dsr_approx);
 function cell(m,k){
   const v=m[k];
@@ -427,7 +444,8 @@ function cell(m,k){
   if(k==="rank")return `<td>${RK[m.model_id]?"#"+RK[m.model_id]:"–"}</td>`;
   if(k==="dsr_approx")return `<td>${num(DSR[m.model_id],2)}</td>`;
   if(["total_return_pct","cagr_pct","oos_return_pct","buy_hold_return_pct"].includes(k))return `<td>${sgn(v)}</td>`;
-  if(["max_drawdown_pct","win_rate_pct","exposure_pct"].includes(k))return `<td>${num(v,1)}%</td>`;
+  if(["max_drawdown_pct","win_rate_pct","exposure_pct","ann_vol_pct","ulcer_index_pct"].includes(k))return `<td>${num(v,1)}%</td>`;
+  if(k==="equity_r2")return `<td>${num(v,2)}</td>`;
   if(typeof v==="number")return `<td>${num(v,k==="trades"?0:2)}</td>`;
   return `<td>${esc(v)}</td>`;
 }
@@ -437,11 +455,15 @@ function table(el,rows,key){
   el.innerHTML=`<table><thead><tr>${COLS.map(c=>`<th class="${c[2]||""}" data-k="${c[0]}">${c[1]}${sk===c[0]?(sd>0?" ▲":" ▼"):""}</th>`).join("")}</tr></thead><tbody>${sorted.map(m=>`<tr>${COLS.map(c=>cell(m,c[0])).join("")}</tr>`).join("")}</tbody></table>`;
   el.querySelectorAll("th").forEach(th=>th.onclick=()=>{const k=th.dataset.k;S.sort[key]=[k,S.sort[key][0]===k?-S.sort[key][1]:-1];render()});
 }
-function rankTable(rows){return `<table><thead><tr><th>อันดับ</th><th class="l">โมเดล</th><th>สินทรัพย์</th><th>TF</th><th>OOS Sharpe</th><th>กำไร OOS</th><th>Max DD</th><th>เทรด</th><th>วันที่ทดสอบ</th></tr></thead><tbody>${rows.map(r=>`<tr><td>#${r.rank}</td><td class="l" title="${esc(r.model_id+" — "+(r.hypothesis||""))}"><b>${esc(r.label||r.model_id)}</b></td><td>${symBadge(r.symbol)}</td><td>${esc(r.timeframe)}</td><td>${num(r.oos_sharpe_ann)}</td><td>${sgn(r.oos_return_pct)}</td><td>${num(r.max_drawdown_pct,1)}%</td><td>${r.trades}</td><td>${esc(r.batch_date)}</td></tr>`).join("")||'<tr><td colspan="9" class="mut">ยังไม่มีโมเดลในหมวดนี้ที่ผ่านเกณฑ์ทั้งหมด</td></tr>'}</tbody></table>`}
+function rankTable(rows){return `<table><thead><tr><th>อันดับ</th><th class="l">โมเดล</th><th>สินทรัพย์</th><th>TF</th><th>OOS Sharpe</th><th>กำไร OOS</th><th>Max DD</th><th>Vol/ปี</th><th>R² นิ่ง</th><th>เทรด</th><th>วันที่ทดสอบ</th></tr></thead><tbody>${rows.map(r=>`<tr><td>#${r.rank}</td><td class="l" title="${esc(r.model_id+" — "+(r.hypothesis||""))}"><b>${esc(r.label||r.model_id)}</b></td><td>${symBadge(r.symbol)}</td><td>${esc(r.timeframe)}</td><td>${num(r.oos_sharpe_ann)}</td><td>${sgn(r.oos_return_pct)}</td><td>${num(r.max_drawdown_pct,1)}%</td><td>${num(r.ann_vol_pct,1)}%</td><td>${num(r.equity_r2,2)}</td><td>${r.trades}</td><td>${esc(r.batch_date)}</td></tr>`).join("")||'<tr><td colspan="11" class="mut">ยังไม่มีโมเดลในหมวดนี้ที่ผ่านเกณฑ์ทั้งหมด</td></tr>'}</tbody></table>`}
 function syncGateUi(){
   const g=S.gates;
   if($("g-dd"))$("g-dd").value=String(g.dd);
   if($("g-dd-val"))$("g-dd-val").textContent=g.dd+"%";
+  if($("g-vol"))$("g-vol").value=String(g.maxVol);
+  if($("g-vol-val"))$("g-vol-val").textContent=g.maxVol>=100?"ไม่จำกัด":(g.maxVol+"%");
+  if($("g-r2"))$("g-r2").value=String(g.minR2);
+  if($("g-r2-val"))$("g-r2-val").textContent=Number(g.minR2).toFixed(2);
   if($("g-trades"))$("g-trades").value=String(g.trades);
   if($("g-sharpe"))$("g-sharpe").value=String(g.minSharpe);
   if($("g-oos-pos"))$("g-oos-pos").checked=Boolean(g.requireOosPos);
@@ -455,14 +477,15 @@ function renderRanking(){
   const qualSym=S.sym==="ALL"?rr.qualified_count:((rr.qualified_by_symbol||{})[S.sym]||0);
   const totSym=((P.models&&P.models.length)?P.models:P.batch_models).filter(m=>S.sym==="ALL"||m.symbol===S.sym).length;
   if($("g-summary"))$("g-summary").textContent=`ผ่านเกณฑ์ ${qualSym}/${totSym} โมเดล`;
-  const gateDesc=`เกณฑ์ปัจจุบัน: ${g.requireOosPos?"OOS > 0%, ":""}OOS Sharpe ${g.minSharpe===0?"> 0":"≥ "+g.minSharpe}, เทรด ≥ ${g.trades} ครั้ง, Max DD ≤ ${g.dd}%`;
+  const volTxt=g.maxVol>=100?"ไม่จำกัด":`≤ ${g.maxVol}%`;
+  const gateDesc=`เกณฑ์ปัจจุบัน: ${g.requireOosPos?"OOS > 0%, ":""}OOS Sharpe ${g.minSharpe===0?"> 0":"≥ "+g.minSharpe}, เทรด ≥ ${g.trades}, Max DD ≤ ${g.dd}%, Vol ${volTxt}, R² ≥ ${Number(g.minR2).toFixed(2)}`;
   let h="";
   if(S.sym==="ALL"){
     h+=`<div class="card"><div class="pt" style="margin-bottom:6px">อันดับ Top-${g.topN} สะสมรวม</div><div class="note" style="margin-bottom:8px">${esc(gateDesc)}</div><div class="tw">${rankTable(rr.top_ranked||[])}</div></div>`;
   }
   Object.entries(rr.top_ranked_by_symbol||{}).filter(([s])=>S.sym==="ALL"||S.sym===s).forEach(([s,rows])=>{h+=`<div class="card" style="margin-top:14px"><div class="pt" style="margin-bottom:8px">${symBadge(s)} อันดับ Top-${g.topN} เฉพาะสินทรัพย์นี้</div><div class="note" style="margin-bottom:8px">${esc(gateDesc)}</div><div class="tw">${rankTable(rows)}</div></div>`});
   const dq=(rr.disqualified||[]).filter(d=>S.sym==="ALL"||d.symbol===S.sym);
-  h+=`<div class="card" style="margin-top:14px"><div class="pt" style="margin-bottom:8px">โมเดลที่ยังไม่ผ่านเกณฑ์ (${dq.length})</div><div class="tw"><table><thead><tr><th class="l">โมเดล</th><th>สินทรัพย์</th><th>TF</th><th>OOS Sharpe</th><th>กำไร OOS</th><th>Max DD</th><th class="l">สาเหตุ</th></tr></thead><tbody>${dq.map(d=>`<tr><td class="l" title="${esc(d.model_id)}">${esc(d.label||d.model_id)}</td><td>${symBadge(d.symbol)}</td><td>${esc(d.timeframe)}</td><td>${num(d.oos_sharpe_ann)}</td><td>${sgn(d.oos_return_pct)}</td><td>${num(d.max_drawdown_pct,1)}%</td><td class="l mut">${esc((d.disqualify_reasons||[]).join(", "))}</td></tr>`).join("")}</tbody></table></div></div>`;
+  h+=`<div class="card" style="margin-top:14px"><div class="pt" style="margin-bottom:8px">โมเดลที่ยังไม่ผ่านเกณฑ์ (${dq.length})</div><div class="tw"><table><thead><tr><th class="l">โมเดล</th><th>สินทรัพย์</th><th>TF</th><th>OOS Sharpe</th><th>กำไร OOS</th><th>Max DD</th><th>Vol/ปี</th><th>R²</th><th class="l">สาเหตุ</th></tr></thead><tbody>${dq.map(d=>`<tr><td class="l" title="${esc(d.model_id)}">${esc(d.label||d.model_id)}</td><td>${symBadge(d.symbol)}</td><td>${esc(d.timeframe)}</td><td>${num(d.oos_sharpe_ann)}</td><td>${sgn(d.oos_return_pct)}</td><td>${num(d.max_drawdown_pct,1)}%</td><td>${num(d.ann_vol_pct,1)}%</td><td>${num(d.equity_r2,2)}</td><td class="l mut">${esc((d.disqualify_reasons||[]).join(", "))}</td></tr>`).join("")}</tbody></table></div></div>`;
   $("rank-tables").innerHTML=h;
 }
 function renderKpis(){
@@ -531,15 +554,19 @@ $("sub").textContent="คลิกชื่อโมเดลด้านล่�
 $("foot").textContent="ข้อมูลวิจัยเชิงทดลองแบบ Causal (ตัดสินใจเมื่อปิดแท่ง → เข้าที่ราคาเปิดแท่งถัดไป หักค่าธรรมเนียมต่อขาแล้ว)";
 function onGateChange(){
   S.gates.dd=Math.max(1,Math.min(100,Number($("g-dd").value||50)));
+  S.gates.maxVol=Math.max(5,Math.min(100,Number($("g-vol").value||60)));
+  S.gates.minR2=Math.max(0,Math.min(0.95,Number($("g-r2").value||0)));
   S.gates.trades=Math.max(0,Number($("g-trades").value||0));
   S.gates.minSharpe=Number($("g-sharpe").value||0);
   S.gates.requireOosPos=Boolean($("g-oos-pos").checked);
   S.gates.mode=$("g-mode").value||"oos_sharpe";
   S.gates.topN=Math.max(1,Math.min(20,Number($("g-topn").value||9)));
   $("g-dd-val").textContent=S.gates.dd+"%";
+  $("g-vol-val").textContent=S.gates.maxVol>=100?"ไม่จำกัด":(S.gates.maxVol+"%");
+  $("g-r2-val").textContent=Number(S.gates.minR2).toFixed(2);
   render();
 }
-["g-dd","g-trades","g-sharpe","g-oos-pos","g-mode","g-topn"].forEach(id=>{
+["g-dd","g-vol","g-r2","g-trades","g-sharpe","g-oos-pos","g-mode","g-topn"].forEach(id=>{
   const el=$(id);
   if(el){el.addEventListener("input",onGateChange);el.addEventListener("change",onGateChange)}
 });
@@ -600,6 +627,19 @@ def render_dashboard_html(
         )
         extra_ids.extend(str(m["model_id"]) for m in ranked_sym[:30] if m.get("model_id"))
     series_ids = list(dict.fromkeys([*batch_ids, *top_ids, *extra_ids]))
+    stab_by_id = {mid: stability_from_alpha_series(ser) for mid, ser in batch_series.items()}
+
+    def _with_stab(m: dict[str, Any]) -> dict[str, Any]:
+        rec = _slim(m, keep_hyp=True)
+        mid = str(rec.get("model_id", ""))
+        if mid in stab_by_id:
+            rec.update(stab_by_id[mid])
+        else:
+            rec.setdefault("ann_vol_pct", 0.0)
+            rec.setdefault("ulcer_index_pct", 0.0)
+            rec.setdefault("equity_r2", 0.0)
+        return rec
+
     payload = {
         "batch_date": batch_date,
         "generated_at_utc": ranking_board.get("generated_at_utc", ""),
@@ -609,8 +649,8 @@ def render_dashboard_html(
         "default_tab": default_tab if default_tab in {"daily", "ranking", "all"} else "daily",
         "rounds": rounds,
         "beta_hub_href": beta_hub_href,
-        "batch_models": [_slim(m, keep_hyp=True) for m in batch_metrics],
-        "models": [_slim(m, keep_hyp=True) for m in all_models_metrics],
+        "batch_models": [_with_stab(m) for m in batch_metrics],
+        "models": [_with_stab(m) for m in all_models_metrics],
         "series": {mid: batch_series[mid] for mid in series_ids if mid in batch_series},
         "ranking": ranking_slim,
         "available_dates": dates,
@@ -625,6 +665,7 @@ _SLIM_KEYS = (
     "oos_return_pct", "oos_max_drawdown_pct", "trades", "win_rate_pct", "profit_factor", "exposure_pct",
     "buy_hold_return_pct", "beta_to_underlying", "corr_to_underlying", "dsr_approx", "oos_fraction",
     "disqualify_reasons", "rank", "days_covered", "data_is_proxy",
+    "ann_vol_pct", "ulcer_index_pct", "equity_r2",
 )
 
 

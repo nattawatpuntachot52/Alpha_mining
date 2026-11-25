@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "generated_at_utc": "2026-11-25T05:10:18Z",
+  "generated_at_utc": "2026-11-25T05:29:40Z",
   "latest_date": "2026-11-25",
   "total_days": 3,
   "dates": [
@@ -11,7 +11,7 @@
   "days": [
     {
       "batch_date": "2026-11-25",
-      "generated_at_utc": "2026-11-25T05:10:18Z",
+      "generated_at_utc": "2026-11-25T05:29:40Z",
       "model_count": 10,
       "qualified_count": 10,
       "model_ids": [
@@ -40,7 +40,7 @@
     },
     {
       "batch_date": "2026-11-24",
-      "generated_at_utc": "2026-11-25T05:10:17Z",
+      "generated_at_utc": "2026-11-25T05:29:40Z",
       "model_count": 10,
       "qualified_count": 10,
       "model_ids": [
@@ -69,7 +69,7 @@
     },
     {
       "batch_date": "2026-11-23",
-      "generated_at_utc": "2026-11-25T05:10:17Z",
+      "generated_at_utc": "2026-11-25T05:29:40Z",
       "model_count": 5,
       "qualified_count": 5,
       "model_ids": [

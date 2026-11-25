@@ -30,6 +30,7 @@ import re
 from typing import Any, Sequence
 
 from .beta_store import compute_return_correlation_matrix
+from .stability import enrich_models_with_stability
 
 _SAFE_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
@@ -248,6 +249,9 @@ def render_dashboard_html(
         current_batch_metrics=batch_metrics,
     )
 
+    enriched_batch = enrich_models_with_stability(batch_metrics, batch_series or {}, kind="beta")
+    enriched_all = enrich_models_with_stability(all_models_metrics, batch_series or {}, kind="beta")
+
     embedded_data = {
         "batch_date": batch_date,
         "generated_at_utc": ranking_board.get("generated_at_utc", ""),
@@ -257,9 +261,9 @@ def render_dashboard_html(
         "default_tab": active_tab,
         "batch_ids": batch_ids,
         "top_ranked_ids": top_ids,
-        "batch_models": list(batch_metrics),
+        "batch_models": enriched_batch,
         "available_dates": normalized_dates,
-        "models": list(all_models_metrics),
+        "models": enriched_all,
         "series": _compact_series_for_html(series_ids, batch_series),
         "corr_matrix": resolved_corr,
         "top_corr_matrix": top_corr_matrix,
@@ -477,6 +481,7 @@ def render_dashboard_html(
     <nav class="portal-bar" aria-label="Unified Research Portal Navigation">
       <div class="portal-pills">
         <a class="pp" href="../../../index.html">หน้าหลัก</a>
+        <a class="pp" href="../../../library.html">ห้องสมุดโมเดล</a>
         <a class="pp a-go" href="../../../alpha/index.html#sym=XAUUSD">ALPHA · ทองคำ (XAUUSD)</a>
         <a class="pp a-go" href="../../../alpha/index.html#sym=ETHUSDT">ALPHA · ETH</a>
         <a class="pp b-on" href="#">BETA · ETH Grid</a>
@@ -552,6 +557,7 @@ def render_dashboard_html(
             <span class="muted">Ranking:</span>
             <select id="t9-rank-mode">
               <option value="cashflow_dd" selected>Cashflow → Max DD</option>
+              <option value="stable_cf">Stable Cashflow (CF / Vol)</option>
               <option value="efficiency">CF / Max DD</option>
               <option value="mtm">MTM Return</option>
             </select>
@@ -560,6 +566,16 @@ def render_dashboard_html(
             <span class="muted">Max DD ≤</span>
             <input id="t9-dd-slider" type="range" min="5" max="80" step="1" value="{int(round(default_dd_cap))}" />
             <strong id="t9-dd-label" class="mono">≤ {int(round(default_dd_cap))}%</strong>
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;">
+            <span class="muted">ความแกว่ง Vol ≤</span>
+            <input id="t9-vol-slider" type="range" min="5" max="60" step="1" value="22" />
+            <strong id="t9-vol-label" class="mono">≤ 22%</strong>
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;">
+            <span class="muted">ความนิ่ง R² ≥</span>
+            <input id="t9-r2-slider" type="range" min="0" max="0.90" step="0.05" value="0.05" />
+            <strong id="t9-r2-label" class="mono">0.05</strong>
           </label>
           <label style="display:flex;align-items:center;gap:5px;">
             <span class="muted">Min CF ($)</span>
@@ -709,6 +725,7 @@ def render_dashboard_html(
             <span class="muted">Ranking Mode:</span>
             <select id="rank-mode">
               <option value="cashflow_dd" selected>Cashflow สูงสุด → Max DD ต่ำสุด (Default)</option>
+              <option value="stable_cf">Stable Cashflow (CF / Vol ความแกว่งต่ำ)</option>
               <option value="efficiency">Cashflow / Max DD Efficiency</option>
               <option value="mtm">Total MTM Return</option>
             </select>
@@ -730,10 +747,16 @@ def render_dashboard_html(
             <span>เฉพาะ Batch วันนี้ ({safe_date})</span>
           </label>
         </div>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <span class="muted">Max DD Gate:</span>
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;">
+          <span class="muted">Max DD:</span>
           <input id="dd-slider" type="range" min="5" max="80" step="1" value="{int(round(default_dd_cap))}" />
           <strong id="dd-label" class="mono">≤ {int(round(default_dd_cap))}%</strong>
+          <span class="muted">ความแกว่ง Vol:</span>
+          <input id="vol-slider" type="range" min="5" max="60" step="1" value="22" />
+          <strong id="vol-label" class="mono">≤ 22%</strong>
+          <span class="muted">ความนิ่ง R²:</span>
+          <input id="r2-slider" type="range" min="0" max="0.90" step="0.05" value="0.05" />
+          <strong id="r2-label" class="mono">≥ 0.05</strong>
           <button id="btn-gate-reset" type="button" class="pill-mini">Reset Gate</button>
         </div>
       </div>
@@ -756,6 +779,8 @@ def render_dashboard_html(
                   <th class="num">Cashflow ($)</th>
                   <th class="num">AVG Wk ($)</th>
                   <th class="num">Max DD</th>
+                  <th class="num">Vol/ปี</th>
+                  <th class="num">R² นิ่ง</th>
                   <th class="num">CF/DD</th>
                   <th class="num">MTM</th>
                   <th class="num">Crash DD</th>
@@ -854,6 +879,8 @@ def render_dashboard_html(
     const DEFAULT_BETA_GATES = {{
       mode: "cashflow_dd",
       ddCap: Number(PAYLOAD.default_dd_cap || 40),
+      maxVol: 22,
+      minR2: 0.05,
       minCf: 0,
       noLiq: true,
       onlyToday: false,
@@ -861,19 +888,29 @@ def render_dashboard_html(
     }};
     const BETA_GATES = Object.assign({{}}, DEFAULT_BETA_GATES);
 
+    function betaPassesGate(m) {{
+      const liqOk = !BETA_GATES.noLiq || !m.would_liquidate;
+      const ddOk = Number(m.max_drawdown_pct || 0) <= BETA_GATES.ddCap;
+      const cfOk = Number(m.cashflow_net_usd || 0) >= BETA_GATES.minCf;
+      const volOk = BETA_GATES.maxVol >= 60 || Number(m.ann_vol_pct || 0) <= BETA_GATES.maxVol;
+      const r2Ok = BETA_GATES.minR2 <= 0 || Number(m.equity_r2 || 0) >= BETA_GATES.minR2;
+      return liqOk && ddOk && cfOk && volOk && r2Ok;
+    }}
+
     function computeBetaRankedPool() {{
       const pool = (PAYLOAD.models || []).filter(m => !BETA_GATES.onlyToday || BATCH_SET.has(m.model_id));
-      const rows = pool.map(m => {{
-        const liqOk = !BETA_GATES.noLiq || !m.would_liquidate;
-        const ddOk = Number(m.max_drawdown_pct || 0) <= BETA_GATES.ddCap;
-        const cfOk = Number(m.cashflow_net_usd || 0) >= BETA_GATES.minCf;
-        return Object.assign({{}}, m, {{ passGate: liqOk && ddOk && cfOk }});
-      }});
+      const rows = pool.map(m => Object.assign({{}}, m, {{ passGate: betaPassesGate(m) }}));
       rows.sort((a, b) => {{
         if (a.passGate !== b.passGate) return a.passGate ? -1 : 1;
         if (BETA_GATES.mode === "cashflow_dd") {{
           if (Math.abs(b.cashflow_net_usd - a.cashflow_net_usd) > 1e-6) return b.cashflow_net_usd - a.cashflow_net_usd;
           return a.max_drawdown_pct - b.max_drawdown_pct;
+        }}
+        if (BETA_GATES.mode === "stable_cf") {{
+          const sa = Number(a.cashflow_net_usd || 0) / Math.max(1, Number(a.ann_vol_pct || 20));
+          const sb = Number(b.cashflow_net_usd || 0) / Math.max(1, Number(b.ann_vol_pct || 20));
+          if (Math.abs(sb - sa) > 1e-6) return sb - sa;
+          return Number(b.equity_r2 || 0) - Number(a.equity_r2 || 0);
         }}
         if (BETA_GATES.mode === "efficiency") {{
           if (Math.abs(b.cashflow_to_dd_ratio - a.cashflow_to_dd_ratio) > 1e-6) return b.cashflow_to_dd_ratio - a.cashflow_to_dd_ratio;
@@ -2371,7 +2408,7 @@ def render_dashboard_html(
       pool.forEach((m, i) => {{
         const color = MODEL_COLOR.get(m.model_id);
         const isOn = visibleIds.has(m.model_id);
-        const pass = (!BETA_GATES.noLiq || !m.would_liquidate) && Number(m.max_drawdown_pct) <= BETA_GATES.ddCap && Number(m.cashflow_net_usd || 0) >= BETA_GATES.minCf;
+        const pass = betaPassesGate(m);
         const st = win.stats[m.model_id] || {{
           isFull: true,
           cashflow: Number(m.cashflow_net_usd || 0),
@@ -2418,7 +2455,7 @@ def render_dashboard_html(
       perfBody.innerHTML = "";
       pool.forEach(m => {{
         const color = MODEL_COLOR.get(m.model_id);
-        const pass = (!BETA_GATES.noLiq || !m.would_liquidate) && Number(m.max_drawdown_pct) <= BETA_GATES.ddCap && Number(m.cashflow_net_usd || 0) >= BETA_GATES.minCf;
+        const pass = betaPassesGate(m);
         const st = win.stats[m.model_id] || {{
           isFull: true,
           cashflow: Number(m.cashflow_net_usd || 0),
@@ -2492,6 +2529,11 @@ def render_dashboard_html(
       setVal("rank-mode", g.mode); setVal("t9-rank-mode", g.mode);
       setVal("dd-slider", g.ddCap); setVal("t9-dd-slider", g.ddCap);
       setTxt("dd-label", `≤ ${{g.ddCap}}%`); setTxt("t9-dd-label", `≤ ${{g.ddCap}}%`);
+      setVal("vol-slider", g.maxVol); setVal("t9-vol-slider", g.maxVol);
+      const volStr = g.maxVol >= 60 ? "ไม่จำกัด" : `≤ ${{g.maxVol}}%`;
+      setTxt("vol-label", volStr); setTxt("t9-vol-label", volStr);
+      setVal("r2-slider", g.minR2); setVal("t9-r2-slider", g.minR2);
+      setTxt("r2-label", `≥ ${{Number(g.minR2).toFixed(2)}}`); setTxt("t9-r2-label", Number(g.minR2).toFixed(2));
       setVal("min-cf-input", g.minCf); setVal("t9-min-cf", g.minCf);
       setVal("rank-topn", g.topN); setVal("t9-topn", g.topN);
       setChk("no-liq-only", g.noLiq); setChk("t9-no-liq", g.noLiq);
@@ -2502,12 +2544,16 @@ def render_dashboard_html(
       const read = (rkId, t9Id) => document.getElementById(src === "t9" ? t9Id : rkId);
       const modeEl = read("rank-mode", "t9-rank-mode");
       const ddEl = read("dd-slider", "t9-dd-slider");
+      const volEl = read("vol-slider", "t9-vol-slider");
+      const r2El = read("r2-slider", "t9-r2-slider");
       const cfEl = read("min-cf-input", "t9-min-cf");
       const tnEl = read("rank-topn", "t9-topn");
       const nlEl = read("no-liq-only", "t9-no-liq");
       const tdEl = read("only-today", "t9-only-today");
       if (modeEl) BETA_GATES.mode = modeEl.value || "cashflow_dd";
       if (ddEl) BETA_GATES.ddCap = Math.max(5, Math.min(80, Number(ddEl.value || 40)));
+      if (volEl) BETA_GATES.maxVol = Math.max(5, Math.min(60, Number(volEl.value || 22)));
+      if (r2El) BETA_GATES.minR2 = Math.max(0, Math.min(0.9, Number(r2El.value || 0)));
       if (cfEl) BETA_GATES.minCf = Number(cfEl.value || 0);
       if (tnEl) BETA_GATES.topN = Math.max(1, Math.min(15, Number(tnEl.value || 9)));
       if (nlEl) BETA_GATES.noLiq = Boolean(nlEl.checked);
@@ -2557,7 +2603,7 @@ def render_dashboard_html(
       document.getElementById("kpi-trials").textContent = String(PAYLOAD.total_trials);
       document.getElementById("kpi-today").textContent = `Today Batch: ${{BATCH_SET.size}} models · Stored: ${{(PAYLOAD.models || []).length}}`;
       document.getElementById("kpi-qual").textContent = `${{qual.length}} / ${{rows.length}}`;
-      document.getElementById("kpi-gate").textContent = `${{g.noLiq ? "No Liq · " : ""}}Max DD ≤ ${{ddCap}}%${{g.minCf > 0 ? " · CF ≥ $" + g.minCf : ""}}`;
+      document.getElementById("kpi-gate").textContent = `${{g.noLiq ? "No Liq · " : ""}}DD ≤ ${{ddCap}}% · Vol ${{g.maxVol >= 60 ? "∞" : "≤ " + g.maxVol + "%"}} · R² ≥ ${{Number(g.minR2).toFixed(2)}}`;
       if (qual.length > 0) {{
         document.getElementById("kpi-top1").textContent = qual[0].model_id;
         document.getElementById("kpi-top1-sub").textContent = `CF ${{fmtUsd(qual[0].cashflow_net_usd)}} · DD ${{Number(qual[0].max_drawdown_pct).toFixed(2)}}%`;
@@ -2583,7 +2629,9 @@ def render_dashboard_html(
         const todayTag = BATCH_SET.has(m.model_id) ? ` <span class="badge badge-today">TODAY</span>` : "";
         const failReason = (g.noLiq && m.would_liquidate)
           ? "LIQ"
-          : (Number(m.max_drawdown_pct || 0) > ddCap ? "DD>" + ddCap + "%" : "CF<$" + g.minCf);
+          : (Number(m.max_drawdown_pct || 0) > ddCap ? "DD>" + ddCap + "%"
+            : (g.maxVol < 60 && Number(m.ann_vol_pct || 0) > g.maxVol ? "VOL>" + g.maxVol + "%"
+              : (g.minR2 > 0 && Number(m.equity_r2 || 0) < g.minR2 ? "R2<" + Number(g.minR2).toFixed(2) : "CF<$" + g.minCf)));
         const gateTag = m.passGate
           ? `<span class="badge badge-pass">PASS</span>`
           : `<span class="badge badge-fail">${{failReason}}</span>`;
@@ -2596,6 +2644,8 @@ def render_dashboard_html(
           <td class="num pos" style="font-weight:700;">${{fmtUsd(m.cashflow_net_usd)}}</td>
           <td class="num pos">${{fmtUsd(m.avg_weekly_cf_usd || 0)}}</td>
           <td class="num warn" style="font-weight:700;">${{Number(m.max_drawdown_pct).toFixed(2)}}%</td>
+          <td class="num">${{Number(m.ann_vol_pct || 0).toFixed(1)}}%</td>
+          <td class="num">${{Number(m.equity_r2 || 0).toFixed(2)}}</td>
           <td class="num">${{Number(m.cashflow_to_dd_ratio).toFixed(2)}}x</td>
           <td class="num ${{m.mtm_return_pct >= 0 ? 'pos' : 'neg'}}">${{fmtPct(m.mtm_return_pct)}}</td>
           <td class="num">${{crashDd}}</td>
@@ -2707,14 +2757,14 @@ def render_dashboard_html(
       drawAllDailyCharts();
     }});
 
-    ["rank-mode", "dd-slider", "min-cf-input", "rank-topn", "no-liq-only", "only-today"].forEach(id => {{
+    ["rank-mode", "dd-slider", "vol-slider", "r2-slider", "min-cf-input", "rank-topn", "no-liq-only", "only-today"].forEach(id => {{
       const el = document.getElementById(id);
       if (el) {{
         el.addEventListener("input", () => applyBetaGatesFromSource("rank"));
         el.addEventListener("change", () => applyBetaGatesFromSource("rank"));
       }}
     }});
-    ["t9-rank-mode", "t9-dd-slider", "t9-min-cf", "t9-topn", "t9-no-liq", "t9-only-today"].forEach(id => {{
+    ["t9-rank-mode", "t9-dd-slider", "t9-vol-slider", "t9-r2-slider", "t9-min-cf", "t9-topn", "t9-no-liq", "t9-only-today"].forEach(id => {{
       const el = document.getElementById(id);
       if (el) {{
         el.addEventListener("input", () => applyBetaGatesFromSource("t9"));
