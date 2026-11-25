@@ -366,9 +366,14 @@ def render_unified_portal_html(payload: dict[str, Any]) -> str:
     .l-val {{ text-align: right; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }}
     .pos {{ color: var(--ok); font-weight: 800; }}
     .warn {{ color: var(--warn); font-size: 11px; }}
+    .cta-row {{ display: flex; flex-direction: column; gap: 8px; }}
     .cta {{
       display: block; text-align: center; padding: 12px 16px; border-radius: 11px;
       text-decoration: none; font-size: 14px; font-weight: 800; transition: filter .15s;
+    }}
+    .cta.sub-cta {{
+      padding: 9px 14px; font-size: 12.5px; font-weight: 700;
+      background: var(--surf); color: var(--fg); border: 1px solid var(--bd);
     }}
     .cta:hover {{ filter: brightness(1.08); }}
     .cta.gold {{ background: var(--gold); color: #0b1017; }}
@@ -419,14 +424,17 @@ def render_unified_portal_html(payload: dict[str, Any]) -> str:
         <div>
           <span class="badge gold">หมวด 1 · ALPHA TRACK (XAUUSD)</span>
           <h2>ทองคำ — จับทิศทาง (XAUUSD)</h2>
-          <p class="cat-sub">ทดสอบทุก Timeframe (M5–D1) · วันละ 10 โมเดล (2 รอบ)</p>
+          <p class="cat-sub">ทดสอบทุก Timeframe (M5–D1) · วันละ 20 โมเดล (4 รอบ)</p>
           <div class="stat-strip" id="stat-xau"></div>
         </div>
         <div class="leader-list">
           <div class="leader-hdr">โมเดลเด่น (เรียงตามผลงานนอกกลุ่มตัวอย่าง OOS)</div>
           <div id="list-xau" class="leader-list"></div>
         </div>
-        <a class="cta gold" href="{a_base}#sym=XAUUSD">เข้าดูกราฟ ALPHA ทองคำ →</a>
+        <div class="cta-row">
+          <a class="cta gold" href="{a_base}#sym=XAUUSD">เข้าดูกราฟ ALPHA ทองคำ →</a>
+          <a class="cta sub-cta" href="{a_base}#sym=XAUUSD&amp;tab=ranking">ดูอันดับ Top 9 แบบ 9-Panel →</a>
+        </div>
       </article>
 
       <!-- 2. ALPHA TRACK: ETHUSDT -->
@@ -434,14 +442,17 @@ def render_unified_portal_html(payload: dict[str, Any]) -> str:
         <div>
           <span class="badge cyan">หมวด 2 · ALPHA TRACK (ETHUSDT)</span>
           <h2>คริปโต — จับทิศทาง (ETHUSDT)</h2>
-          <p class="cat-sub">ทดสอบทุก Timeframe (M5–D1) · วันละ 10 โมเดล (2 รอบ)</p>
+          <p class="cat-sub">ทดสอบทุก Timeframe (M5–D1) · วันละ 20 โมเดล (4 รอบ)</p>
           <div class="stat-strip" id="stat-eth"></div>
         </div>
         <div class="leader-list">
           <div class="leader-hdr">โมเดลเด่น (เรียงตามผลงานนอกกลุ่มตัวอย่าง OOS)</div>
           <div id="list-eth" class="leader-list"></div>
         </div>
-        <a class="cta cyan" href="{a_base}#sym=ETHUSDT">เข้าดูกราฟ ALPHA คริปโต →</a>
+        <div class="cta-row">
+          <a class="cta cyan" href="{a_base}#sym=ETHUSDT">เข้าดูกราฟ ALPHA คริปโต →</a>
+          <a class="cta sub-cta" href="{a_base}#sym=ETHUSDT&amp;tab=ranking">ดูอันดับ Top 9 แบบ 9-Panel →</a>
+        </div>
       </article>
 
       <!-- 3. BETA TRACK: ETH GRID -->
@@ -449,14 +460,17 @@ def render_unified_portal_html(payload: dict[str, Any]) -> str:
         <div>
           <span class="badge blue">หมวด 3 · BETA TRACK (GRID CASHFLOW)</span>
           <h2>ETH Grid — สร้างกระแสเงินสด</h2>
-          <p class="cat-sub">LGB154 โซน 5000→500 (1,000 วัน) · วันละ 10 โมเดล (2 รอบ)</p>
+          <p class="cat-sub">LGB154 โซน 5000→500 (1,000 วัน) · วันละ 20 โมเดล (4 รอบ)</p>
           <div class="stat-strip" id="stat-beta"></div>
         </div>
         <div class="leader-list">
           <div class="leader-hdr">3 อันดับทำกระแสเงินสดสูงสุด (DD ≤ 40%)</div>
           <div id="list-beta" class="leader-list"></div>
         </div>
-        <a class="cta blue" href="{b_base}">เข้าดูกราฟ BETA Grid →</a>
+        <div class="cta-row">
+          <a class="cta blue" href="{b_base}">เข้าดูกราฟ BETA Grid →</a>
+          <a class="cta sub-cta" href="{b_base}#mode=top9">ดูอันดับ Top 9 แบบ 9-Panel →</a>
+        </div>
       </article>
     </section>
 

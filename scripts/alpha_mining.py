@@ -237,7 +237,10 @@ def _cmd_run_daily(args: argparse.Namespace) -> int:
     )
     all_metrics = store.load_all_metrics()
     batch_ids = [m["model_id"] for m in batch_metrics]
-    batch_series = store.load_batch_series(batch_ids)
+    top_ids = [r["model_id"] for r in board.get("top_ranked", []) if r.get("model_id")]
+    for rows in (board.get("top_ranked_by_symbol") or {}).values():
+        top_ids.extend(r["model_id"] for r in rows if r.get("model_id"))
+    batch_series = store.load_batch_series(list(dict.fromkeys([*batch_ids, *top_ids])))
     existing_days = store.load_daily_batches_summary()
 
     summary_md = render_daily_summary_markdown(
@@ -391,7 +394,10 @@ def _cmd_rebuild_dashboard(args: argparse.Namespace) -> int:
             else [m for m in all_metrics if m.get("batch_date") == bdate]
         )
         batch_ids = [m["model_id"] for m in batch_metrics]
-        batch_series = store.load_batch_series(batch_ids)
+        top_ids = [r["model_id"] for r in board.get("top_ranked", []) if r.get("model_id")]
+        for rows in (board.get("top_ranked_by_symbol") or {}).values():
+            top_ids.extend(r["model_id"] for r in rows if r.get("model_id"))
+        batch_series = store.load_batch_series(list(dict.fromkeys([*batch_ids, *top_ids])))
         summary_md = render_daily_summary_markdown(batch_date=bdate, batch_metrics=batch_metrics, ranking_board=board)
         dash_html = render_dashboard_html(
             batch_date=bdate,
@@ -422,7 +428,7 @@ def _cmd_rebuild_dashboard(args: argparse.Namespace) -> int:
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Daily Alpha Mining Factory — 2 rounds/day x 10 models (5 XAUUSD + 5 ETHUSDT = 20/day)."
+        description="Daily Alpha Mining Factory — 4 rounds/day x 10 models (5 XAUUSD + 5 ETHUSDT = 40/day)."
     )
     parser.add_argument("--store-dir", type=Path, default=DEFAULT_STORE_DIR)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -431,10 +437,10 @@ def _build_parser() -> argparse.ArgumentParser:
     rd.add_argument("--date", default=None, help="Batch date YYYY-MM-DD (default: today UTC).")
     rd.add_argument("--queue-file", type=Path, default=DEFAULT_QUEUE_FILE)
     rd.add_argument("--batch-file", type=Path, default=None, help="Optional JSON batch override file.")
-    rd.add_argument("--per-symbol", type=int, default=5, help="Models per symbol per round (default: 5 -> 10/round, 20/day).")
+    rd.add_argument("--per-symbol", type=int, default=5, help="Models per symbol per round (default: 5 -> 10/round, 40/day).")
     rd.add_argument("--symbols", default=",".join(KNOWN_SYMBOLS), help="Comma-separated symbols (default: XAUUSD,ETHUSDT).")
     rd.add_argument("--round", type=int, default=0, help="Explicit round number (0 = auto next round).")
-    rd.add_argument("--max-rounds", type=int, default=2, help="Auto mode: skip when date already has this many rounds (default: 2).")
+    rd.add_argument("--max-rounds", type=int, default=4, help="Auto mode: skip when date already has this many rounds (default: 4).")
     rd.add_argument("--days", type=int, default=0, help="Override lookback days for all timeframes (0 = per-TF default).")
     rd.add_argument("--end-date", default=None, help="Optional end date YYYY-MM-DD (default: yesterday UTC).")
     rd.add_argument("--cache-dir", type=Path, default=DEFAULT_CACHE_DIR)

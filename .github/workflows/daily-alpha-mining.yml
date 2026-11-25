@@ -1,15 +1,19 @@
-name: "Daily Alpha Mining Factory (2 Rounds x 10 = 20 Models/Day | XAUUSD + ETHUSDT)"
+name: "Daily Alpha Mining Factory (4 Rounds x 10 = 40 Models/Day | XAUUSD + ETHUSDT)"
 
 on:
   schedule:
     # Round 1: Daily 07:15 ICT (00:15 UTC) — 10 models (5 XAUUSD + 5 ETHUSDT)
     - cron: "15 0 * * *"
-    # Round 2: Daily 19:15 ICT (12:15 UTC) — +10 models (accumulates to 20 models/day: 10 XAUUSD + 10 ETHUSDT)
+    # Round 2: Daily 11:15 ICT (04:15 UTC) — +10 models (20/day)
+    - cron: "15 4 * * *"
+    # Round 3: Daily 15:15 ICT (08:15 UTC) — +10 models (30/day)
+    - cron: "15 8 * * *"
+    # Round 4: Daily 19:15 ICT (12:15 UTC) — +10 models (accumulates to 40 models/day: 20 XAUUSD + 20 ETHUSDT)
     - cron: "15 12 * * *"
   workflow_dispatch:
     inputs:
       per_symbol:
-        description: "Models per symbol per round (default: 5 -> 5 XAUUSD + 5 ETHUSDT = 10/round, 20/day)"
+        description: "Models per symbol per round (default: 5 -> 5 XAUUSD + 5 ETHUSDT = 10/round, 40/day)"
         required: false
         default: "5"
         type: string
@@ -19,7 +23,7 @@ on:
         default: "XAUUSD,ETHUSDT"
         type: string
       round:
-        description: "Optional round number (0 = auto next round up to 2/day)"
+        description: "Optional round number (0 = auto next round up to 4/day)"
         required: false
         default: "0"
         type: string
@@ -137,7 +141,7 @@ jobs:
             alpha-factory-vision-mtf-
             alpha-binance-vision-1m-um-
 
-      - name: Run Alpha Mining Round (5 XAUUSD + 5 ETHUSDT -> 20/Day) & Build 9-Panel Dashboard
+      - name: Run Alpha Mining Round (5 XAUUSD + 5 ETHUSDT -> 40/Day) & Build 9-Panel Dashboard
         env:
           BATCH_DATE: ${{ steps.params.outputs.batch_date }}
           PER_SYMBOL: ${{ steps.params.outputs.per_symbol }}
@@ -152,7 +156,7 @@ jobs:
             --per-symbol "$PER_SYMBOL" \
             --symbols "$SYMBOLS" \
             --round "$ROUND_NO" \
-            --max-rounds 2 \
+            --max-rounds 4 \
             --days "$DAYS" \
             --oos-fraction 0.30 \
             --max-dd-gate 50 \

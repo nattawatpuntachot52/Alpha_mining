@@ -221,6 +221,8 @@ def render_dashboard_html(
     default_dd_cap = float(rule.get("hard_gates", {}).get("max_drawdown_pct_limit", 40.0))
     top_n = int(rule.get("top_n", 9))
     batch_ids = [m["model_id"] for m in batch_metrics]
+    top_ids = [m["model_id"] for m in (ranking_board.get("top_ranked") or []) if m.get("model_id")]
+    series_ids = list(dict.fromkeys([*batch_ids, *top_ids]))
     active_tab = default_tab if default_tab in {"daily", "ranking", "all"} else "daily"
 
     resolved_corr = corr_matrix
@@ -228,6 +230,12 @@ def render_dashboard_html(
         resolved_corr = compute_return_correlation_matrix(batch_ids, batch_series)
     if resolved_corr is None:
         resolved_corr = {"labels": [], "matrix": []}
+
+    top_corr_matrix = (
+        compute_return_correlation_matrix(top_ids, batch_series)
+        if (top_ids and batch_series)
+        else {"labels": [], "matrix": []}
+    )
 
     normalized_dates = _normalize_available_dates(
         batch_date,
@@ -243,11 +251,13 @@ def render_dashboard_html(
         "default_dd_cap": default_dd_cap,
         "default_tab": active_tab,
         "batch_ids": batch_ids,
+        "top_ranked_ids": top_ids,
         "batch_models": list(batch_metrics),
         "available_dates": normalized_dates,
         "models": list(all_models_metrics),
-        "series": _compact_series_for_html(batch_ids, batch_series),
+        "series": _compact_series_for_html(series_ids, batch_series),
         "corr_matrix": resolved_corr,
+        "top_corr_matrix": top_corr_matrix,
     }
     safe_json = _safe_inline_json(embedded_data)
     safe_date = html.escape(batch_date)
@@ -480,6 +490,7 @@ def render_dashboard_html(
           <a id="btn-all-days" class="nav-btn" href="../../index.html" title="หน้ารวมผล Mine ทุกวันย้อนหลัง">All Days</a>
         </div>
         <button data-tab="daily" class="tab-btn{daily_active}">Daily Batch — 9 Panels</button>
+        <button data-tab="top9" class="tab-btn">Top-{top_n} — 9 Panels</button>
         <button data-tab="ranking" class="tab-btn{ranking_active}">Top-{top_n} Ranking Board</button>
         <button data-tab="all" class="tab-btn{all_active}">All Isolated Models</button>
         <button id="theme-toggle" type="button" title="Toggle Light/Dark">Theme</button>
@@ -531,7 +542,7 @@ def render_dashboard_html(
       </div>
 
       <div class="legend-bar">
-        <span class="muted" style="font-weight:700;margin-right:4px;">Models ({safe_date}):</span>
+        <span id="legend-scope-label" class="muted" style="font-weight:700;margin-right:4px;">Models ({safe_date}):</span>
         <div id="daily-legend-pills" style="display:flex;flex-wrap:wrap;gap:7px;flex:1;"></div>
         <div style="display:flex;gap:6px;align-items:center;">
           <button id="btn-show-all" type="button" class="pill-mini">Show All</button>
@@ -673,9 +684,12 @@ def render_dashboard_html(
 
       <div class="split">
         <div class="card" style="padding:0;overflow:hidden;">
-          <div style="padding:10px 14px;border-bottom:1px solid var(--bm-border);display:flex;justify-content:space-between;">
+          <div style="padding:10px 14px;border-bottom:1px solid var(--bm-border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
             <strong>Top-{top_n} Cashflow → DD Ranking Board (คลิกแถวเพื่อดู Isolated Model)</strong>
-            <span class="muted">Hard Gate: No Liq + Max DD</span>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span class="muted">Hard Gate: No Liq + Max DD</span>
+              <button id="btn-open-top9-panels" type="button" class="pill-mini active">ดูกราฟ 9-Panel ของ Top-{top_n}</button>
+            </div>
           </div>
           <div class="table-wrap">
             <table>
@@ -766,8 +780,23 @@ def render_dashboard_html(
     const DAILY_MODELS = (Array.isArray(PAYLOAD.batch_models) && PAYLOAD.batch_models.length)
       ? PAYLOAD.batch_models
       : BATCH_IDS.map(id => MODEL_MAP.get(id)).filter(Boolean);
+    const TOP_RANK_IDS = Array.isArray(PAYLOAD.top_ranked_ids) ? PAYLOAD.top_ranked_ids : [];
+    const TOP_RANK_MODELS = (TOP_RANK_IDS.length
+      ? TOP_RANK_IDS.map(id => MODEL_MAP.get(id)).filter(Boolean)
+      : (PAYLOAD.models || [])
+          .filter(m => !m.would_liquidate && Number(m.max_drawdown_pct) <= Number(PAYLOAD.default_dd_cap || 40))
+          .sort((a, b) => Number(b.cashflow_net_usd || 0) - Number(a.cashflow_net_usd || 0))
+          .slice(0, Number(PAYLOAD.top_n || 9)));
+
     const MODEL_COLOR = new Map();
-    DAILY_MODELS.forEach((m, idx) => MODEL_COLOR.set(m.model_id, PALETTE[idx % PALETTE.length]));
+    [...DAILY_MODELS, ...TOP_RANK_MODELS].forEach((m, idx) => {{
+      if (!MODEL_COLOR.has(m.model_id)) MODEL_COLOR.set(m.model_id, PALETTE[idx % PALETTE.length]);
+    }});
+
+    let activePanelScope = "daily"; // "daily" | "top9"
+    function getPoolModels() {{
+      return (activePanelScope === "top9" && TOP_RANK_MODELS.length) ? TOP_RANK_MODELS : DAILY_MODELS;
+    }}
 
     const visibleIds = new Set(DAILY_MODELS.map(m => m.model_id));
     let selectedId = (DAILY_MODELS[0] && DAILY_MODELS[0].model_id) || (PAYLOAD.models[0] && PAYLOAD.models[0].model_id) || "";
@@ -859,10 +888,11 @@ def render_dashboard_html(
     }}
 
     function getWindowData() {{
+      const pool = getPoolModels();
       const nAll = ALL_DATES.length;
       const s = nAll ? Math.max(0, Math.min(rangeStartIdx, nAll - 1)) : 0;
       const e = nAll ? Math.max(s, Math.min(rangeEndIdx, nAll - 1)) : -1;
-      const key = `${{s}}:${{e}}`;
+      const key = `${{activePanelScope}}:${{s}}:${{e}}`;
       if (cachedWindowData && cachedWindowKey === key) return cachedWindowData;
 
       const byMRaw = RAW_SERIES.by_model || {{}};
@@ -899,7 +929,7 @@ def render_dashboard_html(
       const stats = {{}};
       const modelRetsMap = {{}};
 
-      DAILY_MODELS.forEach(m => {{
+      pool.forEach(m => {{
         const mid = m.model_id;
         const initCap = Number(m.initial_capital || 10000);
         const ms = byMRaw[mid];
@@ -983,10 +1013,12 @@ def render_dashboard_html(
         }};
       }});
 
-      let corrMatrix = PAYLOAD.corr_matrix || {{ labels: [], matrix: [] }};
+      let corrMatrix = (activePanelScope === "top9" && PAYLOAD.top_corr_matrix && (PAYLOAD.top_corr_matrix.labels || []).length)
+        ? PAYLOAD.top_corr_matrix
+        : (PAYLOAD.corr_matrix || {{ labels: [], matrix: [] }});
       if (!isFull) {{
         const vecs = [];
-        DAILY_MODELS.forEach(m => {{
+        pool.forEach(m => {{
           const r = modelRetsMap[m.model_id];
           if (r && r.length >= 2) vecs.push([m.model_id, r]);
         }});
@@ -1087,10 +1119,19 @@ def render_dashboard_html(
       setSub("th-dd", win.isFull ? "Max DD %" : "Win DD % (Daily)");
       setSub("th-util", win.isFull ? "Max Util %" : "Win Util % (Daily)");
       const tblTitle = document.getElementById("perf-table-title");
+      const scopeTag = activePanelScope === "top9"
+        ? `Top-${{PAYLOAD.top_n}} Cumulative Leaders`
+        : `Daily Batch (${{PAYLOAD.batch_date}})`;
       if (tblTitle) {{
         tblTitle.textContent = win.isFull
-          ? `Full Performance Summary — Daily Batch (${{PAYLOAD.batch_date}})`
-          : `Window Performance Summary (${{win.startDate}} → ${{win.endDate}} · ${{win.daysCount}}d) — Batch ${{PAYLOAD.batch_date}}`;
+          ? `Full Performance Summary — ${{scopeTag}}`
+          : `Window Performance Summary (${{win.startDate}} → ${{win.endDate}} · ${{win.daysCount}}d) — ${{scopeTag}}`;
+      }}
+      const legLbl = document.getElementById("legend-scope-label");
+      if (legLbl) {{
+        legLbl.textContent = activePanelScope === "top9"
+          ? `Top-${{PAYLOAD.top_n}} Leaders:`
+          : `Models (${{PAYLOAD.batch_date}}):`;
       }}
     }}
 
@@ -1210,7 +1251,7 @@ def render_dashboard_html(
     }}
 
     function getActiveModels() {{
-      return DAILY_MODELS.filter(m => visibleIds.has(m.model_id));
+      return getPoolModels().filter(m => visibleIds.has(m.model_id));
     }}
 
     function showTooltip(clientX, clientY, title, rows) {{
@@ -2036,25 +2077,40 @@ def render_dashboard_html(
 
     function switchTab(target) {{
       currentTab = target;
-      ["daily", "ranking", "all"].forEach(k => {{
-        document.getElementById("view-" + k).classList.toggle("hidden", k !== target);
-      }});
+      const isPanelView = (target === "daily" || target === "top9");
+      if (isPanelView) {{
+        const nextScope = target === "top9" ? "top9" : "daily";
+        if (activePanelScope !== nextScope) {{
+          activePanelScope = nextScope;
+          cachedWindowData = null;
+          cachedWindowKey = "";
+          visibleIds.clear();
+          getPoolModels().forEach(m => visibleIds.add(m.model_id));
+          updateLookbackUi();
+          renderDailyPillsAndTables();
+        }}
+      }}
+      document.getElementById("view-daily").classList.toggle("hidden", !isPanelView);
+      document.getElementById("view-ranking").classList.toggle("hidden", target !== "ranking");
+      document.getElementById("view-all").classList.toggle("hidden", target !== "all");
       document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === target));
-      if (target === "daily") {{
+      if (isPanelView) {{
         requestAnimationFrame(drawAllDailyCharts);
       }}
     }}
 
     function renderDailyPillsAndTables() {{
+      const pool = getPoolModels();
       const win = getWindowData();
       const pillHost = document.getElementById("daily-legend-pills");
       pillHost.innerHTML = "";
-      DAILY_MODELS.forEach(m => {{
+      pool.forEach((m, idx) => {{
         const color = MODEL_COLOR.get(m.model_id);
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "pill" + (visibleIds.has(m.model_id) ? "" : " off");
-        btn.innerHTML = `<span class="dot" style="background:${{escHtml(color)}}"></span><span>${{escHtml(shortLabel(m.model_id))}}</span>`;
+        const prefix = activePanelScope === "top9" ? `#${{idx + 1}} ` : "";
+        btn.innerHTML = `<span class="dot" style="background:${{escHtml(color)}}"></span><span>${{prefix}}${{escHtml(shortLabel(m.model_id))}}</span>`;
         btn.title = `${{m.model_id}} (${{m.signal_name}}) — คลิกสลับ / ดับเบิลคลิกดูเดี่ยว`;
         btn.addEventListener("click", () => {{
           if (visibleIds.has(m.model_id)) {{
@@ -2067,7 +2123,7 @@ def render_dashboard_html(
         }});
         btn.addEventListener("dblclick", () => {{
           if (visibleIds.size === 1 && visibleIds.has(m.model_id)) {{
-            DAILY_MODELS.forEach(x => visibleIds.add(x.model_id));
+            pool.forEach(x => visibleIds.add(x.model_id));
           }} else {{
             visibleIds.clear();
             visibleIds.add(m.model_id);
@@ -2080,7 +2136,7 @@ def render_dashboard_html(
 
       const cards = document.getElementById("daily-cards");
       cards.innerHTML = "";
-      DAILY_MODELS.forEach((m, i) => {{
+      pool.forEach((m, i) => {{
         const color = MODEL_COLOR.get(m.model_id);
         const isOn = visibleIds.has(m.model_id);
         const pass = !m.would_liquidate && Number(m.max_drawdown_pct) <= Number(PAYLOAD.default_dd_cap || 40);
@@ -2107,9 +2163,10 @@ def render_dashboard_html(
           renderDailyPillsAndTables();
           drawAllDailyCharts();
         }});
+        const cardBadge = activePanelScope === "top9" ? `Top #${{i + 1}}/${{pool.length}}` : `Model ${{i + 1}}/${{pool.length}}`;
         el.innerHTML = `
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-            <span class="muted mono">Model ${{i + 1}}/${{DAILY_MODELS.length}}</span>
+            <span class="muted mono">${{cardBadge}}</span>
             <span class="badge ${{pass ? 'badge-pass' : 'badge-fail'}}" title="Full-run Hard Gate (No Liq + Max DD ≤ ${{Number(PAYLOAD.default_dd_cap || 40)}}%)">${{pass ? 'PASS' : 'FAIL'}}</span>
           </div>
           <div class="mono" style="font-weight:700;margin-bottom:1px;">${{escHtml(m.model_id)}}</div>
@@ -2127,7 +2184,7 @@ def render_dashboard_html(
 
       const perfBody = document.getElementById("daily-perf-body");
       perfBody.innerHTML = "";
-      DAILY_MODELS.forEach(m => {{
+      pool.forEach(m => {{
         const color = MODEL_COLOR.get(m.model_id);
         const pass = !m.would_liquidate && Number(m.max_drawdown_pct) <= Number(PAYLOAD.default_dd_cap || 40);
         const st = win.stats[m.model_id] || {{
@@ -2340,14 +2397,14 @@ def render_dashboard_html(
     }});
 
     document.getElementById("btn-show-all").addEventListener("click", () => {{
-      DAILY_MODELS.forEach(m => visibleIds.add(m.model_id));
+      getPoolModels().forEach(m => visibleIds.add(m.model_id));
       renderDailyPillsAndTables();
       drawAllDailyCharts();
     }});
 
     document.getElementById("btn-top3").addEventListener("click", () => {{
       const win = getWindowData();
-      const top3 = [...DAILY_MODELS]
+      const top3 = [...getPoolModels()]
         .sort((a, b) => Number((win.stats[b.model_id] && win.stats[b.model_id].cashflow) ?? b.cashflow_net_usd) - Number((win.stats[a.model_id] && win.stats[a.model_id].cashflow) ?? a.cashflow_net_usd))
         .slice(0, 3);
       visibleIds.clear();
@@ -2355,6 +2412,11 @@ def render_dashboard_html(
       renderDailyPillsAndTables();
       drawAllDailyCharts();
     }});
+
+    const btnOpenTop9Panels = document.getElementById("btn-open-top9-panels");
+    if (btnOpenTop9Panels) {{
+      btnOpenTop9Panels.addEventListener("click", () => switchTab("top9"));
+    }}
 
     document.getElementById("theme-toggle").addEventListener("click", () => {{
       document.body.classList.toggle("light");
@@ -2389,7 +2451,18 @@ def render_dashboard_html(
     renderRanking();
     renderAllModelsTable();
     renderDailyPillsAndTables();
-    requestAnimationFrame(drawAllDailyCharts);
+    if (/mode=top9|tab=top9/i.test(location.hash || "")) {{
+      switchTab("top9");
+    }} else if (/tab=ranking/i.test(location.hash || "")) {{
+      switchTab("ranking");
+    }} else {{
+      requestAnimationFrame(drawAllDailyCharts);
+    }}
+    window.addEventListener("hashchange", () => {{
+      if (/mode=top9|tab=top9/i.test(location.hash || "")) switchTab("top9");
+      else if (/tab=ranking/i.test(location.hash || "")) switchTab("ranking");
+      else if (/tab=daily/i.test(location.hash || "")) switchTab("daily");
+    }});
   </script>
 </body>
 </html>
