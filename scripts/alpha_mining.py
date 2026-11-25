@@ -240,7 +240,15 @@ def _cmd_run_daily(args: argparse.Namespace) -> int:
     top_ids = [r["model_id"] for r in board.get("top_ranked", []) if r.get("model_id")]
     for rows in (board.get("top_ranked_by_symbol") or {}).values():
         top_ids.extend(r["model_id"] for r in rows if r.get("model_id"))
-    batch_series = store.load_batch_series(list(dict.fromkeys([*batch_ids, *top_ids])))
+    extra_ids = [
+        str(m["model_id"])
+        for m in sorted(
+            all_metrics,
+            key=lambda x: (-float(x.get("oos_sharpe_ann", -999.0)), float(x.get("max_drawdown_pct", 999.0))),
+        )[:60]
+        if m.get("model_id")
+    ]
+    batch_series = store.load_batch_series(list(dict.fromkeys([*batch_ids, *top_ids, *extra_ids])))
     existing_days = store.load_daily_batches_summary()
 
     summary_md = render_daily_summary_markdown(
@@ -397,7 +405,15 @@ def _cmd_rebuild_dashboard(args: argparse.Namespace) -> int:
         top_ids = [r["model_id"] for r in board.get("top_ranked", []) if r.get("model_id")]
         for rows in (board.get("top_ranked_by_symbol") or {}).values():
             top_ids.extend(r["model_id"] for r in rows if r.get("model_id"))
-        batch_series = store.load_batch_series(list(dict.fromkeys([*batch_ids, *top_ids])))
+        extra_ids = [
+            str(m["model_id"])
+            for m in sorted(
+                all_metrics,
+                key=lambda x: (-float(x.get("oos_sharpe_ann", -999.0)), float(x.get("max_drawdown_pct", 999.0))),
+            )[:60]
+            if m.get("model_id")
+        ]
+        batch_series = store.load_batch_series(list(dict.fromkeys([*batch_ids, *top_ids, *extra_ids])))
         summary_md = render_daily_summary_markdown(batch_date=bdate, batch_metrics=batch_metrics, ranking_board=board)
         dash_html = render_dashboard_html(
             batch_date=bdate,
