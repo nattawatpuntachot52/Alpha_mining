@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_039_ethusdt_1d_donchian_breakout_20_10_ls",
+  "trial_number": 39,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"donchian_breakout\",\"params\":{\"entry\":20,\"exit\":10},\"sl_pct\":0.0,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"1d\",\"tp_pct\":0.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "1d",
+  "family": "donchian_breakout",
+  "params": {
+    "entry": 20,
+    "exit": 10
+  },
+  "direction": "long_short",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day02_r2_donchian",
+  "hypothesis": "Classic D1 Turtle 20/10 two-way trend follower on ETHUSDT.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-25",
+  "updated_at_utc": "2026-11-25T04:37:10Z",
+  "spec_sha256": "sha256:5e1fd1ad5caaea80835dffedd44c3cfdf198365cef0cc76c4a4f4d16c6a42b1e"
+}
