@@ -527,6 +527,72 @@ class TestAgentAckAndPrAudit(unittest.TestCase):
             parsed = json.loads(proc.stdout)
             self.assertEqual(parsed[0]["verdict"], "BLOCKED")
 
+    def test_disjoint_alpha_and_beta_factory_prs_stay_ready_to_merge(self) -> None:
+        raw_prs = [
+            {
+                "number": 27,
+                "title": "chore(alpha-mining): daily 10-model XAUUSD+ETH batch (r1)",
+                "author": {"login": "app/github-actions"},
+                "baseRefName": "main",
+                "headRefName": "bot/daily-alpha-mining-2026-11-25",
+                "baseRefOid": "1d1eb3a",
+                "headRefOid": "6b62f2c",
+                "isDraft": False,
+                "state": "OPEN",
+                "mergeable": "MERGEABLE",
+                "mergeStateStatus": "BLOCKED",
+                "body": VALID_ACK_BODY,
+                "comments": [],
+                "files": [
+                    {"path": "alpha_mining/daily/2026-11-25/batch.json"},
+                    {"path": "alpha_mining/index.html"},
+                ],
+                "statusCheckRollup": [
+                    {"name": "rust", "conclusion": "SUCCESS"},
+                    {"name": "python", "conclusion": "SUCCESS"},
+                ],
+                "reviews": [],
+            },
+            {
+                "number": 28,
+                "title": "chore(beta-mining): daily 5-model batch (r1)",
+                "author": {"login": "app/github-actions"},
+                "baseRefName": "main",
+                "headRefName": "bot/daily-beta-mining-2026-11-25",
+                "baseRefOid": "1d1eb3a",
+                "headRefOid": "c872959",
+                "isDraft": False,
+                "state": "OPEN",
+                "mergeable": "MERGEABLE",
+                "mergeStateStatus": "BLOCKED",
+                "body": VALID_ACK_BODY,
+                "comments": [],
+                "files": [
+                    {"path": "beta_mining/daily/2026-11-25/batch.json"},
+                    {"path": "beta_mining/index.html"},
+                ],
+                "statusCheckRollup": [
+                    {"name": "rust", "conclusion": "SUCCESS"},
+                    {"name": "python", "conclusion": "SUCCESS"},
+                ],
+                "reviews": [],
+            },
+        ]
+        results = {res.pr.number: res for res in audit_pull_requests(parse_pr_snapshots(raw_prs))}
+        self.assertEqual(results[27].verdict, "READY_TO_MERGE")
+        self.assertEqual(results[28].verdict, "READY_TO_MERGE")
+        self.assertEqual([f.code for f in results[27].findings], ["PARALLEL_DISJOINT_FACTORY_DATA"])
+        self.assertEqual([f.severity for f in results[27].findings], ["info"])
+        self.assertEqual([f.code for f in results[28].findings], ["PARALLEL_DISJOINT_FACTORY_DATA"])
+
+        # Adding even one non-factory file must fall back to PARALLEL_SAME_BASE warning (MERGE_WITH_CAUTION).
+        raw_prs[1]["files"].append({"path": "README.md"})
+        mixed = {res.pr.number: res for res in audit_pull_requests(parse_pr_snapshots(raw_prs))}
+        self.assertEqual(mixed[27].verdict, "MERGE_WITH_CAUTION")
+        self.assertEqual(mixed[28].verdict, "MERGE_WITH_CAUTION")
+        self.assertIn("PARALLEL_SAME_BASE", {f.code for f in mixed[27].findings})
+        self.assertIn("PARALLEL_SAME_BASE", {f.code for f in mixed[28].findings})
+
 
 if __name__ == "__main__":
     unittest.main()
