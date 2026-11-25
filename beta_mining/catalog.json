@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
-  "updated_at_utc": "2026-11-24T09:48:00Z",
-  "total_trials": 15,
+  "updated_at_utc": "2026-11-25T00:16:13Z",
+  "total_trials": 20,
   "models": {
     "beta_001_ha_1m": {
       "model_id": "beta_001_ha_1m",
@@ -227,6 +227,81 @@
       "evidence_status": "reproducible",
       "spec_sha256": "sha256:2741c59e9f21cbe5fbfe85a5e281d15b1ae7a43cd478ca84e4949831e05f2a15",
       "updated_at_utc": "2026-11-24T09:48:00Z"
+    },
+    "beta_016_rsi_reversion_14_30_70": {
+      "model_id": "beta_016_rsi_reversion_14_30_70",
+      "trial_number": 16,
+      "folder": "models/beta_016_rsi_reversion_14_30_70",
+      "signal_spec": "rsi_reversion_14_30_70",
+      "signal_name": "rsi_reversion_14_30_70",
+      "symbol": "ETHUSDT",
+      "product_type": "USD_M",
+      "created_batch_date": "2026-11-25",
+      "latest_batch_date": "2026-11-25",
+      "latest_run_id": "2026-11-25_run01",
+      "evidence_status": "reproducible",
+      "spec_sha256": "sha256:38e1a56168b77cee241e4b8166f958fe4977fb309323c4e1ab85745d7adaa7d3",
+      "updated_at_utc": "2026-11-25T00:15:38Z"
+    },
+    "beta_017_rsi_reversion_14_35_65": {
+      "model_id": "beta_017_rsi_reversion_14_35_65",
+      "trial_number": 17,
+      "folder": "models/beta_017_rsi_reversion_14_35_65",
+      "signal_spec": "rsi_reversion_14_35_65",
+      "signal_name": "rsi_reversion_14_35_65",
+      "symbol": "ETHUSDT",
+      "product_type": "USD_M",
+      "created_batch_date": "2026-11-25",
+      "latest_batch_date": "2026-11-25",
+      "latest_run_id": "2026-11-25_run01",
+      "evidence_status": "reproducible",
+      "spec_sha256": "sha256:c1dfed43ee1a972d779207f17fb4927a3cc49f53dfb3c605b2bd1be4858c3ca1",
+      "updated_at_utc": "2026-11-25T00:15:46Z"
+    },
+    "beta_018_rsi_reversion_7_30_70": {
+      "model_id": "beta_018_rsi_reversion_7_30_70",
+      "trial_number": 18,
+      "folder": "models/beta_018_rsi_reversion_7_30_70",
+      "signal_spec": "rsi_reversion_7_30_70",
+      "signal_name": "rsi_reversion_7_30_70",
+      "symbol": "ETHUSDT",
+      "product_type": "USD_M",
+      "created_batch_date": "2026-11-25",
+      "latest_batch_date": "2026-11-25",
+      "latest_run_id": "2026-11-25_run01",
+      "evidence_status": "reproducible",
+      "spec_sha256": "sha256:f2296d0eac768ad9da6701745e24ccef6b7a25b976b38634a784ec0e67c81bed",
+      "updated_at_utc": "2026-11-25T00:15:57Z"
+    },
+    "beta_019_rsi_reversion_21_40_60": {
+      "model_id": "beta_019_rsi_reversion_21_40_60",
+      "trial_number": 19,
+      "folder": "models/beta_019_rsi_reversion_21_40_60",
+      "signal_spec": "rsi_reversion_21_40_60",
+      "signal_name": "rsi_reversion_21_40_60",
+      "symbol": "ETHUSDT",
+      "product_type": "USD_M",
+      "created_batch_date": "2026-11-25",
+      "latest_batch_date": "2026-11-25",
+      "latest_run_id": "2026-11-25_run01",
+      "evidence_status": "reproducible",
+      "spec_sha256": "sha256:e9b1aa81830c72e5848c39f0a89104d855b0c7135d09c397df2ef1d57f54afb2",
+      "updated_at_utc": "2026-11-25T00:16:06Z"
+    },
+    "beta_020_rsi_reversion_21_35_65": {
+      "model_id": "beta_020_rsi_reversion_21_35_65",
+      "trial_number": 20,
+      "folder": "models/beta_020_rsi_reversion_21_35_65",
+      "signal_spec": "rsi_reversion_21_35_65",
+      "signal_name": "rsi_reversion_21_35_65",
+      "symbol": "ETHUSDT",
+      "product_type": "USD_M",
+      "created_batch_date": "2026-11-25",
+      "latest_batch_date": "2026-11-25",
+      "latest_run_id": "2026-11-25_run01",
+      "evidence_status": "reproducible",
+      "spec_sha256": "sha256:74981ec2cea8a29ab79a2594d7897865ec66bbf34f9faa1d11ec4041088c0230",
+      "updated_at_utc": "2026-11-25T00:16:13Z"
     }
   }
 }
