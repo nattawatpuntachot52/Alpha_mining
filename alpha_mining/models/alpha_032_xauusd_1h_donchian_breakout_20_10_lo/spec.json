@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_032_xauusd_1h_donchian_breakout_20_10_lo",
+  "trial_number": 32,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"donchian_breakout\",\"params\":{\"entry\":20,\"exit\":10},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"1h\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "1h",
+  "family": "donchian_breakout",
+  "params": {
+    "entry": 20,
+    "exit": 10
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day02_r2_donchian_squeeze",
+  "hypothesis": "Classic Turtle System-1 Donchian 20/10 on H1 gold.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-25",
+  "updated_at_utc": "2026-11-25T04:37:07Z",
+  "spec_sha256": "sha256:0bedb149a899a6c10b7b38cd82a48bf03f76dabb25c07d36eccc258392bcddfb"
+}

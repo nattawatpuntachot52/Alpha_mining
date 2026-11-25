@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_035_xauusd_15m_donchian_breakout_60_20_14_0_85_lo",
+  "trial_number": 35,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"donchian_breakout\",\"params\":{\"atr_period\":14,\"entry\":60,\"exit\":20,\"squeeze_ratio\":0.85},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"15m\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "15m",
+  "family": "donchian_breakout",
+  "params": {
+    "entry": 60,
+    "exit": 20,
+    "atr_period": 14,
+    "squeeze_ratio": 0.85
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day02_r2_donchian_squeeze",
+  "hypothesis": "M15 tight-squeeze Donchian 60/20 captures London/NY expansion out of quiet ranges.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-25",
+  "updated_at_utc": "2026-11-25T04:37:08Z",
+  "spec_sha256": "sha256:b69e2adb4f2ab38d71ab55f9dd56dbc41d59bfd4987b16485229c212d413847c"
+}
