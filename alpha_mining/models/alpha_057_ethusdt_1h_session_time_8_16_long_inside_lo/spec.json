@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_057_ethusdt_1h_session_time_8_16_long_inside_lo",
+  "trial_number": 57,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"session_time\",\"params\":{\"end_hour_utc\":16,\"mode\":\"long_inside\",\"start_hour_utc\":8},\"sl_pct\":0.0,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"1h\",\"tp_pct\":0.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "1h",
+  "family": "session_time",
+  "params": {
+    "start_hour_utc": 8,
+    "end_hour_utc": 16,
+    "mode": "long_inside"
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day03_r2_sessions",
+  "hypothesis": "Europe-session (08-16 UTC) crypto drift hypothesis.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-25",
+  "updated_at_utc": "2026-11-25T08:23:22Z",
+  "spec_sha256": "sha256:283040aaecc6c95e5e39a06e8de2dc38b4d825865b43b8219f51dada476412d4"
+}

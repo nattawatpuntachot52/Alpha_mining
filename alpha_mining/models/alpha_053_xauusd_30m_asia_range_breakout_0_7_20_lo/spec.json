@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_053_xauusd_30m_asia_range_breakout_0_7_20_lo",
+  "trial_number": 53,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"asia_range_breakout\",\"params\":{\"eod_hour_utc\":20,\"range_end_hour_utc\":7,\"range_start_hour_utc\":0},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"30m\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "30m",
+  "family": "asia_range_breakout",
+  "params": {
+    "range_start_hour_utc": 0,
+    "range_end_hour_utc": 7,
+    "eod_hour_utc": 20
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day03_r2_asia_session",
+  "hypothesis": "Long-only M30 Asia-range breakout aligns intraday expansion with gold's structural upward drift.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-25",
+  "updated_at_utc": "2026-11-25T08:23:21Z",
+  "spec_sha256": "sha256:508198b4396edcc968aca6d8bec21c16da0abd3daac8edf69b4099a9642f1c22"
+}

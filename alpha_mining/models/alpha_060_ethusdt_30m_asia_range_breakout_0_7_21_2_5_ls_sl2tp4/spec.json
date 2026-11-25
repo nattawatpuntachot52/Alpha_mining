@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_060_ethusdt_30m_asia_range_breakout_0_7_21_2_5_ls_sl2tp4",
+  "trial_number": 60,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"asia_range_breakout\",\"params\":{\"eod_hour_utc\":21,\"max_range_pct\":2.5,\"range_end_hour_utc\":7,\"range_start_hour_utc\":0},\"sl_pct\":2.0,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"30m\",\"tp_pct\":4.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "30m",
+  "family": "asia_range_breakout",
+  "params": {
+    "range_start_hour_utc": 0,
+    "range_end_hour_utc": 7,
+    "eod_hour_utc": 21,
+    "max_range_pct": 2.5
+  },
+  "direction": "long_short",
+  "sl_pct": 2.0,
+  "tp_pct": 4.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day03_r2_sessions",
+  "hypothesis": "Narrow-Asia-box (<2.5%) M30 breakout on ETH with 2.0% SL / 4.0% TP.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-25",
+  "updated_at_utc": "2026-11-25T08:23:23Z",
+  "spec_sha256": "sha256:e11318cedd59b38a82dbf0b8a02a0bc156470ab6396217a97c907b03ef4bc892"
+}
