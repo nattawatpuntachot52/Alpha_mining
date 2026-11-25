@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_025_xauusd_30m_momentum_roc_28_0_25_lo",
+  "trial_number": 25,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"momentum_roc\",\"params\":{\"lookback\":28,\"threshold_pct\":0.25},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"30m\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "30m",
+  "family": "momentum_roc",
+  "params": {
+    "lookback": 28,
+    "threshold_pct": 0.25
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day02_r1_momentum_mtf",
+  "hypothesis": "M30 28-bar momentum with +0.25% deadband filters flat Asian-session noise.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-25",
+  "updated_at_utc": "2026-11-25T00:15:17Z",
+  "spec_sha256": "sha256:da420852bf691f44edc218f92d59473dee3c4b947ec19cd6bc386d3fcc7a1967"
+}

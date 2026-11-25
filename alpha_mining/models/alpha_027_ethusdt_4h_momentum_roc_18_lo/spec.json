@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_027_ethusdt_4h_momentum_roc_18_lo",
+  "trial_number": 27,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"momentum_roc\",\"params\":{\"lookback\":18},\"sl_pct\":0.0,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"4h\",\"tp_pct\":0.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "4h",
+  "family": "momentum_roc",
+  "params": {
+    "lookback": 18
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day02_r1_momentum_mtf",
+  "hypothesis": "3-day H4 long-only momentum stays out of prolonged ETH bear markets.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-25",
+  "updated_at_utc": "2026-11-25T00:15:18Z",
+  "spec_sha256": "sha256:882ece157266f7192734fa368eb3407ef458fb285db1b76a15594d212ea9fd1e"
+}
