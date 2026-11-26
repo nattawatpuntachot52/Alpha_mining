@@ -27,7 +27,7 @@ from __future__ import annotations
 import html
 import json
 import re
-from typing import Any, Sequence
+from typing import Any, Mapping, Sequence
 
 from .beta_store import compute_return_correlation_matrix
 from .stability import enrich_models_with_stability
@@ -217,6 +217,7 @@ def render_dashboard_html(
     corr_matrix: dict[str, Any] | None = None,
     default_tab: str = "daily",
     available_dates: Sequence[Any] | None = None,
+    stability_map: Mapping[str, Mapping[str, float]] | None = None,
 ) -> str:
     """Render a 100% self-contained offline-ready 9-panel interactive HTML Dashboard (zero CDN dependencies)."""
     rule = ranking_board.get("ranking_rule", {})
@@ -229,7 +230,8 @@ def render_dashboard_html(
         for m in sorted(all_models_metrics, key=lambda x: -float(x.get("cashflow_net_usd", 0.0)))[:25]
         if m.get("model_id")
     ]
-    series_ids = list(dict.fromkeys([*batch_ids, *top_ids, *extra_ids]))
+    provided_series_ids = list((batch_series or {}).keys())
+    series_ids = list(dict.fromkeys([*batch_ids, *top_ids, *extra_ids, *provided_series_ids]))
     active_tab = default_tab if default_tab in {"daily", "ranking", "all"} else "daily"
 
     resolved_corr = corr_matrix
@@ -250,8 +252,12 @@ def render_dashboard_html(
         current_batch_metrics=batch_metrics,
     )
 
-    enriched_batch = enrich_models_with_stability(batch_metrics, batch_series or {}, kind="beta")
-    enriched_all = enrich_models_with_stability(all_models_metrics, batch_series or {}, kind="beta")
+    enriched_batch = enrich_models_with_stability(
+        batch_metrics, batch_series or {}, kind="beta", stability_map=stability_map
+    )
+    enriched_all = enrich_models_with_stability(
+        all_models_metrics, batch_series or {}, kind="beta", stability_map=stability_map
+    )
 
     embedded_data = {
         "batch_date": batch_date,
@@ -359,7 +365,7 @@ def render_dashboard_html(
       display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px;
       background: var(--bm-card); border: 1px solid var(--bm-border); border-radius: 12px; padding: 11px 14px;
     }}
-    select, input[type="range"], input[type="date"] {{
+    select, input[type="range"], input[type="date"], input[type="number"] {{
       background: var(--bm-surface); color: var(--bm-fg); border: 1px solid var(--bm-border);
       border-radius: 6px; padding: 5px 8px; font-size: 12px; font-family: inherit;
     }}
@@ -382,7 +388,7 @@ def render_dashboard_html(
     .range-group {{ display: flex; flex-wrap: wrap; align-items: center; gap: 7px; }}
     .preset-group {{ display: inline-flex; flex-wrap: wrap; gap: 5px; }}
     .range-lbl {{ display: inline-flex; align-items: center; gap: 5px; font-size: 12px; }}
-    .split {{ display: grid; grid-template-columns: 2fr 1fr; gap: 14px; align-items: start; }}
+    .split {{ display: grid; grid-template-columns: minmax(0, 2.35fr) minmax(300px, 360px); gap: 14px; align-items: start; }}
     .dash-grid {{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }}
     .panel-wide {{ grid-column: 1 / -1; }}
     @media (max-width: 980px) {{
@@ -430,9 +436,10 @@ def render_dashboard_html(
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }}
     .table-wrap {{ overflow-x: auto; }}
-    table {{ width: 100%; border-collapse: collapse; font-size: 12px; }}
-    th, td {{ padding: 8px 10px; border-bottom: 1px solid var(--bm-border); text-align: left; white-space: nowrap; }}
+    table {{ width: 100%; border-collapse: collapse; font-size: 11.5px; }}
+    th, td {{ padding: 6px 6px; border-bottom: 1px solid var(--bm-border); text-align: left; white-space: nowrap; }}
     th {{ color: var(--bm-muted); font-weight: 600; }}
+    .mid-trunc {{ display: inline-block; max-width: 175px; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }}
     td.num, th.num {{ text-align: right; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }}
     tr.data-row {{ cursor: pointer; }}
     tr.data-row:hover, tr.data-row.selected {{ background: var(--bm-surface); }}
@@ -713,17 +720,17 @@ def render_dashboard_html(
               <tr>
                 <th>Model</th>
                 <th>Signal</th>
-                <th class="num">Final Equity</th>
-                <th class="num">Return %</th>
-                <th id="th-dd" class="num">Max DD %</th>
-                <th class="num">Realized CF</th>
-                <th class="num">Unrealized</th>
-                <th class="num">AVG Weekly</th>
-                <th class="num">Buy / Sell Fills</th>
-                <th class="num">Buy / Sell ETH</th>
+                <th class="num">Final Eq</th>
+                <th class="num">Ret %</th>
+                <th id="th-dd" class="num">Max DD</th>
+                <th class="num">Real CF</th>
+                <th class="num">Unreal</th>
+                <th class="num">Avg Wk</th>
+                <th class="num">B/S Fills</th>
+                <th class="num">B/S ETH</th>
                 <th class="num">End ETH</th>
-                <th id="th-util" class="num">Max Util %</th>
-                <th class="num">Beta / Corr</th>
+                <th id="th-util" class="num">Util %</th>
+                <th class="num">β / r</th>
                 <th style="text-align:center;">Gate</th>
               </tr>
             </thead>
@@ -790,16 +797,16 @@ def render_dashboard_html(
             <table>
               <thead>
                 <tr>
-                  <th>Rank</th>
-                  <th>Model ID / Signal</th>
-                  <th class="num">Cashflow ($)</th>
-                  <th class="num">AVG Wk ($)</th>
+                  <th>#</th>
+                  <th>Model / Signal</th>
+                  <th class="num">Cashflow</th>
+                  <th class="num">Avg Wk</th>
                   <th class="num">Max DD</th>
                   <th class="num">Vol/ปี</th>
-                  <th class="num">R² นิ่ง</th>
+                  <th class="num">R²</th>
                   <th class="num">CF/DD</th>
                   <th class="num">MTM</th>
-                  <th class="num">Crash DD</th>
+                  <th class="num">Crash</th>
                   <th style="text-align:center;">Gate</th>
                 </tr>
               </thead>
@@ -1775,7 +1782,9 @@ def render_dashboard_html(
       if (opts.minCap !== undefined) minV = Math.min(minV, opts.minCap);
       if (opts.maxCap !== undefined) maxV = Math.max(maxV, opts.maxCap);
       const {{ lo, hi, ticks }} = computeNiceTicks(minV < 0 ? minV * 1.12 : 0, maxV * 1.15, 5);
-      const padL = 56, padR = 14, padT = 26, padB = 34;
+      const n = items.length;
+      const dense = n > 10;
+      const padL = 56, padR = 14, padT = 26, padB = dense ? 58 : 36;
       const plotW = Math.max(20, w - padL - padR);
       const plotH = Math.max(20, h - padT - padB);
       const yAt = val => padT + (1 - (val - lo) / Math.max(1e-9, hi - lo)) * plotH;
@@ -1811,17 +1820,17 @@ def render_dashboard_html(
         ctx.fillText(opts.yFmt(t), padL - 7, y);
       }});
 
-      const n = items.length;
       const slotW = plotW / n;
-      const bw = Math.min(34, Math.max(10, slotW * 0.30));
-      const gap = Math.min(6, bw * 0.25);
+      const bw = Math.min(34, Math.max(5, slotW * 0.34));
+      const gap = Math.min(5, Math.max(1.5, bw * 0.22));
+      const showValText = slotW >= 54;
       const hIdx = hoverState[canvasId];
 
       items.forEach((it, i) => {{
         const cx = padL + (i + 0.5) * slotW;
         if (hIdx === i) {{
           ctx.fillStyle = theme.isLight ? "rgba(37, 99, 235, 0.08)" : "rgba(59, 130, 246, 0.14)";
-          ctx.fillRect(padL + i * slotW + 2, padT, slotW - 4, plotH);
+          ctx.fillRect(padL + i * slotW + 1, padT, Math.max(2, slotW - 2), plotH);
         }}
         const x1 = cx - bw - gap * 0.5;
         const x2 = cx + gap * 0.5;
@@ -1832,26 +1841,45 @@ def render_dashboard_html(
           const bh = Math.max(1.5, Math.abs(yv - zeroY));
           ctx.fillStyle = b.c;
           ctx.fillRect(b.x, top, bw, bh);
-          ctx.fillStyle = theme.fg;
-          ctx.font = "10px ui-monospace, SFMono-Regular, Menlo, monospace";
-          ctx.textAlign = "center";
-          ctx.textBaseline = b.v >= 0 ? "bottom" : "top";
-          ctx.fillText(opts.lblFmt(b.v), b.x + bw / 2, b.v >= 0 ? top - 3 : top + bh + 3);
+          if (showValText || hIdx === i) {{
+            ctx.fillStyle = theme.fg;
+            ctx.font = "9.5px ui-monospace, SFMono-Regular, Menlo, monospace";
+            ctx.textAlign = "center";
+            ctx.textBaseline = b.v >= 0 ? "bottom" : "top";
+            ctx.fillText(opts.lblFmt(b.v), b.x + bw / 2, b.v >= 0 ? top - 3 : top + bh + 3);
+          }}
         }});
 
-        // X category label with model dot
-        ctx.font = "11px ui-monospace, SFMono-Regular, Menlo, monospace";
-        const maxChars = Math.max(6, Math.floor(slotW / 7.5));
-        const txt = it.short.length > maxChars ? it.short.slice(0, maxChars - 1) + "…" : it.short;
-        const txtW = ctx.measureText(txt).width;
-        ctx.fillStyle = it.modelColor;
-        ctx.beginPath();
-        ctx.arc(cx - txtW / 2 - 6, padT + plotH + 14, 3.5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = theme.axis;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(txt, cx + 3, padT + plotH + 14);
+        // X category label (tilted when dense to avoid overlap)
+        if (dense) {{
+          ctx.fillStyle = it.modelColor;
+          ctx.beginPath();
+          ctx.arc(cx, padT + plotH + 7, 3, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.save();
+          ctx.translate(cx, padT + plotH + 13);
+          ctx.rotate(-0.62);
+          ctx.font = "9.5px ui-monospace, SFMono-Regular, Menlo, monospace";
+          ctx.fillStyle = theme.axis;
+          ctx.textAlign = "right";
+          ctx.textBaseline = "middle";
+          const txt = it.short.length > 13 ? it.short.slice(0, 12) + "…" : it.short;
+          ctx.fillText(txt, 0, 0);
+          ctx.restore();
+        }} else {{
+          ctx.font = "10.5px ui-monospace, SFMono-Regular, Menlo, monospace";
+          const maxChars = Math.max(6, Math.floor((slotW - 14) / 6.8));
+          const txt = it.short.length > maxChars ? it.short.slice(0, maxChars - 1) + "…" : it.short;
+          const txtW = ctx.measureText(txt).width;
+          ctx.fillStyle = it.modelColor;
+          ctx.beginPath();
+          ctx.arc(cx - txtW / 2 - 6, padT + plotH + 14, 3.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = theme.axis;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(txt, cx + 3, padT + plotH + 14);
+        }}
       }});
 
       canvas._hitMeta = {{ type: "cat", padL, padR, padT, plotW, plotH, items, opts }};
@@ -1980,10 +2008,12 @@ def render_dashboard_html(
         return;
       }}
 
+      const n = items.length;
+      const dense = n > 10;
       const gate = Number(opts.gate || 40);
       const maxVal = Math.max(gate * 1.05, ...items.map(it => Number(it.ddPct || 0)), 10);
       const {{ lo, hi, ticks }} = computeNiceTicks(0, maxVal * 1.14, 5);
-      const padL = 56, padR = 14, padT = 26, padB = 34;
+      const padL = 56, padR = 14, padT = 26, padB = dense ? 56 : 36;
       const plotW = Math.max(20, w - padL - padR);
       const plotH = Math.max(20, h - padT - padB);
       const yAt = val => padT + (1 - (val - lo) / Math.max(1e-9, hi - lo)) * plotH;
@@ -2012,9 +2042,8 @@ def render_dashboard_html(
         ctx.fillText(t.toFixed(0) + "%", padL - 7, y);
       }});
 
-      const n = items.length;
       const slotW = plotW / n;
-      const barW = Math.max(8, Math.min(48, slotW * 0.58));
+      const barW = Math.max(8, Math.min(48, slotW * 0.60));
       const hIdx = hoverState[canvasId];
 
       items.forEach((it, idx) => {{
@@ -2026,23 +2055,47 @@ def render_dashboard_html(
 
         if (hIdx === idx) {{
           ctx.fillStyle = theme.isLight ? "rgba(37,99,235,0.08)" : "rgba(59,130,246,0.12)";
-          ctx.fillRect(padL + idx * slotW + 2, padT, slotW - 4, plotH);
+          ctx.fillRect(padL + idx * slotW + 1, padT, Math.max(2, slotW - 2), plotH);
         }}
 
         ctx.fillStyle = over ? "#ef4444" : (it.color || "#f59e0b");
         ctx.fillRect(cx - barW / 2, yTop, barW, bh);
 
-        ctx.fillStyle = over ? "#fca5a5" : theme.fg;
-        ctx.font = "10px ui-monospace, SFMono-Regular, Menlo, monospace";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "bottom";
-        ctx.fillText(val.toFixed(1) + "%", cx, Math.max(padT + 10, yTop - 3));
+        if (slotW >= 36) {{
+          ctx.fillStyle = over ? "#fca5a5" : theme.fg;
+          ctx.font = "10px ui-monospace, SFMono-Regular, Menlo, monospace";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "bottom";
+          ctx.fillText(val.toFixed(1) + "%", cx, Math.max(padT + 10, yTop - 3));
+        }} else if (slotW >= 22 || hIdx === idx) {{
+          ctx.fillStyle = over ? "#fca5a5" : theme.fg;
+          ctx.font = "9px ui-monospace, SFMono-Regular, Menlo, monospace";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "bottom";
+          const stagger = (idx % 2 === 1) ? 10 : 0;
+          ctx.fillText(val.toFixed(0) + "%", cx, Math.max(padT + 10 + stagger, yTop - 2 - stagger));
+        }}
 
-        ctx.fillStyle = theme.axis;
-        ctx.textBaseline = "top";
-        const maxChars = Math.max(5, Math.floor(slotW / 7));
-        const lbl = it.short.length > maxChars ? it.short.slice(0, maxChars - 1) + "…" : it.short;
-        ctx.fillText(lbl, cx, padT + plotH + 8);
+        if (dense) {{
+          ctx.save();
+          ctx.translate(cx, padT + plotH + 8);
+          ctx.rotate(-0.62);
+          ctx.fillStyle = theme.axis;
+          ctx.font = "9.5px ui-monospace, SFMono-Regular, Menlo, monospace";
+          ctx.textAlign = "right";
+          ctx.textBaseline = "middle";
+          const lbl = it.short.length > 13 ? it.short.slice(0, 12) + "…" : it.short;
+          ctx.fillText(lbl, 0, 0);
+          ctx.restore();
+        }} else {{
+          ctx.fillStyle = theme.axis;
+          ctx.font = "10.5px ui-monospace, SFMono-Regular, Menlo, monospace";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "top";
+          const maxChars = Math.max(5, Math.floor(slotW / 6.8));
+          const lbl = it.short.length > maxChars ? it.short.slice(0, maxChars - 1) + "…" : it.short;
+          ctx.fillText(lbl, cx, padT + plotH + 8);
+        }}
       }});
 
       // Dashed Hard Gate reference line
@@ -2498,8 +2551,8 @@ def render_dashboard_html(
           switchTab("ranking");
         }});
         tr.innerHTML = `
-          <td class="mono" style="font-weight:700;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${{escHtml(color)}};margin-right:7px;"></span>${{escHtml(m.model_id)}}</td>
-          <td class="mono muted">${{escHtml(m.signal_name)}}</td>
+          <td class="mono" style="font-weight:700;" title="${{escHtml(m.model_id)}}"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${{escHtml(color)}};margin-right:6px;vertical-align:middle;"></span><span class="mid-trunc">${{escHtml(m.model_id)}}</span></td>
+          <td class="mono muted" title="${{escHtml(m.signal_name)}}"><span class="mid-trunc" style="max-width:130px;">${{escHtml(m.signal_name)}}</span></td>
           <td class="num">${{fmtUsd(st.finalEquity, false)}}</td>
           <td class="num ${{st.returnPct >= 0 ? 'pos' : 'neg'}}">${{fmtPct(st.returnPct)}}</td>
           <td class="num warn" style="font-weight:700;"${{ddNote}}>-${{Number(st.maxDdPct).toFixed(2)}}%</td>
@@ -2655,8 +2708,8 @@ def render_dashboard_html(
         tr.innerHTML = `
           <td class="mono" style="font-weight:700;">${{m.passGate ? "#" + rk : "—"}}</td>
           <td>
-            <div class="mono" style="font-weight:700;">${{escHtml(m.model_id)}}${{todayTag}}</div>
-            <div class="muted" style="font-size:11px;">${{escHtml(m.signal_name)}} · Trial #${{Number(m.trial_number || 0)}}</div>
+            <div class="mono mid-trunc" style="font-weight:700;max-width:185px;" title="${{escHtml(m.model_id)}}">${{escHtml(m.model_id)}}</div>${{todayTag}}
+            <div class="muted mid-trunc" style="font-size:11px;max-width:205px;" title="${{escHtml(m.signal_name)}}">${{escHtml(m.signal_name)}} · #${{Number(m.trial_number || 0)}}</div>
           </td>
           <td class="num pos" style="font-weight:700;">${{fmtUsd(m.cashflow_net_usd)}}</td>
           <td class="num pos">${{fmtUsd(m.avg_weekly_cf_usd || 0)}}</td>

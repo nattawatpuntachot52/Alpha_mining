@@ -87,6 +87,7 @@ def enrich_models_with_stability(
     series_map: Mapping[str, Mapping[str, Any]],
     *,
     kind: str,
+    stability_map: Mapping[str, Mapping[str, float]] | None = None,
 ) -> list[dict[str, Any]]:
     """Return shallow copies of metric dicts enriched with ``ann_vol_pct``, ``ulcer_index_pct``, and ``equity_r2``."""
     fn = stability_from_alpha_series if kind == "alpha" else stability_from_beta_series
@@ -95,7 +96,9 @@ def enrich_models_with_stability(
     for m in models:
         rec = dict(m)
         mid = str(rec.get("model_id", ""))
-        if mid and mid in series_map:
+        if mid and stability_map and mid in stability_map:
+            rec.update(stability_map[mid])
+        elif mid and mid in series_map:
             if mid not in cache:
                 cache[mid] = fn(series_map[mid])
             rec.update(cache[mid])
