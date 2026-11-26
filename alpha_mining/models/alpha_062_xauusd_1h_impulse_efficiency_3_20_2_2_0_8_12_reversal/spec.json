@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_062_xauusd_1h_impulse_efficiency_3_20_2_2_0_8_12_reversal",
+  "trial_number": 62,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"impulse_efficiency\",\"params\":{\"er_threshold\":0.8,\"hold_bars\":12,\"k\":3,\"mode\":\"reversal\",\"w\":20,\"z_threshold\":2.2},\"sl_pct\":0.75,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"1h\",\"tp_pct\":0.75}",
+  "symbol": "XAUUSD",
+  "timeframe": "1h",
+  "family": "impulse_efficiency",
+  "params": {
+    "k": 3,
+    "w": 20,
+    "z_threshold": 2.2,
+    "er_threshold": 0.8,
+    "hold_bars": 12,
+    "mode": "reversal"
+  },
+  "direction": "long_short",
+  "sl_pct": 0.75,
+  "tp_pct": 0.75,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day04_r1_impulse_sweep",
+  "hypothesis": "Falsification test: fade high-efficiency Z>=2.2 spikes (exhaustion vs continuation).",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-26",
+  "updated_at_utc": "2026-11-26T00:15:27Z",
+  "spec_sha256": "sha256:b3af8905e4a47bbbe3cf267cb632d3dc2a92f9e560890e9a88e39036ead1feb4"
+}
