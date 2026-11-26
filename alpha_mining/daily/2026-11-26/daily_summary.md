@@ -1,12 +1,12 @@
 # Alpha_mining — Alpha Mining Daily Summary (2026-11-26)
 
-- **Generated (UTC):** `2026-11-26T08:08:30Z`
-- **Models Tested Today:** `30` (`ETHUSDT`: 15, `XAUUSD`: 15) | **Rounds:** `[1, 2, 3]` | **Cumulative Trials (`N_trials`):** `90`
+- **Generated (UTC):** `2026-11-26T12:15:24Z`
+- **Models Tested Today:** `40` (`ETHUSDT`: 20, `XAUUSD`: 20) | **Rounds:** `[1, 2, 3, 4]` | **Cumulative Trials (`N_trials`):** `100`
 - **Top-9 Rule:** `OOS Sharpe DESC -> Max DD ASC` | **Hard Gates:** `no liquidation`, `trades >= 30`, `OOS profit > 0`, `Max DD <= 50%`
-- **Multiple-testing:** expected max daily Sharpe under H0 for `N=90` trials = `0.2024`; `DSR≈` is the probability a model beats that haircut.
+- **Multiple-testing:** expected max daily Sharpe under H0 for `N=100` trials = `0.217915`; `DSR≈` is the probability a model beats that haircut.
 - **XAUUSD data:** public feed is `PAXGUSDT` (gold-backed, 24/7) as a PROXY for broker XAUUSD; costs 2 bps/side. ETHUSDT = Binance USD-M perp, 5 bps/side.
 
-## 1. โมเดลที่ Mine วันนี้ (2026-11-26 — 30 โมเดล)
+## 1. โมเดลที่ Mine วันนี้ (2026-11-26 — 40 โมเดล)
 
 | Model ID | Sym | TF | Dir | Return | CAGR | Max DD | Sharpe | IS Sh | OOS Sh | OOS Ret | Trades | Win% | PF | B&H |
 |---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
@@ -40,6 +40,16 @@
 | `alpha_088_ethusdt_1h_heiken_ma_cross_ema_9_26_ls` | ETHUSDT | 1h | long_short | -85.2% | -38.0% | 88.4% | -0.49 | -0.48 | -0.52 | -45.4% | 1,425 | 25.3% | 0.92 | +40.4% |
 | `alpha_089_ethusdt_4h_heiken_ma_cross_ema_8_21_ls` | ETHUSDT | 4h | long_short | -74.9% | -24.1% | 84.5% | -0.14 | 0.11 | -0.76 | -62.0% | 521 | 26.5% | 0.97 | -58.9% |
 | `alpha_090_ethusdt_1d_ma_cross_ema_10_30_lo` | ETHUSDT | 1d | long_only | +51.5% | +7.2% | 71.2% | 0.39 | 0.16 | 1.01 | +89.2% | 35 | 34.3% | 1.47 | +226.0% |
+| `alpha_091_xauusd_15m_bollinger_reversion_20_2_2_0_0_ls_sl0_6tp0` | XAUUSD | 15m | long_short | -48.3% | -23.5% | 55.9% | -2.34 | -1.82 | -3.51 | -26.3% | 2,706 | 60.9% | 0.83 | +55.4% |
+| `alpha_092_xauusd_1h_bollinger_reversion_20_2_0_0_0_lo` | XAUUSD | 1h | long_only | -9.2% | -2.4% | 32.0% | -0.15 | 0.97 | -1.25 | -25.3% | 623 | 68.7% | 0.95 | +104.4% |
+| `alpha_093_xauusd_5m_bollinger_reversion_30_2_5_0_0_ls_sl0_35tp0` | XAUUSD | 5m | long_short | -65.3% | -51.1% | 65.4% | -7.20 | -7.38 | -7.03 | -30.5% | 2,651 | 51.9% | 0.66 | +6.2% |
+| `alpha_094_xauusd_1h_vol_expansion_breakout_14_1_6_8_ls` | XAUUSD | 1h | long_short | -40.4% | -12.1% | 46.9% | -0.99 | -1.74 | 0.21 | +2.4% | 869 | 40.9% | 0.80 | +104.4% |
+| `alpha_095_xauusd_30m_vol_expansion_breakout_20_1_8_10_lo` | XAUUSD | 30m | long_only | -10.2% | -3.5% | 27.8% | -0.39 | -0.29 | -0.56 | -6.3% | 467 | 44.3% | 0.91 | +80.5% |
+| `alpha_096_ethusdt_1h_bollinger_reversion_20_2_2_0_0_ls_sl2_5tp0` | ETHUSDT | 1h | long_short | -77.7% | -31.3% | 79.2% | -1.04 | -0.89 | -1.37 | -44.2% | 1,178 | 61.4% | 0.87 | +40.4% |
+| `alpha_097_ethusdt_4h_bollinger_reversion_20_2_0_0_0_lo` | ETHUSDT | 4h | long_only | -76.3% | -25.0% | 81.8% | -0.52 | -0.70 | -0.08 | -15.1% | 200 | 64.5% | 0.73 | -58.9% |
+| `alpha_098_ethusdt_15m_bollinger_reversion_24_2_5_0_0_ls_sl1_5tp2` | ETHUSDT | 15m | long_short | -88.5% | -58.4% | 89.0% | -2.65 | -2.31 | -3.63 | -53.4% | 1,906 | 58.5% | 0.79 | -54.1% |
+| `alpha_099_ethusdt_1h_vol_expansion_breakout_14_1_8_8_ls` | ETHUSDT | 1h | long_short | -13.1% | -3.4% | 41.6% | 0.05 | 0.09 | -0.05 | -8.0% | 782 | 45.4% | 1.01 | +40.4% |
+| `alpha_100_ethusdt_4h_vol_expansion_breakout_14_1_6_8_ls` | ETHUSDT | 4h | long_short | +36.4% | +6.4% | 41.1% | 0.35 | 0.35 | 0.35 | +9.9% | 322 | 46.9% | 1.13 | -58.9% |
 
 ## 2. Cumulative Top-9 Ranking Board (OOS Sharpe สูงสุด → DD ต่ำสุด)
 
@@ -64,19 +74,27 @@
 - `alpha_090_ethusdt_1d_ma_cross_ema_10_30_lo`: เหตุผล `MAX_DD_EXCEEDS_50PCT`
 - `alpha_086_ethusdt_15m_ma_cross_sma_28_101_lo`: เหตุผล `MAX_DD_EXCEEDS_50PCT`
 - `alpha_076_ethusdt_1d_rsi_reversion_2_10_90_65_35_lo`: เหตุผล `MAX_DD_EXCEEDS_50PCT`
+- `alpha_099_ethusdt_1h_vol_expansion_breakout_14_1_8_8_ls`: เหตุผล `OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
+- `alpha_097_ethusdt_4h_bollinger_reversion_20_2_0_0_0_lo`: เหตุผล `MAX_DD_EXCEEDS_50PCT, OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
 - `alpha_079_ethusdt_4h_rsi_regime_14_55_50_45_ls`: เหตุผล `MAX_DD_EXCEEDS_50PCT, OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
 - `alpha_070_ethusdt_1h_impulse_efficiency_6_24_2_0_0_7_18_continua`: เหตุผล `OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
 - `alpha_072_xauusd_4h_rsi_reversion_3_15_85_60_40_lo`: เหตุผล `OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
 - `alpha_088_ethusdt_1h_heiken_ma_cross_ema_9_26_ls`: เหตุผล `MAX_DD_EXCEEDS_50PCT, OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
+- `alpha_095_xauusd_30m_vol_expansion_breakout_20_1_8_10_lo`: เหตุผล `OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
 - `alpha_066_ethusdt_1h_impulse_efficiency_3_20_2_2_0_78_12_reversa`: เหตุผล `MAX_DD_EXCEEDS_50PCT, OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
 - `alpha_087_ethusdt_1h_ma_cross_ema_12_36_ls`: เหตุผล `MAX_DD_EXCEEDS_50PCT, OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
 - `alpha_078_ethusdt_1h_rsi_reversion_14_25_75_50_50_ls_sl2_5tp0`: เหตุผล `MAX_DD_EXCEEDS_50PCT, OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
 - `alpha_089_ethusdt_4h_heiken_ma_cross_ema_8_21_ls`: เหตุผล `MAX_DD_EXCEEDS_50PCT, OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
 - `alpha_061_xauusd_1h_impulse_efficiency_3_20_1_8_0_7_10_continuat`: เหตุผล `MAX_DD_EXCEEDS_50PCT, OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
 - `alpha_077_ethusdt_4h_rsi_reversion_4_20_80_55_45_ls`: เหตุผล `MAX_DD_EXCEEDS_50PCT, OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
+- `alpha_092_xauusd_1h_bollinger_reversion_20_2_0_0_0_lo`: เหตุผล `OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
 - `alpha_068_ethusdt_30m_impulse_efficiency_3_24_2_0_0_75_12_contin`: เหตุผล `MAX_DD_EXCEEDS_50PCT, OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
+- `alpha_096_ethusdt_1h_bollinger_reversion_20_2_2_0_0_ls_sl2_5tp0`: เหตุผล `MAX_DD_EXCEEDS_50PCT, OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
 - `alpha_073_xauusd_1h_rsi_reversion_14_28_72_55_45_ls`: เหตุผล `OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
 - `alpha_064_xauusd_30m_impulse_efficiency_3_24_2_0_0_75_12_continu`: เหตุผล `OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
 - `alpha_062_xauusd_1h_impulse_efficiency_3_20_2_2_0_8_12_reversal`: เหตุผล `OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
 - `alpha_067_ethusdt_15m_impulse_efficiency_4_30_2_4_0_78_16_contin`: เหตุผล `MAX_DD_EXCEEDS_50PCT, OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
 - `alpha_063_xauusd_15m_impulse_efficiency_4_30_2_2_0_75_16_continu`: เหตุผล `MAX_DD_EXCEEDS_50PCT, OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
+- `alpha_091_xauusd_15m_bollinger_reversion_20_2_2_0_0_ls_sl0_6tp0`: เหตุผล `MAX_DD_EXCEEDS_50PCT, OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
+- `alpha_098_ethusdt_15m_bollinger_reversion_24_2_5_0_0_ls_sl1_5tp2`: เหตุผล `MAX_DD_EXCEEDS_50PCT, OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`
+- `alpha_093_xauusd_5m_bollinger_reversion_30_2_5_0_0_ls_sl0_35tp0`: เหตุผล `MAX_DD_EXCEEDS_50PCT, OOS_NOT_PROFITABLE, OOS_SHARPE_LE_0`

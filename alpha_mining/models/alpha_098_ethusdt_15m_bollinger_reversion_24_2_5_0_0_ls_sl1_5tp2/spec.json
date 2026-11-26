@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_098_ethusdt_15m_bollinger_reversion_24_2_5_0_0_ls_sl1_5tp2",
+  "trial_number": 98,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"bollinger_reversion\",\"params\":{\"exit_z\":0.0,\"k\":2.5,\"period\":24},\"sl_pct\":1.5,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"15m\",\"tp_pct\":2.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "15m",
+  "family": "bollinger_reversion",
+  "params": {
+    "period": 24,
+    "k": 2.5,
+    "exit_z": 0.0
+  },
+  "direction": "long_short",
+  "sl_pct": 1.5,
+  "tp_pct": 2.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day05_r2_bb_vol",
+  "hypothesis": "M15 2.5σ extreme reversion fades sudden perp orderbook vacuums.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-26",
+  "updated_at_utc": "2026-11-26T12:15:24Z",
+  "spec_sha256": "sha256:1b83c0f02f0f5fcabda95096786fa8fc624816bdeebef4baf40d6c21c42410de"
+}

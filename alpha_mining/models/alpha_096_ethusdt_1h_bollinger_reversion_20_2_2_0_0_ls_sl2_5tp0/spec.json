@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_096_ethusdt_1h_bollinger_reversion_20_2_2_0_0_ls_sl2_5tp0",
+  "trial_number": 96,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"bollinger_reversion\",\"params\":{\"exit_z\":0.0,\"k\":2.2,\"period\":20},\"sl_pct\":2.5,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"1h\",\"tp_pct\":0.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "1h",
+  "family": "bollinger_reversion",
+  "params": {
+    "period": 20,
+    "k": 2.2,
+    "exit_z": 0.0
+  },
+  "direction": "long_short",
+  "sl_pct": 2.5,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day05_r2_bb_vol",
+  "hypothesis": "H1 Bollinger(20, 2.2σ) two-way reversion with 2.5% stop-loss.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-26",
+  "updated_at_utc": "2026-11-26T12:15:24Z",
+  "spec_sha256": "sha256:d485a6c9e1347fb630987091162a09793f21697ce30237c392c22448c88db318"
+}

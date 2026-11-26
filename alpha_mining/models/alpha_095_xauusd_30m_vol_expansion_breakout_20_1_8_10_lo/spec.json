@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_095_xauusd_30m_vol_expansion_breakout_20_1_8_10_lo",
+  "trial_number": 95,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"vol_expansion_breakout\",\"params\":{\"atr_period\":20,\"hold_bars\":10,\"k_atr\":1.8},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"30m\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "30m",
+  "family": "vol_expansion_breakout",
+  "params": {
+    "atr_period": 20,
+    "k_atr": 1.8,
+    "hold_bars": 10
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day05_r2_bb_vol",
+  "hypothesis": "M30 upward 1.8x ATR expansion captures sudden safe-haven gold surges.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-26",
+  "updated_at_utc": "2026-11-26T12:15:23Z",
+  "spec_sha256": "sha256:387ee3e70ec5bbee775f3e88758e301e1b1e067937abd4d702125f6ba98da1c4"
+}

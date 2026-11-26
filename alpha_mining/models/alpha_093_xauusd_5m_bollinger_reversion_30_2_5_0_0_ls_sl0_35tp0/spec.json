@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_093_xauusd_5m_bollinger_reversion_30_2_5_0_0_ls_sl0_35tp0",
+  "trial_number": 93,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"bollinger_reversion\",\"params\":{\"exit_z\":0.0,\"k\":2.5,\"period\":30},\"sl_pct\":0.35,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"5m\",\"tp_pct\":0.5}",
+  "symbol": "XAUUSD",
+  "timeframe": "5m",
+  "family": "bollinger_reversion",
+  "params": {
+    "period": 30,
+    "k": 2.5,
+    "exit_z": 0.0
+  },
+  "direction": "long_short",
+  "sl_pct": 0.35,
+  "tp_pct": 0.5,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day05_r2_bb_vol",
+  "hypothesis": "M5 extreme 2.5σ micro-reversion fades brief liquidity vacuum spikes.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-26",
+  "updated_at_utc": "2026-11-26T12:15:23Z",
+  "spec_sha256": "sha256:dfe3143af791b0aa767596bb8554b540b2ad55bb94133b8a0dadc3f3fc36ed42"
+}

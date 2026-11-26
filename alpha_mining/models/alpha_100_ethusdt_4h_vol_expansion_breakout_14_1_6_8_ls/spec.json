@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_100_ethusdt_4h_vol_expansion_breakout_14_1_6_8_ls",
+  "trial_number": 100,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"vol_expansion_breakout\",\"params\":{\"atr_period\":14,\"hold_bars\":8,\"k_atr\":1.6},\"sl_pct\":0.0,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"4h\",\"tp_pct\":0.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "4h",
+  "family": "vol_expansion_breakout",
+  "params": {
+    "atr_period": 14,
+    "k_atr": 1.6,
+    "hold_bars": 8
+  },
+  "direction": "long_short",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day05_r2_bb_vol",
+  "hypothesis": "H4 1.6x ATR expansion breakout captures multi-day crypto regime transitions.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-26",
+  "updated_at_utc": "2026-11-26T12:15:24Z",
+  "spec_sha256": "sha256:ca814b9f562bec32d6e7bff6137224f01233fe3f5838f5961273e2805c93dbc0"
+}
