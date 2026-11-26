@@ -1,0 +1,89 @@
+{
+  "contract_version": "1.0",
+  "brief_id": "brief-beta-dynamic-spacing-5types-20261126",
+  "title": "Beta Mining Pluggable 5-Family Spacing Engine & Cost-Protected NET Dynamic TP",
+  "public_summary": "Unlock Beta Mining from fixed 0.20% grid spacing by introducing 5 strictly causal SpacingProvider families paired with funding/fee-protected NET Dynamic TP under an unchanged 2.0 ETH max inventory cap.",
+  "domain": "quant_research",
+  "target_evidence_status": "reproducible",
+  "inputs": [
+    "1000-day Binance Vision ETHUSDT USD-M 1m klines and historical 8h funding rates",
+    "Baseline 55 Beta Mining models at fixed 0.20% spacing (beta_mining/catalog.json)"
+  ],
+  "outputs": [
+    "Pluggable SpacingProvider (5 families) and DynamicTpConfig in python/alpha_mining/strategy/lgb154.py",
+    "Causal dynamic spacing & NET TP support plus consistency metrics in python/alpha_mining/research/backtest_lgb154.py",
+    "5 isolated Beta models (beta_056..beta_060, 1 per spacing family) evaluated over 1,000 days under max_position_quantity = 2.0 ETH"
+  ],
+  "variables": [
+    "spacing_spec (fixed_pct, atr_range, log_return_vol, ewma_asymmetric, inventory_hybrid)",
+    "dynamic_tp (net_profit_pct scaled with entry spacing and inventory relief above fee+funding floor)"
+  ],
+  "constraints": [
+    "max_position_quantity strictly locked at 2.0 ETH and initial_capital at 10000 USDT",
+    "strictly causal closed-bar evaluation (t_signal = t - 1 < t_execution)",
+    "strict isolation from live production bot.py",
+    "preserve all 55 existing baseline models and trial counters transparently"
+  ],
+  "assumptions": [
+    "strict_cross limit fills with 1-tick half-spread and 2 bps maker fee + historical 8h funding settlement"
+  ],
+  "unknowns": [],
+  "block_on_unresolved_unknowns": true,
+  "acceptance_criteria": [
+    "All 5 spacing families pass zero-lookahead, max 2.0 ETH cap, and accounting conservation unit tests",
+    "All 5 pre-specified spacing models complete 1,000-day ETHUSDT 1m + 30-day crash stress evaluation and persist cleanly",
+    "cargo fmt/check/test/clippy --locked and python unittest discover exit 0"
+  ],
+  "hypothesis": {
+    "statement": "Under an identical 2.0 ETH inventory cap and 10,000 USDT capital, replacing locked 0.20% spacing and flat PROFIT_PLUS_COMMISSION TP with volatility/inventory-adaptive spacing and cost+funding-protected NET Dynamic TP increases closed-cycle net win rate toward 100%, reduces max drawdown, and turns 1,000-day total MTM net PnL positive on the controlled baseline signal.",
+    "economic_rationale": "Fixed 0.20% spacing exhausts the 200-bullet (2.0 ETH) inventory cap within the top ~33% of a drawdown and ignores negative 8h funding drift on multi-week holds, whereas volatility-scaled spacing rations inventory across tail regimes and NET TP enforces positive net expectancy per closed cycle.",
+    "alternative_explanations": [
+      "Lower trade frequency alone reduces fees and funding exposure during trending drawdowns",
+      "Specific 2024-2026 ETH range endpoints favor wider static spacing regardless of dynamic adaptation"
+    ],
+    "falsification_criteria": [
+      "Dynamic spacing models still suffer negative 1,000-day MTM PnL and higher max drawdown than the fixed 0.20% baseline on the same signal, or violate the 2.0 ETH cap"
+    ]
+  },
+  "quant_checks": {
+    "cost_model_assumptions": [
+      "2 bps maker fee per leg, 1-tick half-spread, strict_cross fills, and real 8h historical Binance UM funding rates"
+    ],
+    "leakage_controls": [
+      "SpacingProvider.on_closed_bar(B_{t-1}) executes strictly prior to B_t order placement and fills"
+    ],
+    "multiple_testing_plan": "Pre-specify exactly 1 model per spacing family (5 total) prior to 1,000-day execution and increment catalog total_trials monotonically from 55 to 60",
+    "oos_validation_plan": "Evaluate across full 1,000-day rolling window, 30-day worst crash window, and consecutive ISO-week positive cashflow hit-rate",
+    "target_proof_level": "correctness"
+  },
+  "governance": {
+    "solver_actor": "engineer-beta-spacing",
+    "verifier_actor": "verifier-ci-suite",
+    "reviewer_actor": "ovca-reviewer-bot",
+    "auditor_actor": "katherine-conditioner-audit"
+  },
+  "authority": {
+    "contract_version": "1.0",
+    "authority_id": "auth-beta-spacing-5types-001",
+    "granted_by": "owner",
+    "objective": "Implement and evaluate 5 Beta Mining spacing families with NET Dynamic TP under 2.0 ETH cap",
+    "scope": [
+      "python/alpha_mining",
+      "python/tests",
+      "scripts",
+      "config/beta_mining",
+      "beta_mining",
+      "workflows/runs"
+    ],
+    "constraints": [
+      "keep max_position_quantity = 2.0 ETH",
+      "do not modify live bot.py or governance charters"
+    ]
+  },
+  "budget": {
+    "contract_version": "1.0",
+    "max_repair_attempts": 1,
+    "max_events": 14
+  },
+  "created_at": "2026-11-26T15:15:00Z"
+}

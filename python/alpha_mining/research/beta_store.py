@@ -182,6 +182,9 @@ class BetaModelStore:
             "zone_high": result.zone_high,
             "zone_low": result.zone_low,
             "spacing_pct": result.spacing_pct,
+            "spacing_spec": getattr(result, "spacing_spec", f"fixed_{result.spacing_pct:g}"),
+            "spacing_mode": getattr(result, "spacing_mode", "fixed_pct"),
+            "tp_mode_label": getattr(result, "tp_mode_label", "legacy_ppc"),
             "grid_levels_count": result.grid_levels_count,
             "initial_capital": result.initial_capital,
             "fill_mode": result.fill_mode,
@@ -243,6 +246,17 @@ class BetaModelStore:
             "max_utilization_pct": round(float(result.max_utilization_pct), 2),
             "avg_weekly_cf_usd": round(float(result.avg_weekly_cf_usd), 4),
             "weekly_count": int(result.weekly_count),
+            "weekly_positive_cf_pct": round(float(getattr(result, "weekly_positive_cf_pct", 0.0)), 2),
+            "profit_factor": round(float(getattr(result, "profit_factor", 0.0)), 3),
+            "ann_vol_pct": round(float(getattr(result, "ann_vol_pct", 0.0)), 2),
+            "ulcer_index_pct": round(float(getattr(result, "ulcer_index_pct", 0.0)), 2),
+            "equity_r2": round(float(getattr(result, "equity_r2", 0.0)), 3),
+            "spacing_spec": str(getattr(result, "spacing_spec", f"fixed_{result.spacing_pct:g}")),
+            "spacing_mode": str(getattr(result, "spacing_mode", "fixed_pct")),
+            "effective_spacing_min_pct": round(float(getattr(result, "effective_spacing_min_pct", result.spacing_pct)), 4),
+            "effective_spacing_avg_pct": round(float(getattr(result, "effective_spacing_avg_pct", result.spacing_pct)), 4),
+            "effective_spacing_max_pct": round(float(getattr(result, "effective_spacing_max_pct", result.spacing_pct)), 4),
+            "tp_mode_label": str(getattr(result, "tp_mode_label", "legacy_ppc")),
             "beta_to_eth": round(float(result.beta_to_eth), 4),
             "corr_to_eth": round(float(result.corr_to_eth), 4),
             "window_start_utc": result.start_utc,
@@ -388,18 +402,23 @@ class BetaModelStore:
         top_n: int = DEFAULT_TOP_N,
         max_dd_pct: float = DEFAULT_MAX_DD_GATE_PCT,
         rank_by: str = "cashflow_dd",
+        require_positive_mtm: bool = False,
         write_file: bool = True,
     ) -> dict[str, Any]:
-        """Compute Top-N Ranking Board: Primary = Net Realized Cashflow DESC, Secondary = Max DD % ASC.
+        """Compute Top-N Ranking Board across cashflow, efficiency, MTM, or consistent_profit modes.
 
-        Hard Safety Gate: `not would_liquidate` AND `max_drawdown_pct <= max_dd_pct`.
+        Hard Safety Gate: `not would_liquidate` AND `max_drawdown_pct <= max_dd_pct`
+        (plus `mtm_pnl_usd > 0` when `require_positive_mtm=True` or `rank_by=='consistent_profit'`).
         Disqualified models are preserved transparently in `disqualified` (never silently dropped).
         """
-        if rank_by not in {"cashflow_dd", "efficiency", "mtm"}:
-            raise ValueError(f"unsupported rank_by {rank_by!r}; expected cashflow_dd, efficiency, or mtm")
+        if rank_by not in {"cashflow_dd", "efficiency", "mtm", "consistent_profit"}:
+            raise ValueError(
+                f"unsupported rank_by {rank_by!r}; expected cashflow_dd, efficiency, mtm, or consistent_profit"
+            )
         if top_n < 1:
             raise ValueError("top_n must be >= 1")
 
+        enforce_pos_mtm = require_positive_mtm or (rank_by == "consistent_profit")
         all_metrics = [m.latest_metrics for m in self.load_all_models()]
         qualified: list[dict[str, Any]] = []
         disqualified: list[dict[str, Any]] = []
@@ -411,6 +430,8 @@ class BetaModelStore:
             dd_val = float(m.get("max_drawdown_pct", 0.0))
             if dd_val > max_dd_pct:
                 reasons.append(f"MAX_DD_EXCEEDS_{max_dd_pct:g}PCT")
+            if enforce_pos_mtm and float(m.get("mtm_pnl_usd", 0.0)) <= 0.0:
+                reasons.append("NEGATIVE_OR_ZERO_MTM_PNL")
 
             entry = dict(m)
             entry["gate_passed"] = len(reasons) == 0
@@ -425,12 +446,19 @@ class BetaModelStore:
             dd = float(item.get("max_drawdown_pct", 0.0))
             eff = float(item.get("cashflow_to_dd_ratio", 0.0))
             mtm = float(item.get("mtm_return_pct", 0.0))
+            mtm_usd = float(item.get("mtm_pnl_usd", 0.0))
+            wk_pos = float(item.get("weekly_positive_cf_pct", 0.0))
+            win_r = float(item.get("win_rate_pct", 0.0))
             mid = str(item.get("model_id", ""))
             if rank_by == "cashflow_dd":
                 # Primary: Highest Cashflow DESC, Secondary: Lowest Max DD ASC
                 return (-round(cf, 6), round(dd, 6), mid)
             if rank_by == "efficiency":
                 return (-round(eff, 6), -round(cf, 6), round(dd, 6), mid)
+            if rank_by == "consistent_profit":
+                # Composite score balancing Realized Cashflow, Net MTM Profit, Weekly Consistency & Cycle Win% vs DD
+                score = (0.45 * cf + 0.55 * mtm_usd) * (0.5 + 0.5 * (wk_pos / 100.0)) * (win_r / 100.0) / max(5.0, dd)
+                return (-round(score, 6), -round(mtm_usd, 6), round(dd, 6), mid)
             return (-round(mtm, 6), round(dd, 6), mid)
 
         qualified.sort(key=_sort_key)
