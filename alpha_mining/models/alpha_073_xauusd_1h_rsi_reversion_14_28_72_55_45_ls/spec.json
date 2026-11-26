@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_073_xauusd_1h_rsi_reversion_14_28_72_55_45_ls",
+  "trial_number": 73,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"rsi_reversion\",\"params\":{\"buy_below\":28,\"exit_long\":55,\"exit_short\":45,\"period\":14,\"sell_above\":72},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"1h\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "1h",
+  "family": "rsi_reversion",
+  "params": {
+    "period": 14,
+    "buy_below": 28,
+    "sell_above": 72,
+    "exit_long": 55,
+    "exit_short": 45
+  },
+  "direction": "long_short",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day04_r2_rsi_mtf",
+  "hypothesis": "Classic H1 RSI(14) 28/72 two-way mean reversion with midline exit.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-26",
+  "updated_at_utc": "2026-11-26T04:15:30Z",
+  "spec_sha256": "sha256:5f283ba3747b8b260cc88d4652d28f8ef12fdfceb6d9dc3902ec6635e3072bc6"
+}

@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_076_ethusdt_1d_rsi_reversion_2_10_90_65_35_lo",
+  "trial_number": 76,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"rsi_reversion\",\"params\":{\"buy_below\":10,\"exit_long\":65,\"exit_short\":35,\"period\":2,\"sell_above\":90},\"sl_pct\":0.0,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"1d\",\"tp_pct\":0.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "1d",
+  "family": "rsi_reversion",
+  "params": {
+    "period": 2,
+    "buy_below": 10,
+    "sell_above": 90,
+    "exit_long": 65,
+    "exit_short": 35
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day04_r2_rsi",
+  "hypothesis": "Connors RSI(2)<10 daily bounce on ETHUSDT.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-26",
+  "updated_at_utc": "2026-11-26T04:15:31Z",
+  "spec_sha256": "sha256:b588cb59f43a31bb89389c441aeba5146cf2499f6369938e8dbc9d1a53f1ca38"
+}
