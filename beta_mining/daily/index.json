@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "generated_at_utc": "2026-11-26T00:15:53Z",
+  "generated_at_utc": "2026-11-26T04:15:48Z",
   "latest_date": "2026-11-26",
   "total_days": 4,
   "dates": [
@@ -12,20 +12,25 @@
   "days": [
     {
       "batch_date": "2026-11-26",
-      "generated_at_utc": "2026-11-26T00:15:53Z",
-      "model_count": 5,
-      "qualified_count": 5,
+      "generated_at_utc": "2026-11-26T04:15:48Z",
+      "model_count": 10,
+      "qualified_count": 10,
       "model_ids": [
         "beta_036_ema_3_8",
         "beta_037_ema_5_13",
         "beta_038_ema_8_34",
         "beta_039_ema_13_55",
-        "beta_040_ema_21_89"
+        "beta_040_ema_21_89",
+        "beta_041_ema_10_30",
+        "beta_042_ema_25_75",
+        "beta_043_ema_40_120",
+        "beta_044_ema_60_180",
+        "beta_045_ema_100_300"
       ],
       "best_cashflow_model_id": "beta_037_ema_5_13",
       "best_cashflow_usd": 2955.13,
-      "lowest_dd_model_id": "beta_039_ema_13_55",
-      "lowest_dd_pct": 17.09,
+      "lowest_dd_model_id": "beta_045_ema_100_300",
+      "lowest_dd_pct": 16.31,
       "window_start_utc": "2024-03-01T00:00:00Z",
       "window_end_utc": "2026-11-24T23:59:00Z",
       "days_covered": 999.0,
