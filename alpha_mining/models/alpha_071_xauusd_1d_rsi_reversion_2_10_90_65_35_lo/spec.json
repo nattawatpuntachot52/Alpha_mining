@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_071_xauusd_1d_rsi_reversion_2_10_90_65_35_lo",
+  "trial_number": 71,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"rsi_reversion\",\"params\":{\"buy_below\":10,\"exit_long\":65,\"exit_short\":35,\"period\":2,\"sell_above\":90},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"1d\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "1d",
+  "family": "rsi_reversion",
+  "params": {
+    "period": 2,
+    "buy_below": 10,
+    "sell_above": 90,
+    "exit_long": 65,
+    "exit_short": 35
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day04_r2_rsi_mtf",
+  "hypothesis": "Connors RSI(2)<10 daily snapback on gold captures acute 1-2 day liquidation bounces.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-26",
+  "updated_at_utc": "2026-11-26T04:15:30Z",
+  "spec_sha256": "sha256:a4c12f20936e505c8e1eb8dbaaf0ffa8910f723d1593c25badf8a4283f056304"
+}

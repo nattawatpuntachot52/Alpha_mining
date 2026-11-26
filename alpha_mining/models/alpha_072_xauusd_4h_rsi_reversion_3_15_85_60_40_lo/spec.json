@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_072_xauusd_4h_rsi_reversion_3_15_85_60_40_lo",
+  "trial_number": 72,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"rsi_reversion\",\"params\":{\"buy_below\":15,\"exit_long\":60,\"exit_short\":40,\"period\":3,\"sell_above\":85},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"4h\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "4h",
+  "family": "rsi_reversion",
+  "params": {
+    "period": 3,
+    "buy_below": 15,
+    "sell_above": 85,
+    "exit_long": 60,
+    "exit_short": 40
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day04_r2_rsi_mtf",
+  "hypothesis": "Fast H4 RSI(3)<15 dip-buyer exits on rebound to RSI 60.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-26",
+  "updated_at_utc": "2026-11-26T04:15:30Z",
+  "spec_sha256": "sha256:a4d28d19826c99558c2551b28ec45e9d6fdec73b3357238bd1746c5b4959bdf2"
+}
