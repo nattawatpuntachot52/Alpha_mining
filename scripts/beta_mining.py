@@ -363,14 +363,26 @@ def _cmd_run_daily(args: argparse.Namespace) -> int:
         write_file=True,
     )
     all_metrics = [m.latest_metrics for m in store.load_all_models()]
+    stability_map = store.load_all_stability_map()
     batch_ids = [m["model_id"] for m in batch_metrics]
     top_ids = [r["model_id"] for r in board.get("top_ranked", []) if r.get("model_id")]
-    extra_ids = [
+    extra_cf = [
         str(m["model_id"])
         for m in sorted(all_metrics, key=lambda x: -float(x.get("cashflow_net_usd", 0.0)))[:25]
         if m.get("model_id")
     ]
-    batch_series = store.load_batch_series(list(dict.fromkeys([*batch_ids, *top_ids, *extra_ids])))
+    extra_stable = [
+        str(m["model_id"])
+        for m in sorted(
+            all_metrics,
+            key=lambda x: -(
+                float(x.get("cashflow_net_usd", 0.0))
+                / max(1.0, float((stability_map.get(str(x.get("model_id", ""))) or {}).get("ann_vol_pct", 99.0)))
+            ),
+        )[:15]
+        if m.get("model_id")
+    ]
+    batch_series = store.load_batch_series(list(dict.fromkeys([*batch_ids, *top_ids, *extra_cf, *extra_stable])))
     corr_matrix = compute_return_correlation_matrix(batch_ids, batch_series)
     existing_days = store.load_daily_batches_summary(max_dd_pct=args.max_dd_gate)
     summary_md = render_daily_summary_markdown(
@@ -384,6 +396,7 @@ def _cmd_run_daily(args: argparse.Namespace) -> int:
         batch_series=batch_series,
         corr_matrix=corr_matrix,
         available_dates=existing_days,
+        stability_map=stability_map,
     )
     ddir = store.save_daily_batch(
         batch_date=batch_date,
@@ -472,6 +485,7 @@ def _rebuild_one_daily_date(
     all_metrics: list[dict[str, Any]],
     board: dict[str, Any],
     available_dates: list[dict[str, Any]],
+    stability_map: dict[str, dict[str, float]] | None = None,
 ) -> Path:
     existing_batch = store.load_daily_batch(bdate)
     if existing_batch and isinstance(existing_batch.get("models"), list) and existing_batch["models"]:
@@ -480,14 +494,26 @@ def _rebuild_one_daily_date(
     else:
         batch_metrics = [m for m in all_metrics if m.get("batch_date") == bdate] or all_metrics
         loader_meta = None
+    stab = stability_map if stability_map is not None else store.load_all_stability_map()
     batch_ids = [m["model_id"] for m in batch_metrics]
     top_ids = [r["model_id"] for r in board.get("top_ranked", []) if r.get("model_id")]
-    extra_ids = [
+    extra_cf = [
         str(m["model_id"])
         for m in sorted(all_metrics, key=lambda x: -float(x.get("cashflow_net_usd", 0.0)))[:25]
         if m.get("model_id")
     ]
-    batch_series = store.load_batch_series(list(dict.fromkeys([*batch_ids, *top_ids, *extra_ids])))
+    extra_stable = [
+        str(m["model_id"])
+        for m in sorted(
+            all_metrics,
+            key=lambda x: -(
+                float(x.get("cashflow_net_usd", 0.0))
+                / max(1.0, float((stab.get(str(x.get("model_id", ""))) or {}).get("ann_vol_pct", 99.0)))
+            ),
+        )[:15]
+        if m.get("model_id")
+    ]
+    batch_series = store.load_batch_series(list(dict.fromkeys([*batch_ids, *top_ids, *extra_cf, *extra_stable])))
     corr_matrix = compute_return_correlation_matrix(batch_ids, batch_series)
     summary_md = render_daily_summary_markdown(
         batch_date=bdate, batch_metrics=batch_metrics, ranking_board=board
@@ -500,6 +526,7 @@ def _rebuild_one_daily_date(
         batch_series=batch_series,
         corr_matrix=corr_matrix,
         available_dates=available_dates,
+        stability_map=stab,
     )
     return store.save_daily_batch(
         batch_date=bdate,
@@ -515,6 +542,7 @@ def _cmd_rebuild_dashboard(args: argparse.Namespace) -> int:
     store = BetaModelStore(args.store_dir)
     board = store.compute_ranking(top_n=args.top_n, max_dd_pct=args.max_dd_gate, write_file=True)
     all_metrics = [m.latest_metrics for m in store.load_all_models()]
+    stability_map = store.load_all_stability_map()
     available_dates = store.load_daily_batches_summary(max_dd_pct=args.max_dd_gate)
 
     if args.all_dates:
@@ -532,6 +560,7 @@ def _cmd_rebuild_dashboard(args: argparse.Namespace) -> int:
             all_metrics=all_metrics,
             board=board,
             available_dates=available_dates,
+            stability_map=stability_map,
         )
         rebuilt_paths.append(ddir / "dashboard.html")
 

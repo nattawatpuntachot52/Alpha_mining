@@ -254,6 +254,17 @@ class AlphaModelStore:
                 out[mid] = s
         return out
 
+    def load_all_stability_map(self) -> dict[str, dict[str, float]]:
+        """Compute portfolio stability metrics (Vol/yr, Ulcer, R^2) for every isolated model on disk."""
+        from .stability import stability_from_alpha_series
+
+        out: dict[str, dict[str, float]] = {}
+        for mid in self.list_model_ids():
+            s = self.load_series(mid)
+            if s:
+                out[mid] = stability_from_alpha_series(s)
+        return out
+
     def mined_spec_keys(self) -> set[str]:
         return {str(info.get("spec_key", "")) for info in (self.load_catalog().get("models") or {}).values()}
 

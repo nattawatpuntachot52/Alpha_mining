@@ -14,7 +14,7 @@ from __future__ import annotations
 import html
 import json
 import re
-from typing import Any, Sequence
+from typing import Any, Mapping, Sequence
 
 from .portal_hub import humanize_alpha_model
 from .stability import stability_from_alpha_series
@@ -119,6 +119,7 @@ button:hover,a.nav:hover{border-color:var(--pri)}button.active{background:var(--
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
 .card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px 14px;min-width:0;overflow:hidden}
 .kl{color:var(--mut);font-size:12px}.kv{font-size:20px;font-weight:700;font-family:ui-monospace,Menlo,monospace;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ks{color:var(--mut);font-size:11.5px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px 14px}
 .gate-bar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px 14px;margin-bottom:14px}
 .gate-grp{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
@@ -319,11 +320,11 @@ function curves(mid){
   return curveCache[mid]={xs:pick(xs),eq:pick(eq),dd:pick(dd)};
 }
 function setup(cv){const r=cv.getBoundingClientRect(),d=devicePixelRatio||1;cv.width=Math.max(10,r.width*d);cv.height=Math.max(10,r.height*d);const c=cv.getContext("2d");c.setTransform(d,0,0,d,0,0);return{c,w:r.width,h:r.height}}
-const ML=58,MR=10,MT=8,MB=26;
+const ML=58,MR=16,MT=8,MB=26;
 function axes(c,w,h,x0,x1,y0,y1,xf,yf){
   c.font="10px ui-monospace,Menlo,monospace";c.fillStyle="#94a3b8";c.strokeStyle="rgba(148,163,184,.14)";c.lineWidth=1;
   for(let i=0;i<=5;i++){const v=y0+(y1-y0)*i/5,y=h-MB-(h-MB-MT)*i/5;c.beginPath();c.moveTo(ML,y);c.lineTo(w-MR,y);c.stroke();c.textAlign="right";c.fillText(yf(v),ML-5,y+3)}
-  if(xf)for(let i=0;i<=5;i++){const v=x0+(x1-x0)*i/5,x=ML+(w-ML-MR)*i/5;c.textAlign="center";c.fillText(xf(v),x,h-8)}
+  if(xf)for(let i=0;i<=5;i++){const v=x0+(x1-x0)*i/5,x=ML+(w-ML-MR)*i/5;c.textAlign=i===0?"left":(i===5?"right":"center");c.fillText(xf(v),x,h-8)}
 }
 function lineChart(cv,list,yf){
   const{c,w,h}=setup(cv);c.clearRect(0,0,w,h);
@@ -369,7 +370,14 @@ function ddBarChart(cv,labels,ms,colorFn,names,gatePct){
     const v=vals[i],m=ms[i],x=ML+slot*i+(slot-bw)/2,yt=Y(v),bh=Math.max(1,yBase-yt);
     const over=gatePct>0&&v>gatePct;
     c.fillStyle=over?"#ef4444":colorFn(m);c.fillRect(x,yt,bw,bh);
-    if(slot>=24){c.fillStyle=over?"#fca5a5":"#cbd5e1";c.font="10px ui-monospace,Menlo,monospace";c.textAlign="center";c.fillText(v.toFixed(1)+"%",x+bw/2,Math.max(MT+9,yt-4))}
+    if(slot>=34){
+      c.fillStyle=over?"#fca5a5":"#cbd5e1";c.font="10px ui-monospace,Menlo,monospace";c.textAlign="center";
+      c.fillText(v.toFixed(1)+"%",x+bw/2,Math.max(MT+9,yt-4));
+    }else if(slot>=20){
+      c.fillStyle=over?"#fca5a5":"#cbd5e1";c.font="9px ui-monospace,Menlo,monospace";c.textAlign="center";
+      const stagger=(i%2===1)?11:0;
+      c.fillText(v.toFixed(0)+"%",x+bw/2,Math.max(MT+9+stagger,yt-3-stagger));
+    }
     c.fillStyle="#94a3b8";c.textAlign="center";c.font="10px ui-monospace,Menlo,monospace";if(slot>16||i%2===0)c.fillText(lb,ML+slot*i+slot/2,h-8);
     const oosDd=m.oos_max_drawdown_pct!=null?`\nOOS Max DD: ${Number(m.oos_max_drawdown_pct).toFixed(1)}%`:"";
     hits.push([x-2,yt-4,bw+4,bh+8,`${names[i]}\nMax DD: ${v.toFixed(1)}%${oosDd}\nGate (≤ ${gatePct}%): ${over?"เกินเกณฑ์":"ผ่าน"}`]);
@@ -492,8 +500,13 @@ function renderKpis(){
   const ms=P.batch_models.filter(visible),oos=ms.filter(m=>m.oos_return_pct>0).length,best=ms.reduce((a,m)=>(!a||m.oos_sharpe_ann>a.oos_sharpe_ann)?m:a,null);
   const rr=evalAlphaRanking();
   const qualSym=S.sym==="ALL"?rr.qualified_count:((rr.qualified_by_symbol||{})[S.sym]||0);
-  const k=[["โมเดลในหน้านี้",ms.length+" โมเดล"],["กำไร OOS เป็นบวก",oos+" / "+ms.length],["OOS Sharpe สูงสุด",best?num(best.oos_sharpe_ann)+" ("+(best.label||best.family)+")":"–"],["ผ่านเกณฑ์ขึ้นบอร์ด",qualSym+" โมเดล"]];
-  $("kpis").innerHTML=k.map(x=>`<div class="card"><div class="kl">${x[0]}</div><div class="kv" style="font-size:17px">${esc(x[1])}</div></div>`).join("");
+  const k=[
+    ["โมเดลในหน้านี้",ms.length+" โมเดล",""],
+    ["กำไร OOS เป็นบวก",oos+" / "+ms.length,""],
+    ["OOS Sharpe สูงสุด",best?num(best.oos_sharpe_ann):"–",best?(best.label||best.family):""],
+    ["ผ่านเกณฑ์ขึ้นบอร์ด",qualSym+" โมเดล",""]
+  ];
+  $("kpis").innerHTML=k.map(x=>`<div class="card"><div class="kl">${x[0]}</div><div class="kv" style="font-size:18px">${esc(x[1])}</div>${x[2]?`<div class="ks" title="${esc(x[2])}">${esc(x[2])}</div>`:""}</div>`).join("");
 }
 function syncHash(){
   const rawHash=location.hash||"";
@@ -591,6 +604,7 @@ def render_dashboard_html(
     available_dates: Sequence[dict[str, Any]] = (),
     beta_hub_href: str = DEFAULT_BETA_HUB_HREF,
     default_tab: str = "daily",
+    stability_map: Mapping[str, Mapping[str, float]] | None = None,
 ) -> str:
     rule = ranking_board.get("ranking_rule", {})
     ranking_slim = {
@@ -627,7 +641,13 @@ def render_dashboard_html(
         )
         extra_ids.extend(str(m["model_id"]) for m in ranked_sym[:30] if m.get("model_id"))
     series_ids = list(dict.fromkeys([*batch_ids, *top_ids, *extra_ids]))
-    stab_by_id = {mid: stability_from_alpha_series(ser) for mid, ser in batch_series.items()}
+    stab_by_id: dict[str, dict[str, float]] = {}
+    if stability_map:
+        for mid, vals in stability_map.items():
+            stab_by_id[str(mid)] = dict(vals)
+    for mid, ser in batch_series.items():
+        if mid not in stab_by_id:
+            stab_by_id[mid] = stability_from_alpha_series(ser)
 
     def _with_stab(m: dict[str, Any]) -> dict[str, Any]:
         rec = _slim(m, keep_hyp=True)

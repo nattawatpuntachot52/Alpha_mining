@@ -362,6 +362,17 @@ class BetaModelStore:
                 out[mid] = s
         return out
 
+    def load_all_stability_map(self) -> dict[str, dict[str, float]]:
+        """Compute portfolio stability metrics (Vol/yr, Ulcer, R^2) for every isolated model on disk."""
+        from .stability import stability_from_beta_series
+
+        out: dict[str, dict[str, float]] = {}
+        for mid in self.list_model_ids():
+            s = self.load_series(mid)
+            if s:
+                out[mid] = stability_from_beta_series(s)
+        return out
+
     def load_signal_provider(self, model_id: str) -> SignalProvider:
         """Load an isolated model's signal plugin (`models/<id>/signal.py` or built-in spec)."""
         loaded = self.load_model(model_id)
