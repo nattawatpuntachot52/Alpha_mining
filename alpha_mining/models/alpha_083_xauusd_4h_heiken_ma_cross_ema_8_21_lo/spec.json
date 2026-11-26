@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_083_xauusd_4h_heiken_ma_cross_ema_8_21_lo",
+  "trial_number": 83,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"heiken_ma_cross\",\"params\":{\"fast\":8,\"ma\":\"ema\",\"slow\":21},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"4h\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "4h",
+  "family": "heiken_ma_cross",
+  "params": {
+    "ma": "ema",
+    "fast": 8,
+    "slow": 21
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day05_r1_ha_ma_mtf",
+  "hypothesis": "H4 Heiken Ashi EMA 8/21 smooths gold pullbacks during sustained uptrends.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-26",
+  "updated_at_utc": "2026-11-26T08:08:28Z",
+  "spec_sha256": "sha256:da7df9c56097f46e95b87d248bee5bbc2a22186a13a5924191c482228565843d"
+}

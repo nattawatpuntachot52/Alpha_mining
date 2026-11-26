@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_081_xauusd_30m_heiken_ma_cross_sma_12_26_lo",
+  "trial_number": 81,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"heiken_ma_cross\",\"params\":{\"fast\":12,\"ma\":\"sma\",\"slow\":26},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"30m\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "30m",
+  "family": "heiken_ma_cross",
+  "params": {
+    "ma": "sma",
+    "fast": 12,
+    "slow": 26
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day05_r1_ha_ma_mtf",
+  "hypothesis": "Test M30 Heiken Ashi SMA 12/26 without Thursday block to check if day-filter is overfit.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-26",
+  "updated_at_utc": "2026-11-26T08:08:28Z",
+  "spec_sha256": "sha256:9f7b73b1152f7e23a504ea56946712984233935c100f18a1e8efdd01d8148fff"
+}

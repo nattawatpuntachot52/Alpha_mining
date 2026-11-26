@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_089_ethusdt_4h_heiken_ma_cross_ema_8_21_ls",
+  "trial_number": 89,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"heiken_ma_cross\",\"params\":{\"fast\":8,\"ma\":\"ema\",\"slow\":21},\"sl_pct\":0.0,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"4h\",\"tp_pct\":0.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "4h",
+  "family": "heiken_ma_cross",
+  "params": {
+    "ma": "ema",
+    "fast": 8,
+    "slow": 21
+  },
+  "direction": "long_short",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day05_r1_ma_ha",
+  "hypothesis": "H4 Heiken Ashi EMA 8/21 two-way swing system.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-26",
+  "updated_at_utc": "2026-11-26T08:08:30Z",
+  "spec_sha256": "sha256:401c998f32f35414b5016508daa83517b3d8ab2401b502055491c26c81dff289"
+}

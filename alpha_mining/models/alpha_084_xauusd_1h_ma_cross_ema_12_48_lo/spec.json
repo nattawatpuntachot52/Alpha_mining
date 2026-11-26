@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_084_xauusd_1h_ma_cross_ema_12_48_lo",
+  "trial_number": 84,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"ma_cross\",\"params\":{\"fast\":12,\"ma\":\"ema\",\"slow\":48},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"1h\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "1h",
+  "family": "ma_cross",
+  "params": {
+    "ma": "ema",
+    "fast": 12,
+    "slow": 48
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day05_r1_ha_ma_mtf",
+  "hypothesis": "H1 12h vs 48h EMA crossover captures 2-day institutional gold flows.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-26",
+  "updated_at_utc": "2026-11-26T08:08:28Z",
+  "spec_sha256": "sha256:4fc770178ec5198423b03cdd40ce5099534bd43f7f94083d513e2b5c47059314"
+}
