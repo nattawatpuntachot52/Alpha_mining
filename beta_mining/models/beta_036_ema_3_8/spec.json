@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "model_id": "beta_036_ema_3_8",
+  "trial_number": 36,
+  "category": "beta",
+  "signal_spec": "ema_3_8",
+  "signal_name": "ema_3_8",
+  "symbol": "ETHUSDT",
+  "product_type": "USD_M",
+  "settlement_unit": "USDT",
+  "zone_high": 5000.0,
+  "zone_low": 500.0,
+  "spacing_pct": 0.2,
+  "grid_levels_count": 1151,
+  "initial_capital": 10000.0,
+  "fill_mode": "strict_cross",
+  "hypothesis": "Fibonacci-ratio EMA pair ema_3_8 tests whether natural-ratio spacing improves CF/DD efficiency on 1m ETHUSDT.",
+  "tags": [
+    "beta_mining",
+    "day08_ema_fibonacci"
+  ],
+  "evidence_status": "reproducible",
+  "config_snapshot": {
+    "profile": "usdm",
+    "high": "5000.0",
+    "low": "500.0",
+    "spacing_pct": "0.2",
+    "order_quantity": "0.01",
+    "max_position_quantity": "2.0",
+    "max_notional_usdt": "10000.0",
+    "initial_capital": "10000.0",
+    "recovery_mode": "partial_only",
+    "fill_mode": "strict_cross"
+  },
+  "created_batch_date": "2026-11-26",
+  "updated_at_utc": "2026-11-26T00:15:34Z",
+  "spec_sha256": "sha256:8e21452acd6a8777b20201457925df74570da33db34f73e5e5aa637ed91b2248"
+}
