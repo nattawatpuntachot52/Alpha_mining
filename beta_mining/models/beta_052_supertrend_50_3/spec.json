@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "model_id": "beta_052_supertrend_50_3",
+  "trial_number": 52,
+  "category": "beta",
+  "signal_spec": "supertrend_50_3",
+  "signal_name": "supertrend_50_3",
+  "symbol": "ETHUSDT",
+  "product_type": "USD_M",
+  "settlement_unit": "USDT",
+  "zone_high": 5000.0,
+  "zone_low": 500.0,
+  "spacing_pct": 0.2,
+  "grid_levels_count": 1151,
+  "initial_capital": 10000.0,
+  "fill_mode": "strict_cross",
+  "hypothesis": "Supertrend supertrend_50_3 (long ATR / wide band) tests tail-risk minimisation versus realised cashflow.",
+  "tags": [
+    "beta_mining",
+    "day11_supertrend_wide"
+  ],
+  "evidence_status": "reproducible",
+  "config_snapshot": {
+    "profile": "usdm",
+    "high": "5000.0",
+    "low": "500.0",
+    "spacing_pct": "0.2",
+    "order_quantity": "0.01",
+    "max_position_quantity": "2.0",
+    "max_notional_usdt": "10000.0",
+    "initial_capital": "10000.0",
+    "recovery_mode": "partial_only",
+    "fill_mode": "strict_cross"
+  },
+  "created_batch_date": "2026-11-26",
+  "updated_at_utc": "2026-11-26T08:43:30Z",
+  "spec_sha256": "sha256:7f4a874a18dc4e001d2614b796b51cc3b3f19ce05c89e1ff1c4ee8a7e6622cbf"
+}
