@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_078_ethusdt_1h_rsi_reversion_14_25_75_50_50_ls_sl2_5tp0",
+  "trial_number": 78,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"rsi_reversion\",\"params\":{\"buy_below\":25,\"exit_long\":50,\"exit_short\":50,\"period\":14,\"sell_above\":75},\"sl_pct\":2.5,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"1h\",\"tp_pct\":0.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "1h",
+  "family": "rsi_reversion",
+  "params": {
+    "period": 14,
+    "buy_below": 25,
+    "sell_above": 75,
+    "exit_long": 50,
+    "exit_short": 50
+  },
+  "direction": "long_short",
+  "sl_pct": 2.5,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day04_r2_rsi",
+  "hypothesis": "H1 extreme RSI(14) 25/75 two-way reversion with 2.5% SL.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-26",
+  "updated_at_utc": "2026-11-26T04:15:31Z",
+  "spec_sha256": "sha256:10a4f1876093b7315f100e8200cd20a811459ce6fcebe79275c3504405a7140a"
+}

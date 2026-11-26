@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_074_xauusd_1h_rsi_regime_14_58_50_42_lo",
+  "trial_number": 74,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"rsi_regime\",\"params\":{\"lower\":42,\"mid\":50,\"period\":14,\"upper\":58},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"1h\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "1h",
+  "family": "rsi_regime",
+  "params": {
+    "period": 14,
+    "upper": 58,
+    "mid": 50,
+    "lower": 42
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day04_r2_rsi_mtf",
+  "hypothesis": "H1 RSI(14)>58 momentum regime holds gold only while buying pressure dominates.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-26",
+  "updated_at_utc": "2026-11-26T04:15:30Z",
+  "spec_sha256": "sha256:3b9274b72784b6e03c782e42823be99de54fe8f92f43a22fc7fd4ad0eaf4cf52"
+}

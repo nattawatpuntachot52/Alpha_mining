@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_079_ethusdt_4h_rsi_regime_14_55_50_45_ls",
+  "trial_number": 79,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"rsi_regime\",\"params\":{\"lower\":45,\"mid\":50,\"period\":14,\"upper\":55},\"sl_pct\":0.0,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"4h\",\"tp_pct\":0.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "4h",
+  "family": "rsi_regime",
+  "params": {
+    "period": 14,
+    "upper": 55,
+    "mid": 50,
+    "lower": 45
+  },
+  "direction": "long_short",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day04_r2_rsi",
+  "hypothesis": "H4 RSI(14) 55/45 hysteresis momentum regime follower.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-26",
+  "updated_at_utc": "2026-11-26T04:15:31Z",
+  "spec_sha256": "sha256:5d360f169ec467b899fb573a433c29cf2280b19c3c85aa8a061b326122382523"
+}

@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_080_ethusdt_1d_rsi_regime_14_55_48_42_lo",
+  "trial_number": 80,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"rsi_regime\",\"params\":{\"lower\":42,\"mid\":48,\"period\":14,\"upper\":55},\"sl_pct\":0.0,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"1d\",\"tp_pct\":0.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "1d",
+  "family": "rsi_regime",
+  "params": {
+    "period": 14,
+    "upper": 55,
+    "mid": 48,
+    "lower": 42
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day04_r2_rsi",
+  "hypothesis": "D1 RSI(14) bull-regime filter stays flat during crypto drawdowns.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-26",
+  "updated_at_utc": "2026-11-26T04:15:31Z",
+  "spec_sha256": "sha256:035f82606795dfe2f81655e29f0acd5dda33abdac1be4185179177d9de0aedac"
+}
