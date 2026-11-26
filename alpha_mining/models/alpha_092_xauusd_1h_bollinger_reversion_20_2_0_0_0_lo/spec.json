@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_092_xauusd_1h_bollinger_reversion_20_2_0_0_0_lo",
+  "trial_number": 92,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"bollinger_reversion\",\"params\":{\"exit_z\":0.0,\"k\":2.0,\"period\":20},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"1h\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "1h",
+  "family": "bollinger_reversion",
+  "params": {
+    "period": 20,
+    "k": 2.0,
+    "exit_z": 0.0
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day05_r2_bb_vol",
+  "hypothesis": "H1 long-only Bollinger -2σ dip buying reverts to 20-hour mean.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-26",
+  "updated_at_utc": "2026-11-26T12:15:18Z",
+  "spec_sha256": "sha256:99da925ad176b2b1e0fe70da1e6a538cd0b2c7ff23f9192c2707219f77def573"
+}

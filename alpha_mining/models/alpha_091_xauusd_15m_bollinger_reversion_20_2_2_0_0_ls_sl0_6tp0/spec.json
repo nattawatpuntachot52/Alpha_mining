@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_091_xauusd_15m_bollinger_reversion_20_2_2_0_0_ls_sl0_6tp0",
+  "trial_number": 91,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"bollinger_reversion\",\"params\":{\"exit_z\":0.0,\"k\":2.2,\"period\":20},\"sl_pct\":0.6,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"15m\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "15m",
+  "family": "bollinger_reversion",
+  "params": {
+    "period": 20,
+    "k": 2.2,
+    "exit_z": 0.0
+  },
+  "direction": "long_short",
+  "sl_pct": 0.6,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day05_r2_bb_vol",
+  "hypothesis": "M15 Bollinger(20, 2.2σ) two-way mean reversion with 0.6% stop-loss.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-26",
+  "updated_at_utc": "2026-11-26T12:15:18Z",
+  "spec_sha256": "sha256:3f7d34d9d77d311e4a3fe3460a63b242349def4cbe1eee5a7c7611d9451fca1b"
+}

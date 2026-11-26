@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_097_ethusdt_4h_bollinger_reversion_20_2_0_0_0_lo",
+  "trial_number": 97,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"bollinger_reversion\",\"params\":{\"exit_z\":0.0,\"k\":2.0,\"period\":20},\"sl_pct\":0.0,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"4h\",\"tp_pct\":0.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "4h",
+  "family": "bollinger_reversion",
+  "params": {
+    "period": 20,
+    "k": 2.0,
+    "exit_z": 0.0
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day05_r2_bb_vol",
+  "hypothesis": "H4 long-only Bollinger -2σ dip buyer.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-26",
+  "updated_at_utc": "2026-11-26T12:15:24Z",
+  "spec_sha256": "sha256:a6a9dc40b6f15416fa4c1a2c8fb26324e9879a5093db1ad61ac6d100fc81ce50"
+}

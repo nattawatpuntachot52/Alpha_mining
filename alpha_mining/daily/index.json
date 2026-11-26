@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "generated_at_utc": "2026-11-26T08:08:30Z",
+  "generated_at_utc": "2026-11-26T12:15:25Z",
   "latest_date": "2026-11-26",
   "total_days": 3,
   "dates": [
@@ -11,16 +11,17 @@
   "days": [
     {
       "batch_date": "2026-11-26",
-      "generated_at_utc": "2026-11-26T08:08:30Z",
-      "model_count": 30,
+      "generated_at_utc": "2026-11-26T12:15:25Z",
+      "model_count": 40,
       "rounds": [
         1,
         2,
-        3
+        3,
+        4
       ],
       "by_symbol": {
-        "XAUUSD": 15,
-        "ETHUSDT": 15
+        "XAUUSD": 20,
+        "ETHUSDT": 20
       },
       "model_ids": [
         "alpha_061_xauusd_1h_impulse_efficiency_3_20_1_8_0_7_10_continuat",
@@ -52,11 +53,21 @@
         "alpha_087_ethusdt_1h_ma_cross_ema_12_36_ls",
         "alpha_088_ethusdt_1h_heiken_ma_cross_ema_9_26_ls",
         "alpha_089_ethusdt_4h_heiken_ma_cross_ema_8_21_ls",
-        "alpha_090_ethusdt_1d_ma_cross_ema_10_30_lo"
+        "alpha_090_ethusdt_1d_ma_cross_ema_10_30_lo",
+        "alpha_091_xauusd_15m_bollinger_reversion_20_2_2_0_0_ls_sl0_6tp0",
+        "alpha_092_xauusd_1h_bollinger_reversion_20_2_0_0_0_lo",
+        "alpha_093_xauusd_5m_bollinger_reversion_30_2_5_0_0_ls_sl0_35tp0",
+        "alpha_094_xauusd_1h_vol_expansion_breakout_14_1_6_8_ls",
+        "alpha_095_xauusd_30m_vol_expansion_breakout_20_1_8_10_lo",
+        "alpha_096_ethusdt_1h_bollinger_reversion_20_2_2_0_0_ls_sl2_5tp0",
+        "alpha_097_ethusdt_4h_bollinger_reversion_20_2_0_0_0_lo",
+        "alpha_098_ethusdt_15m_bollinger_reversion_24_2_5_0_0_ls_sl1_5tp2",
+        "alpha_099_ethusdt_1h_vol_expansion_breakout_14_1_8_8_ls",
+        "alpha_100_ethusdt_4h_vol_expansion_breakout_14_1_6_8_ls"
       ],
       "best_oos_sharpe_model_id": "alpha_065_xauusd_4h_impulse_efficiency_3_20_1_8_0_75_10_continua",
       "best_oos_sharpe": 1.789,
-      "profitable_oos_count": 14,
+      "profitable_oos_count": 16,
       "has_dashboard": true,
       "has_summary": true,
       "dashboard_rel_path": "daily/2026-11-26/dashboard.html",
