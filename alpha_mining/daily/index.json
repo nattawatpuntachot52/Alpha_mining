@@ -1,13 +1,45 @@
 {
   "schema_version": "1.0",
-  "generated_at_utc": "2026-11-25T08:23:23Z",
-  "latest_date": "2026-11-25",
-  "total_days": 2,
+  "generated_at_utc": "2026-11-26T00:15:31Z",
+  "latest_date": "2026-11-26",
+  "total_days": 3,
   "dates": [
+    "2026-11-26",
     "2026-11-25",
     "2026-11-24"
   ],
   "days": [
+    {
+      "batch_date": "2026-11-26",
+      "generated_at_utc": "2026-11-26T00:15:31Z",
+      "model_count": 10,
+      "rounds": [
+        1
+      ],
+      "by_symbol": {
+        "XAUUSD": 5,
+        "ETHUSDT": 5
+      },
+      "model_ids": [
+        "alpha_061_xauusd_1h_impulse_efficiency_3_20_1_8_0_7_10_continuat",
+        "alpha_062_xauusd_1h_impulse_efficiency_3_20_2_2_0_8_12_reversal",
+        "alpha_063_xauusd_15m_impulse_efficiency_4_30_2_2_0_75_16_continu",
+        "alpha_064_xauusd_30m_impulse_efficiency_3_24_2_0_0_75_12_continu",
+        "alpha_065_xauusd_4h_impulse_efficiency_3_20_1_8_0_75_10_continua",
+        "alpha_066_ethusdt_1h_impulse_efficiency_3_20_2_2_0_78_12_reversa",
+        "alpha_067_ethusdt_15m_impulse_efficiency_4_30_2_4_0_78_16_contin",
+        "alpha_068_ethusdt_30m_impulse_efficiency_3_24_2_0_0_75_12_contin",
+        "alpha_069_ethusdt_4h_impulse_efficiency_3_20_1_8_0_75_12_continu",
+        "alpha_070_ethusdt_1h_impulse_efficiency_6_24_2_0_0_7_18_continua"
+      ],
+      "best_oos_sharpe_model_id": "alpha_065_xauusd_4h_impulse_efficiency_3_20_1_8_0_75_10_continua",
+      "best_oos_sharpe": 1.789,
+      "profitable_oos_count": 2,
+      "has_dashboard": true,
+      "has_summary": true,
+      "dashboard_rel_path": "daily/2026-11-26/dashboard.html",
+      "summary_rel_path": "daily/2026-11-26/daily_summary.md"
+    },
     {
       "batch_date": "2026-11-25",
       "generated_at_utc": "2026-11-25T08:23:23Z",

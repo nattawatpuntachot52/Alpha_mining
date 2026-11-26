@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_069_ethusdt_4h_impulse_efficiency_3_20_1_8_0_75_12_continu",
+  "trial_number": 69,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"impulse_efficiency\",\"params\":{\"er_threshold\":0.75,\"hold_bars\":12,\"k\":3,\"mode\":\"continuation\",\"w\":20,\"z_threshold\":1.8},\"sl_pct\":3.5,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"4h\",\"tp_pct\":6.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "4h",
+  "family": "impulse_efficiency",
+  "params": {
+    "k": 3,
+    "w": 20,
+    "z_threshold": 1.8,
+    "er_threshold": 0.75,
+    "hold_bars": 12,
+    "mode": "continuation"
+  },
+  "direction": "long_short",
+  "sl_pct": 3.5,
+  "tp_pct": 6.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day04_r1_impulse",
+  "hypothesis": "H4 multi-bar clean thrust continuation with 3.5% SL / 6.0% TP.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-26",
+  "updated_at_utc": "2026-11-26T00:15:31Z",
+  "spec_sha256": "sha256:ea7c7f0d3adb2625d2b12f05690e9e645a4fc8b571228ce5bf9fd45cb2b69bdd"
+}

@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_061_xauusd_1h_impulse_efficiency_3_20_1_8_0_7_10_continuat",
+  "trial_number": 61,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"impulse_efficiency\",\"params\":{\"er_threshold\":0.7,\"hold_bars\":10,\"k\":3,\"mode\":\"continuation\",\"w\":20,\"z_threshold\":1.8},\"sl_pct\":1.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"1h\",\"tp_pct\":1.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "1h",
+  "family": "impulse_efficiency",
+  "params": {
+    "k": 3,
+    "w": 20,
+    "z_threshold": 1.8,
+    "er_threshold": 0.7,
+    "hold_bars": 10,
+    "mode": "continuation"
+  },
+  "direction": "long_short",
+  "sl_pct": 1.0,
+  "tp_pct": 1.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day04_r1_impulse_sweep",
+  "hypothesis": "Impulse S2 variant: slightly looser Z>=1.8 & ER>=0.70 with symmetric 1.0%/1.0% SL/TP.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-26",
+  "updated_at_utc": "2026-11-26T00:15:27Z",
+  "spec_sha256": "sha256:a4106fca5d70d695fcb15609ee16379997b559f695ac9585f7d1f2b66d2be172"
+}

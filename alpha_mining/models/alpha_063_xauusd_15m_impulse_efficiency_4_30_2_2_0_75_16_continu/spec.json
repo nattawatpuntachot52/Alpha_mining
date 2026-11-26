@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_063_xauusd_15m_impulse_efficiency_4_30_2_2_0_75_16_continu",
+  "trial_number": 63,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"impulse_efficiency\",\"params\":{\"er_threshold\":0.75,\"hold_bars\":16,\"k\":4,\"mode\":\"continuation\",\"w\":30,\"z_threshold\":2.2},\"sl_pct\":0.5,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"15m\",\"tp_pct\":0.8}",
+  "symbol": "XAUUSD",
+  "timeframe": "15m",
+  "family": "impulse_efficiency",
+  "params": {
+    "k": 4,
+    "w": 30,
+    "z_threshold": 2.2,
+    "er_threshold": 0.75,
+    "hold_bars": 16,
+    "mode": "continuation"
+  },
+  "direction": "long_short",
+  "sl_pct": 0.5,
+  "tp_pct": 0.8,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day04_r1_impulse_sweep",
+  "hypothesis": "M15 fast news/macro shock continuation (k=4 bars = 1h impulse) with 0.5% SL / 0.8% TP.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-26",
+  "updated_at_utc": "2026-11-26T00:15:28Z",
+  "spec_sha256": "sha256:0d47bb9f3827a27e857ed3280aaccbf92fc692aa814af9ee1d794f13fb3e1983"
+}
