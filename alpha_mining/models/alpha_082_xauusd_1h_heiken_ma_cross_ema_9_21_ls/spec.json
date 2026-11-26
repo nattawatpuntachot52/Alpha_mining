@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_082_xauusd_1h_heiken_ma_cross_ema_9_21_ls",
+  "trial_number": 82,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"heiken_ma_cross\",\"params\":{\"fast\":9,\"ma\":\"ema\",\"slow\":21},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"1h\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "1h",
+  "family": "heiken_ma_cross",
+  "params": {
+    "ma": "ema",
+    "fast": 9,
+    "slow": 21
+  },
+  "direction": "long_short",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day05_r1_ha_ma_mtf",
+  "hypothesis": "H1 Heiken Ashi EMA 9/21 two-way reduces whipsaw compared to raw close EMA cross.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-26",
+  "updated_at_utc": "2026-11-26T08:08:28Z",
+  "spec_sha256": "sha256:175ec166979e091c125f134a33f2c297dcd69d9f442c337f6e891a0549cd71e2"
+}
