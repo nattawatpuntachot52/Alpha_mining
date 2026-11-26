@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "generated_at_utc": "2026-11-26T04:15:31Z",
+  "generated_at_utc": "2026-11-26T08:08:30Z",
   "latest_date": "2026-11-26",
   "total_days": 3,
   "dates": [
@@ -11,15 +11,16 @@
   "days": [
     {
       "batch_date": "2026-11-26",
-      "generated_at_utc": "2026-11-26T04:15:31Z",
-      "model_count": 20,
+      "generated_at_utc": "2026-11-26T08:08:30Z",
+      "model_count": 30,
       "rounds": [
         1,
-        2
+        2,
+        3
       ],
       "by_symbol": {
-        "XAUUSD": 10,
-        "ETHUSDT": 10
+        "XAUUSD": 15,
+        "ETHUSDT": 15
       },
       "model_ids": [
         "alpha_061_xauusd_1h_impulse_efficiency_3_20_1_8_0_7_10_continuat",
@@ -41,11 +42,21 @@
         "alpha_077_ethusdt_4h_rsi_reversion_4_20_80_55_45_ls",
         "alpha_078_ethusdt_1h_rsi_reversion_14_25_75_50_50_ls_sl2_5tp0",
         "alpha_079_ethusdt_4h_rsi_regime_14_55_50_45_ls",
-        "alpha_080_ethusdt_1d_rsi_regime_14_55_48_42_lo"
+        "alpha_080_ethusdt_1d_rsi_regime_14_55_48_42_lo",
+        "alpha_081_xauusd_30m_heiken_ma_cross_sma_12_26_lo",
+        "alpha_082_xauusd_1h_heiken_ma_cross_ema_9_21_ls",
+        "alpha_083_xauusd_4h_heiken_ma_cross_ema_8_21_lo",
+        "alpha_084_xauusd_1h_ma_cross_ema_12_48_lo",
+        "alpha_085_xauusd_1d_ma_cross_ema_10_50_lo",
+        "alpha_086_ethusdt_15m_ma_cross_sma_28_101_lo",
+        "alpha_087_ethusdt_1h_ma_cross_ema_12_36_ls",
+        "alpha_088_ethusdt_1h_heiken_ma_cross_ema_9_26_ls",
+        "alpha_089_ethusdt_4h_heiken_ma_cross_ema_8_21_ls",
+        "alpha_090_ethusdt_1d_ma_cross_ema_10_30_lo"
       ],
       "best_oos_sharpe_model_id": "alpha_065_xauusd_4h_impulse_efficiency_3_20_1_8_0_75_10_continua",
       "best_oos_sharpe": 1.789,
-      "profitable_oos_count": 7,
+      "profitable_oos_count": 14,
       "has_dashboard": true,
       "has_summary": true,
       "dashboard_rel_path": "daily/2026-11-26/dashboard.html",

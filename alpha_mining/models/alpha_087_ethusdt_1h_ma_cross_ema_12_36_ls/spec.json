@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_087_ethusdt_1h_ma_cross_ema_12_36_ls",
+  "trial_number": 87,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"ma_cross\",\"params\":{\"fast\":12,\"ma\":\"ema\",\"slow\":36},\"sl_pct\":0.0,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"1h\",\"tp_pct\":0.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "1h",
+  "family": "ma_cross",
+  "params": {
+    "ma": "ema",
+    "fast": 12,
+    "slow": 36
+  },
+  "direction": "long_short",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day05_r1_ma_ha",
+  "hypothesis": "H1 EMA 12/36 two-way crossover balances responsiveness and fee drag.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-26",
+  "updated_at_utc": "2026-11-26T08:08:29Z",
+  "spec_sha256": "sha256:524fc5f20c6cb6699fb2ea0030d590074708537f101796c99183031d04ddd23d"
+}
