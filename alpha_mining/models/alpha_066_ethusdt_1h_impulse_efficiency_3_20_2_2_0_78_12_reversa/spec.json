@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_066_ethusdt_1h_impulse_efficiency_3_20_2_2_0_78_12_reversa",
+  "trial_number": 66,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"impulse_efficiency\",\"params\":{\"er_threshold\":0.78,\"hold_bars\":12,\"k\":3,\"mode\":\"reversal\",\"w\":20,\"z_threshold\":2.2},\"sl_pct\":2.0,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"1h\",\"tp_pct\":2.5}",
+  "symbol": "ETHUSDT",
+  "timeframe": "1h",
+  "family": "impulse_efficiency",
+  "params": {
+    "k": 3,
+    "w": 20,
+    "z_threshold": 2.2,
+    "er_threshold": 0.78,
+    "hold_bars": 12,
+    "mode": "reversal"
+  },
+  "direction": "long_short",
+  "sl_pct": 2.0,
+  "tp_pct": 2.5,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day04_r1_impulse",
+  "hypothesis": "Falsification test: fade high-Z/ER ETH spikes (liquidation climax mean reversion).",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-26",
+  "updated_at_utc": "2026-11-26T00:15:29Z",
+  "spec_sha256": "sha256:ca1ae9c4cc2a1378d2c9f7a0c8d76dc0ee9ecd6fb819c09891db787c42cb2804"
+}

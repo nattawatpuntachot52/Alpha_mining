@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_070_ethusdt_1h_impulse_efficiency_6_24_2_0_0_7_18_continua",
+  "trial_number": 70,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"impulse_efficiency\",\"params\":{\"er_threshold\":0.7,\"hold_bars\":18,\"k\":6,\"mode\":\"continuation\",\"w\":24,\"z_threshold\":2.0},\"sl_pct\":0.0,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"1h\",\"tp_pct\":0.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "1h",
+  "family": "impulse_efficiency",
+  "params": {
+    "k": 6,
+    "w": 24,
+    "z_threshold": 2.0,
+    "er_threshold": 0.7,
+    "hold_bars": 18,
+    "mode": "continuation"
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day04_r1_impulse",
+  "hypothesis": "Long-only 6-hour sustained institutional ETH accumulation impulse.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-26",
+  "updated_at_utc": "2026-11-26T00:15:31Z",
+  "spec_sha256": "sha256:94a0d38624ea6bbdbb2893a206b8b881303bc684850af905f6c8c5c8ad8e52f6"
+}
