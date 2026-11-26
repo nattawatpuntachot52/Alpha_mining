@@ -236,6 +236,7 @@ def _cmd_run_daily(args: argparse.Namespace) -> int:
         write_file=True,
     )
     all_metrics = store.load_all_metrics()
+    stability_map = store.load_all_stability_map()
     batch_ids = [m["model_id"] for m in batch_metrics]
     top_ids = [r["model_id"] for r in board.get("top_ranked", []) if r.get("model_id")]
     for rows in (board.get("top_ranked_by_symbol") or {}).values():
@@ -263,6 +264,7 @@ def _cmd_run_daily(args: argparse.Namespace) -> int:
         ranking_board=board,
         batch_series=batch_series,
         available_dates=existing_days,
+        stability_map=stability_map,
     )
     ddir = store.save_daily_batch(
         batch_date=batch_date,
@@ -388,6 +390,7 @@ def _cmd_rebuild_dashboard(args: argparse.Namespace) -> int:
         write_file=True,
     )
     all_metrics = store.load_all_metrics()
+    stability_map = store.load_all_stability_map()
     available_dates = store.load_daily_batches_summary()
     if args.all_dates:
         targets = store.list_daily_dates()
@@ -422,6 +425,7 @@ def _cmd_rebuild_dashboard(args: argparse.Namespace) -> int:
             ranking_board=board,
             batch_series=batch_series,
             available_dates=available_dates,
+            stability_map=stability_map,
         )
         store.save_daily_batch(
             batch_date=bdate,

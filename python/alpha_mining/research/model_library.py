@@ -333,20 +333,21 @@ def render_model_library_html(payload: dict[str, Any]) -> str:
     .pill.on.gold {{ background: var(--gold); border-color: var(--gold); color: #0b1017; }}
     .pill.on.cyan {{ background: var(--cyan); border-color: var(--cyan); color: #061318; }}
     input[type="search"], select {{ padding: 7px 10px; border-radius: 8px; border: 1px solid var(--bd); background: var(--surf); color: var(--fg); font-size: 12.5px; }}
-    input[type="search"] {{ min-width: 240px; }}
+    input[type="search"] {{ min-width: 270px; }}
     input[type="range"] {{ width: 110px; accent-color: var(--blue); }}
     .lbl {{ display: inline-flex; align-items: center; gap: 6px; font-size: 12px; }}
-    .split {{ display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(360px, 0.95fr); gap: 16px; align-items: start; }}
+    .split {{ display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(360px, 440px); gap: 16px; align-items: start; }}
     @media (max-width: 1080px) {{ .split {{ grid-template-columns: 1fr; }} }}
     .tw {{ overflow-x: auto; max-height: 740px; }}
-    table {{ border-collapse: collapse; width: 100%; font-size: 12.5px; }}
-    th, td {{ padding: 8px 9px; border-bottom: 1px solid var(--bd); text-align: right; white-space: nowrap; }}
+    table {{ border-collapse: collapse; width: 100%; font-size: 12px; }}
+    th, td {{ padding: 7px 6px; border-bottom: 1px solid var(--bd); text-align: right; white-space: nowrap; }}
     th {{ position: sticky; top: 0; background: var(--card); color: var(--mut); cursor: pointer; z-index: 2; }}
-    th.l, td.l {{ text-align: left; white-space: normal; }}
+    th.l, td.l {{ text-align: left; white-space: nowrap; }}
+    .lib-name {{ max-width: 215px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }}
     tbody tr {{ cursor: pointer; }}
     tbody tr:hover {{ background: rgba(59, 130, 246, 0.08); }}
     tbody tr.sel {{ background: rgba(59, 130, 246, 0.18); }}
-    .badge {{ display: inline-block; padding: 2px 7px; border-radius: 6px; font-size: 11px; font-weight: 700; }}
+    .badge {{ display: inline-block; padding: 2px 7px; border-radius: 6px; font-size: 11px; font-weight: 700; white-space: nowrap; }}
     .b-xau {{ background: var(--gold-soft); color: var(--gold); }}
     .b-eth {{ background: var(--cyan-soft); color: var(--cyan); }}
     .b-beta {{ background: var(--blue-soft); color: var(--blue); }}
@@ -405,7 +406,7 @@ def render_model_library_html(payload: dict[str, Any]) -> str:
           <button type="button" class="pill" data-cat="BETA_ETH_GRID">BETA · ETH Grid</button>
         </div>
         <div class="grp">
-          <input id="q-search" type="search" placeholder="ค้นหาชื่อโมเดล, family, signal, TF, สมมติฐาน..." />
+          <input id="q-search" type="search" placeholder="ค้นหาชื่อโมเดล, signal, TF, สมมติฐาน..." />
           <select id="q-sort">
             <option value="stability" selected>เรียงตามความนิ่ง (R² สูง → Vol ต่ำ)</option>
             <option value="primary">เรียงตามกำไรหลัก / Cashflow</option>
@@ -643,7 +644,7 @@ def render_model_library_html(payload: dict[str, Any]) -> str:
           : `<span class="${{m.primary_return_pct >= 0 ? 'pos' : 'neg'}}">${{m.primary_return_pct >= 0 ? '+' : ''}}${{num(m.primary_return_pct, 1)}}% OOS</span>`;
         return `<tr data-id="${{esc(m.model_id)}}" class="${{m.model_id === ST.selectedId ? 'sel' : ''}}">
           <td class="l">${{catBadge(m)}}</td>
-          <td class="l"><b>${{esc(m.title)}}</b><div class="mut mono" style="font-size:11px;">${{esc(m.model_id)}}</div></td>
+          <td class="l"><div class="lib-name" title="${{esc(m.title)}}"><b>${{esc(m.title)}}</b></div><div class="mut mono lib-name" style="font-size:11px;" title="${{esc(m.model_id)}}">${{esc(m.model_id)}}</div></td>
           <td class="mono">${{esc(m.batch_date)}}</td>
           <td class="mono">${{perf}}</td>
           <td class="mono">-${{num(m.max_drawdown_pct, 1)}}%</td>

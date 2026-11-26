@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "batch_date": "2026-11-24",
-  "generated_at_utc": "2026-11-25T05:51:03Z",
+  "generated_at_utc": "2026-11-26T15:15:50Z",
   "model_count": 20,
   "rounds": [
     1,
@@ -809,7 +809,7 @@
       "liquidated": false,
       "data_source": "binance_vision:spot:PAXGUSDT",
       "data_is_proxy": true,
-      "current_top9_rank": 2
+      "current_top9_rank": 6
     },
     {
       "schema_version": "1.0",
@@ -939,7 +939,7 @@
       "liquidated": false,
       "data_source": "binance_vision:spot:PAXGUSDT",
       "data_is_proxy": true,
-      "current_top9_rank": 7
+      "current_top9_rank": null
     },
     {
       "schema_version": "1.0",
@@ -1076,7 +1076,7 @@
       "liquidated": false,
       "data_source": "binance_vision:spot:PAXGUSDT",
       "data_is_proxy": true,
-      "current_top9_rank": 9
+      "current_top9_rank": null
     },
     {
       "schema_version": "1.0",
