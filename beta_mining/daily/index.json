@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "generated_at_utc": "2026-11-27T06:59:17Z",
+  "generated_at_utc": "2026-11-27T07:05:58Z",
   "latest_date": "2026-11-27",
   "total_days": 5,
   "dates": [
@@ -13,7 +13,7 @@
   "days": [
     {
       "batch_date": "2026-11-27",
-      "generated_at_utc": "2026-11-27T06:59:17Z",
+      "generated_at_utc": "2026-11-27T07:05:58Z",
       "model_count": 10,
       "qualified_count": 10,
       "model_ids": [
@@ -42,7 +42,7 @@
     },
     {
       "batch_date": "2026-11-26",
-      "generated_at_utc": "2026-11-26T16:00:34Z",
+      "generated_at_utc": "2026-11-27T07:05:58Z",
       "model_count": 35,
       "qualified_count": 35,
       "model_ids": [
@@ -96,7 +96,7 @@
     },
     {
       "batch_date": "2026-11-25",
-      "generated_at_utc": "2026-11-26T16:00:34Z",
+      "generated_at_utc": "2026-11-27T07:05:57Z",
       "model_count": 20,
       "qualified_count": 20,
       "model_ids": [
@@ -135,7 +135,7 @@
     },
     {
       "batch_date": "2026-11-24",
-      "generated_at_utc": "2026-11-26T16:00:34Z",
+      "generated_at_utc": "2026-11-27T07:05:57Z",
       "model_count": 10,
       "qualified_count": 10,
       "model_ids": [
@@ -164,7 +164,7 @@
     },
     {
       "batch_date": "2026-11-23",
-      "generated_at_utc": "2026-11-26T16:00:34Z",
+      "generated_at_utc": "2026-11-27T07:05:57Z",
       "model_count": 5,
       "qualified_count": 5,
       "model_ids": [

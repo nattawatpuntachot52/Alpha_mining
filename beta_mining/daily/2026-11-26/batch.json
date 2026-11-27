@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "batch_date": "2026-11-26",
-  "generated_at_utc": "2026-11-26T16:00:34Z",
+  "generated_at_utc": "2026-11-27T07:05:58Z",
   "model_count": 35,
   "rounds": [
     1,
@@ -93,7 +93,7 @@
         "would_liquidate": false,
         "closed_trades_count": 173
       },
-      "current_top9_rank": 8
+      "current_top9_rank": null
     },
     {
       "schema_version": "1.0",
@@ -165,7 +165,7 @@
         "would_liquidate": false,
         "closed_trades_count": 136
       },
-      "current_top9_rank": 7
+      "current_top9_rank": null
     },
     {
       "schema_version": "1.0",
@@ -813,7 +813,7 @@
         "would_liquidate": false,
         "closed_trades_count": 160
       },
-      "current_top9_rank": 6
+      "current_top9_rank": null
     },
     {
       "schema_version": "1.0",
@@ -1461,7 +1461,7 @@
         "would_liquidate": false,
         "closed_trades_count": 165
       },
-      "current_top9_rank": 9
+      "current_top9_rank": null
     },
     {
       "schema_version": "1.0",

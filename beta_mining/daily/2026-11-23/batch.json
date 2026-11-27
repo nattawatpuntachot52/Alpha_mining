@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "batch_date": "2026-11-23",
-  "generated_at_utc": "2026-11-26T16:00:34Z",
+  "generated_at_utc": "2026-11-27T07:05:57Z",
   "model_count": 5,
   "rounds": [],
   "loader": {
@@ -83,7 +83,7 @@
         "would_liquidate": false,
         "closed_trades_count": 254
       },
-      "current_top9_rank": 2
+      "current_top9_rank": 5
     },
     {
       "schema_version": "1.0",
@@ -367,7 +367,7 @@
         "would_liquidate": false,
         "closed_trades_count": 351
       },
-      "current_top9_rank": 1
+      "current_top9_rank": 2
     }
   ],
   "ranking_snapshot_top_n": 9
