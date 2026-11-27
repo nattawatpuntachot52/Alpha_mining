@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_134_xauusd_4h_bollinger_reversion_20_2_2_0_2_lo",
+  "trial_number": 134,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"bollinger_reversion\",\"params\":{\"exit_z\":0.2,\"k\":2.2,\"period\":20},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"4h\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "4h",
+  "family": "bollinger_reversion",
+  "params": {
+    "period": 20,
+    "k": 2.2,
+    "exit_z": 0.2
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day07_r2_macro_swing",
+  "hypothesis": "H4 Bollinger -2.2σ dip buyer targets overshoot above mean (+0.2σ).",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-27",
+  "updated_at_utc": "2026-11-27T08:18:31Z",
+  "spec_sha256": "sha256:1e96c2f9f05eaa47333f3992e98594935261914413690c32663bd31d08e2a4dd"
+}

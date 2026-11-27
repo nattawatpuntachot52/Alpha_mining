@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_137_ethusdt_1d_ma_cross_ema_7_21_ls",
+  "trial_number": 137,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"ma_cross\",\"params\":{\"fast\":7,\"ma\":\"ema\",\"slow\":21},\"sl_pct\":0.0,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"1d\",\"tp_pct\":0.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "1d",
+  "family": "ma_cross",
+  "params": {
+    "ma": "ema",
+    "fast": 7,
+    "slow": 21
+  },
+  "direction": "long_short",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day07_r2_macro",
+  "hypothesis": "D1 EMA 7/21 two-way weekly-cycle trend follower.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-27",
+  "updated_at_utc": "2026-11-27T08:18:32Z",
+  "spec_sha256": "sha256:59373d7cfc26b322c1c43f720427edc6ec0a30cb72b3d17119b55ab0f0dac584"
+}

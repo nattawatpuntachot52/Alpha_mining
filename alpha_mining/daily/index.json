@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "generated_at_utc": "2026-11-27T08:15:23Z",
+  "generated_at_utc": "2026-11-27T08:18:33Z",
   "latest_date": "2026-11-27",
   "total_days": 4,
   "dates": [
@@ -12,16 +12,17 @@
   "days": [
     {
       "batch_date": "2026-11-27",
-      "generated_at_utc": "2026-11-27T08:15:23Z",
-      "model_count": 30,
+      "generated_at_utc": "2026-11-27T08:18:33Z",
+      "model_count": 40,
       "rounds": [
         1,
         2,
-        3
+        3,
+        4
       ],
       "by_symbol": {
-        "XAUUSD": 15,
-        "ETHUSDT": 15
+        "XAUUSD": 20,
+        "ETHUSDT": 20
       },
       "model_ids": [
         "alpha_101_xauusd_1d_calendar_turn_x_long_lo",
@@ -53,11 +54,21 @@
         "alpha_127_ethusdt_4h_ma_cross_ema_12_40_lo",
         "alpha_128_ethusdt_30m_donchian_breakout_50_15_ls",
         "alpha_129_ethusdt_1h_momentum_roc_48_ls",
-        "alpha_130_ethusdt_1h_ma_cross_ema_20_60_ls_sl3tp7_5"
+        "alpha_130_ethusdt_1h_ma_cross_ema_20_60_ls_sl3tp7_5",
+        "alpha_131_xauusd_1d_donchian_breakout_20_10_lo",
+        "alpha_132_xauusd_1d_ma_cross_sma_20_60_lo",
+        "alpha_133_xauusd_1d_rsi_regime_14_55_48_42_lo",
+        "alpha_134_xauusd_4h_bollinger_reversion_20_2_2_0_2_lo",
+        "alpha_135_xauusd_1h_session_time_20_4_long_inside_short_outside",
+        "alpha_136_ethusdt_1d_ma_cross_sma_20_50_lo",
+        "alpha_137_ethusdt_1d_ma_cross_ema_7_21_ls",
+        "alpha_138_ethusdt_1d_donchian_breakout_30_15_lo",
+        "alpha_139_ethusdt_1d_heiken_ma_cross_ema_5_15_ls",
+        "alpha_140_ethusdt_4h_rsi_regime_21_55_50_45_lo"
       ],
-      "best_oos_sharpe_model_id": "alpha_124_xauusd_4h_ma_cross_ema_8_26_ls",
-      "best_oos_sharpe": 1.149,
-      "profitable_oos_count": 9,
+      "best_oos_sharpe_model_id": "alpha_137_ethusdt_1d_ma_cross_ema_7_21_ls",
+      "best_oos_sharpe": 1.844,
+      "profitable_oos_count": 16,
       "has_dashboard": true,
       "has_summary": true,
       "dashboard_rel_path": "daily/2026-11-27/dashboard.html",

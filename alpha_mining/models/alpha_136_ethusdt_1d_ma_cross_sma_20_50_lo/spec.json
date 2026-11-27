@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_136_ethusdt_1d_ma_cross_sma_20_50_lo",
+  "trial_number": 136,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"ma_cross\",\"params\":{\"fast\":20,\"ma\":\"sma\",\"slow\":50},\"sl_pct\":0.0,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"1d\",\"tp_pct\":0.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "1d",
+  "family": "ma_cross",
+  "params": {
+    "ma": "sma",
+    "fast": 20,
+    "slow": 50
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day07_r2_macro",
+  "hypothesis": "D1 SMA 20/50 trend filter on ETHUSDT.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-27",
+  "updated_at_utc": "2026-11-27T08:18:32Z",
+  "spec_sha256": "sha256:ae92cb57457f8e590775ae7c23d1969bd6366b360b08084b173df01f8866e7e5"
+}
