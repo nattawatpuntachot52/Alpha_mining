@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_121_xauusd_15m_ma_cross_ema_20_80_ls_sl1tp2_5",
+  "trial_number": 121,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"ma_cross\",\"params\":{\"fast\":20,\"ma\":\"ema\",\"slow\":80},\"sl_pct\":1.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"15m\",\"tp_pct\":2.5}",
+  "symbol": "XAUUSD",
+  "timeframe": "15m",
+  "family": "ma_cross",
+  "params": {
+    "ma": "ema",
+    "fast": 20,
+    "slow": 80
+  },
+  "direction": "long_short",
+  "sl_pct": 1.0,
+  "tp_pct": 2.5,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day07_r1_risk_managed",
+  "hypothesis": "M15 EMA 20/80 two-way with hard 1.0% SL / 2.5% TP caps tail risk in whipsaws.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-27",
+  "updated_at_utc": "2026-11-27T08:15:20Z",
+  "spec_sha256": "sha256:e05b814980c31616da934b14c0c2bf695a20da70f0ec30fabdf0a6b580432a3e"
+}

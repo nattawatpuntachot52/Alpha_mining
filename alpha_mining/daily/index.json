@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "generated_at_utc": "2026-11-27T04:15:27Z",
+  "generated_at_utc": "2026-11-27T08:18:33Z",
   "latest_date": "2026-11-27",
   "total_days": 4,
   "dates": [
@@ -12,15 +12,17 @@
   "days": [
     {
       "batch_date": "2026-11-27",
-      "generated_at_utc": "2026-11-27T04:15:27Z",
-      "model_count": 20,
+      "generated_at_utc": "2026-11-27T08:18:33Z",
+      "model_count": 40,
       "rounds": [
         1,
-        2
+        2,
+        3,
+        4
       ],
       "by_symbol": {
-        "XAUUSD": 10,
-        "ETHUSDT": 10
+        "XAUUSD": 20,
+        "ETHUSDT": 20
       },
       "model_ids": [
         "alpha_101_xauusd_1d_calendar_turn_x_long_lo",
@@ -42,11 +44,31 @@
         "alpha_117_ethusdt_5m_bollinger_reversion_30_2_8_0_0_ls_sl1tp1_2",
         "alpha_118_ethusdt_5m_vol_expansion_breakout_20_2_5_12_ls",
         "alpha_119_ethusdt_5m_heiken_ma_cross_ema_18_54_lo",
-        "alpha_120_ethusdt_5m_rsi_reversion_14_20_80_50_50_ls_sl1_2tp0"
+        "alpha_120_ethusdt_5m_rsi_reversion_14_20_80_50_50_ls_sl1_2tp0",
+        "alpha_121_xauusd_15m_ma_cross_ema_20_80_ls_sl1tp2_5",
+        "alpha_122_xauusd_30m_donchian_breakout_30_12_lo",
+        "alpha_123_xauusd_30m_donchian_breakout_50_15_lo",
+        "alpha_124_xauusd_4h_ma_cross_ema_8_26_ls",
+        "alpha_125_xauusd_1h_momentum_roc_48_lo",
+        "alpha_126_ethusdt_4h_ma_cross_ema_8_26_ls",
+        "alpha_127_ethusdt_4h_ma_cross_ema_12_40_lo",
+        "alpha_128_ethusdt_30m_donchian_breakout_50_15_ls",
+        "alpha_129_ethusdt_1h_momentum_roc_48_ls",
+        "alpha_130_ethusdt_1h_ma_cross_ema_20_60_ls_sl3tp7_5",
+        "alpha_131_xauusd_1d_donchian_breakout_20_10_lo",
+        "alpha_132_xauusd_1d_ma_cross_sma_20_60_lo",
+        "alpha_133_xauusd_1d_rsi_regime_14_55_48_42_lo",
+        "alpha_134_xauusd_4h_bollinger_reversion_20_2_2_0_2_lo",
+        "alpha_135_xauusd_1h_session_time_20_4_long_inside_short_outside",
+        "alpha_136_ethusdt_1d_ma_cross_sma_20_50_lo",
+        "alpha_137_ethusdt_1d_ma_cross_ema_7_21_ls",
+        "alpha_138_ethusdt_1d_donchian_breakout_30_15_lo",
+        "alpha_139_ethusdt_1d_heiken_ma_cross_ema_5_15_ls",
+        "alpha_140_ethusdt_4h_rsi_regime_21_55_50_45_lo"
       ],
-      "best_oos_sharpe_model_id": "alpha_105_xauusd_1h_session_time_21_5_long_inside_x_lo",
-      "best_oos_sharpe": 0.919,
-      "profitable_oos_count": 3,
+      "best_oos_sharpe_model_id": "alpha_137_ethusdt_1d_ma_cross_ema_7_21_ls",
+      "best_oos_sharpe": 1.844,
+      "profitable_oos_count": 16,
       "has_dashboard": true,
       "has_summary": true,
       "dashboard_rel_path": "daily/2026-11-27/dashboard.html",

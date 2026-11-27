@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_129_ethusdt_1h_momentum_roc_48_ls",
+  "trial_number": 129,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"momentum_roc\",\"params\":{\"lookback\":48},\"sl_pct\":0.0,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"1h\",\"tp_pct\":0.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "1h",
+  "family": "momentum_roc",
+  "params": {
+    "lookback": 48
+  },
+  "direction": "long_short",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day07_r1_robustness",
+  "hypothesis": "H1 48-hour two-way momentum bridges 14h and 90h horizons.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-27",
+  "updated_at_utc": "2026-11-27T08:15:23Z",
+  "spec_sha256": "sha256:e7e967935542e0407cc035a476c1f2efae2498f416065b49467d1a0f5ad9fd2b"
+}

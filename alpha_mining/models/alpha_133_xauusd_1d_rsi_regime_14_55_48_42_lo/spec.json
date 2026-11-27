@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_133_xauusd_1d_rsi_regime_14_55_48_42_lo",
+  "trial_number": 133,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"rsi_regime\",\"params\":{\"lower\":42,\"mid\":48,\"period\":14,\"upper\":55},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"1d\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "1d",
+  "family": "rsi_regime",
+  "params": {
+    "period": 14,
+    "upper": 55,
+    "mid": 48,
+    "lower": 42
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day07_r2_macro_swing",
+  "hypothesis": "D1 RSI(14) regime hysteresis stays long in sustained bull runs and cash in drawdowns.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-27",
+  "updated_at_utc": "2026-11-27T08:18:31Z",
+  "spec_sha256": "sha256:e661386e83eb2672055aadb3d000125f5df0b3742ee0551362e5579d248ad9bb"
+}
