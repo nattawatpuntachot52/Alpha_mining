@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_140_ethusdt_4h_rsi_regime_21_55_50_45_lo",
+  "trial_number": 140,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"rsi_regime\",\"params\":{\"lower\":45,\"mid\":50,\"period\":21,\"upper\":55},\"sl_pct\":0.0,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"4h\",\"tp_pct\":0.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "4h",
+  "family": "rsi_regime",
+  "params": {
+    "period": 21,
+    "upper": 55,
+    "mid": 50,
+    "lower": 45
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day07_r2_macro",
+  "hypothesis": "Smoothed H4 RSI(21) bull-regime filter targets low drawdown on ETH.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-27",
+  "updated_at_utc": "2026-11-27T08:18:32Z",
+  "spec_sha256": "sha256:48472f569efbb9b68ae717a9ee969337ca78ee010aa6abd8cff6cd1a027f4abc"
+}

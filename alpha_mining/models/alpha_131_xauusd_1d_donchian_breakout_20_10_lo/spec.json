@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_131_xauusd_1d_donchian_breakout_20_10_lo",
+  "trial_number": 131,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"donchian_breakout\",\"params\":{\"entry\":20,\"exit\":10},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"1d\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "1d",
+  "family": "donchian_breakout",
+  "params": {
+    "entry": 20,
+    "exit": 10
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day07_r2_macro_swing",
+  "hypothesis": "D1 Turtle 20/10 captures multi-month gold bull cycles with minimal cost drag.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-27",
+  "updated_at_utc": "2026-11-27T08:18:31Z",
+  "spec_sha256": "sha256:d9aa54ad3c44ccb2bc38a1359d05cb19777e096394934fa2956ce55bc58e96ef"
+}

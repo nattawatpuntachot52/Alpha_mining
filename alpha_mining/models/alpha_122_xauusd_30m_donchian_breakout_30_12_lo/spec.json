@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_122_xauusd_30m_donchian_breakout_30_12_lo",
+  "trial_number": 122,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"donchian_breakout\",\"params\":{\"entry\":30,\"exit\":12},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"30m\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "30m",
+  "family": "donchian_breakout",
+  "params": {
+    "entry": 30,
+    "exit": 12
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day07_r1_risk_managed",
+  "hypothesis": "M30 Donchian 30/12 parameter-stability neighbour of MT5 40/10 baseline.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-27",
+  "updated_at_utc": "2026-11-27T08:15:20Z",
+  "spec_sha256": "sha256:11a9d2665b41174929e97d9e5b9fad9df035b3b15ee755d16c0e55c5212ba798"
+}

@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_139_ethusdt_1d_heiken_ma_cross_ema_5_15_ls",
+  "trial_number": 139,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"heiken_ma_cross\",\"params\":{\"fast\":5,\"ma\":\"ema\",\"slow\":15},\"sl_pct\":0.0,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"1d\",\"tp_pct\":0.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "1d",
+  "family": "heiken_ma_cross",
+  "params": {
+    "ma": "ema",
+    "fast": 5,
+    "slow": 15
+  },
+  "direction": "long_short",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day07_r2_macro",
+  "hypothesis": "D1 Heiken Ashi EMA 5/15 two-way reduces whipsaws around daily chop.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-27",
+  "updated_at_utc": "2026-11-27T08:18:32Z",
+  "spec_sha256": "sha256:68313bb9fb9dbd6a0b91b6dc0a5b46d33ceaa23e800131340f345a48d68c24ed"
+}

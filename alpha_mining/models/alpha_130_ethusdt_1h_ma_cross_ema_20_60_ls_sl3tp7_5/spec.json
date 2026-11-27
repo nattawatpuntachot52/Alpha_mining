@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_130_ethusdt_1h_ma_cross_ema_20_60_ls_sl3tp7_5",
+  "trial_number": 130,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"ma_cross\",\"params\":{\"fast\":20,\"ma\":\"ema\",\"slow\":60},\"sl_pct\":3.0,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"1h\",\"tp_pct\":7.5}",
+  "symbol": "ETHUSDT",
+  "timeframe": "1h",
+  "family": "ma_cross",
+  "params": {
+    "ma": "ema",
+    "fast": 20,
+    "slow": 60
+  },
+  "direction": "long_short",
+  "sl_pct": 3.0,
+  "tp_pct": 7.5,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day07_r1_robustness",
+  "hypothesis": "H1 EMA 20/60 two-way with 3.0% SL / 7.5% TP asymmetric trend payoff.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-27",
+  "updated_at_utc": "2026-11-27T08:15:23Z",
+  "spec_sha256": "sha256:11af32feeb4d40bc642d62c75cf5ef3c70967d5783ce1d1dd1109b2a0a0bb74c"
+}

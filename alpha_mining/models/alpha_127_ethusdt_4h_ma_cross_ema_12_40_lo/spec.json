@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_127_ethusdt_4h_ma_cross_ema_12_40_lo",
+  "trial_number": 127,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"ma_cross\",\"params\":{\"fast\":12,\"ma\":\"ema\",\"slow\":40},\"sl_pct\":0.0,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"4h\",\"tp_pct\":0.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "4h",
+  "family": "ma_cross",
+  "params": {
+    "ma": "ema",
+    "fast": 12,
+    "slow": 40
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day07_r1_robustness",
+  "hypothesis": "H4 EMA 12/40 long-only macro filter reduces short-squeeze whipsaw.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-27",
+  "updated_at_utc": "2026-11-27T08:15:22Z",
+  "spec_sha256": "sha256:e86efddab142dbf6fe472f8ad003c758328a330cf4e52c9f80d59c91df69caa0"
+}

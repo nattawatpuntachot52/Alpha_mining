@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_135_xauusd_1h_session_time_20_4_long_inside_short_outside",
+  "trial_number": 135,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"session_time\",\"params\":{\"end_hour_utc\":4,\"mode\":\"long_inside_short_outside\",\"start_hour_utc\":20},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"1h\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "1h",
+  "family": "session_time",
+  "params": {
+    "start_hour_utc": 20,
+    "end_hour_utc": 4,
+    "mode": "long_inside_short_outside"
+  },
+  "direction": "long_short",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day07_r2_macro_swing",
+  "hypothesis": "Two-way SessionA test: long overnight (20-04 UTC), short daytime — tests pure intraday seasonality.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-27",
+  "updated_at_utc": "2026-11-27T08:18:32Z",
+  "spec_sha256": "sha256:ae7626c72aca683e503d44452dd778aa350a6033a41ed68b01c5824fe2d87198"
+}
