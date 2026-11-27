@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_125_xauusd_1h_momentum_roc_48_lo",
+  "trial_number": 125,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"momentum_roc\",\"params\":{\"lookback\":48},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"1h\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "1h",
+  "family": "momentum_roc",
+  "params": {
+    "lookback": 48
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day07_r1_risk_managed",
+  "hypothesis": "H1 48-bar (2-day) momentum bridges Alpha005 (14) and Alpha010 (90).",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-27",
+  "updated_at_utc": "2026-11-27T08:15:21Z",
+  "spec_sha256": "sha256:62c720123aff06b8a17962776d568c412454feb3c9b0c758d75927ac6b22a14c"
+}

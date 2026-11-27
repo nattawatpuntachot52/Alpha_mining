@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_123_xauusd_30m_donchian_breakout_50_15_lo",
+  "trial_number": 123,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"donchian_breakout\",\"params\":{\"entry\":50,\"exit\":15},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"30m\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "30m",
+  "family": "donchian_breakout",
+  "params": {
+    "entry": 50,
+    "exit": 15
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day07_r1_risk_managed",
+  "hypothesis": "M30 Donchian 50/15 slower neighbour of MT5 40/10 baseline to test robustness plateau.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-27",
+  "updated_at_utc": "2026-11-27T08:15:20Z",
+  "spec_sha256": "sha256:2d5731441f3f5a373b8bf7737805c905cf196b28d05255a456a999616a9c8490"
+}
