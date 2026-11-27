@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_108_ethusdt_1d_calendar_turn_x_long_lo",
+  "trial_number": 108,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"calendar_turn\",\"params\":{\"side\":\"long\",\"weekdays\":[0,1]},\"sl_pct\":0.0,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"1d\",\"tp_pct\":0.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "1d",
+  "family": "calendar_turn",
+  "params": {
+    "weekdays": [
+      0,
+      1
+    ],
+    "side": "long"
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day06_r1_calendar",
+  "hypothesis": "Mon-Tue institutional ETF creation/flow hypothesis on ETH.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-27",
+  "updated_at_utc": "2026-11-27T00:15:23Z",
+  "spec_sha256": "sha256:28e825e1e889bb7d5085e39b8db6a9d7faf863f73452a9540c02584fb928393e"
+}

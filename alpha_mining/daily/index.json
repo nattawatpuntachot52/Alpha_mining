@@ -1,14 +1,46 @@
 {
   "schema_version": "1.0",
-  "generated_at_utc": "2026-11-26T15:15:50Z",
-  "latest_date": "2026-11-26",
-  "total_days": 3,
+  "generated_at_utc": "2026-11-27T00:15:24Z",
+  "latest_date": "2026-11-27",
+  "total_days": 4,
   "dates": [
+    "2026-11-27",
     "2026-11-26",
     "2026-11-25",
     "2026-11-24"
   ],
   "days": [
+    {
+      "batch_date": "2026-11-27",
+      "generated_at_utc": "2026-11-27T00:15:24Z",
+      "model_count": 10,
+      "rounds": [
+        1
+      ],
+      "by_symbol": {
+        "XAUUSD": 5,
+        "ETHUSDT": 5
+      },
+      "model_ids": [
+        "alpha_101_xauusd_1d_calendar_turn_x_long_lo",
+        "alpha_102_xauusd_1d_calendar_turn_x_long_lo",
+        "alpha_103_xauusd_1d_calendar_turn_x_long_lo",
+        "alpha_104_xauusd_1d_calendar_turn_x_long_lo",
+        "alpha_105_xauusd_1h_session_time_21_5_long_inside_x_lo",
+        "alpha_106_ethusdt_1d_calendar_turn_x_long_lo",
+        "alpha_107_ethusdt_1d_calendar_turn_x_long_lo",
+        "alpha_108_ethusdt_1d_calendar_turn_x_long_lo",
+        "alpha_109_ethusdt_1d_calendar_turn_x_short_so",
+        "alpha_110_ethusdt_1h_session_time_13_21_long_inside_short_outsid"
+      ],
+      "best_oos_sharpe_model_id": "alpha_105_xauusd_1h_session_time_21_5_long_inside_x_lo",
+      "best_oos_sharpe": 0.919,
+      "profitable_oos_count": 3,
+      "has_dashboard": true,
+      "has_summary": true,
+      "dashboard_rel_path": "daily/2026-11-27/dashboard.html",
+      "summary_rel_path": "daily/2026-11-27/daily_summary.md"
+    },
     {
       "batch_date": "2026-11-26",
       "generated_at_utc": "2026-11-26T15:15:50Z",
