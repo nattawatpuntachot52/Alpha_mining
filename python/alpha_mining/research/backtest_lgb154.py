@@ -27,9 +27,13 @@ from typing import Any, Mapping, Sequence
 
 from ..strategy.lgb154 import (
     Bar,
+    DynamicTpPolicy,
+    HUNDRED,
     HeikinAshiSignal,
     Lgb154Config,
+    ONE,
     SignalProvider,
+    SpacingProvider,
     ZERO,
     build_grid_levels,
     compute_net_tp_price,
@@ -40,6 +44,7 @@ from ..strategy.lgb154 import (
     to_decimal,
     within_spacing,
 )
+from .stability import compute_stability_metrics
 
 EIGHT_HOURS_MS = 28_800_000
 ONE_DAY_MS = 86_400_000
@@ -84,6 +89,7 @@ class _GroupState:
     entry_fee_open: Decimal = ZERO
     funding_open: Decimal = ZERO  # signed: negative = paid by long, positive = received
     first_fill_ms: int = 0
+    entry_spacing_pct: float = 0.20
     tp_threshold: Decimal | None = None
     tp_threshold_f: float = math.inf
 
@@ -174,6 +180,17 @@ class BacktestResult:
     weekly_count: int = 0
     beta_to_eth: float = 0.0
     corr_to_eth: float = 0.0
+    spacing_spec: str = "fixed_0.2"
+    spacing_mode: str = "fixed_pct"
+    effective_spacing_min_pct: float = 0.2
+    effective_spacing_avg_pct: float = 0.2
+    effective_spacing_max_pct: float = 0.2
+    tp_mode_label: str = "legacy_ppc"
+    weekly_positive_cf_pct: float = 0.0
+    profit_factor: float = 0.0
+    ann_vol_pct: float = 0.0
+    ulcer_index_pct: float = 0.0
+    equity_r2: float = 0.0
     trades: list[ClosedTrade] = field(default_factory=list)
     daily_series: dict[str, Any] = field(default_factory=dict)
 
@@ -237,18 +254,37 @@ def compute_beta_and_corr(series_y: Sequence[float], series_x: Sequence[float]) 
     return beta, corr
 
 
-def _refresh_group_tp(group: _GroupState, cfg: Lgb154Config) -> None:
+def _refresh_group_tp(
+    group: _GroupState,
+    cfg: Lgb154Config,
+    tp_policy: DynamicTpPolicy | None = None,
+    inventory_ratio: float = 0.0,
+) -> None:
     if group.open_qty <= ZERO:
         group.tp_threshold = None
         group.tp_threshold_f = math.inf
         return
-    th = compute_tp_threshold(
-        open_qty=group.open_qty,
-        cost_basis=group.cost_basis,
-        entry_fee_open=group.entry_fee_open,
-        funding_open=group.funding_open,
-        cfg=cfg,
-    )
+    if tp_policy is not None and tp_policy.use_net_protection:
+        net_pct_f = tp_policy.target_net_pct(group.entry_spacing_pct, inventory_ratio)
+        net_pct_d = Decimal(f"{net_pct_f:.5f}")
+        fund_credit = min(ZERO, group.funding_open) if cfg.include_funding_cost else ZERO
+        fee = max(ZERO, group.entry_fee_open)
+        if cfg.is_coinm:
+            rate = tp_policy.exit_fee_buffer_pct / HUNDRED
+            denom = group.cost_basis * (ONE - net_pct_d / HUNDRED) - fee + fund_credit - cfg.extra_buffer_eth
+            th = (group.open_qty * cfg.contract_size_usd * (ONE + rate) / denom) if denom > ZERO else None
+        else:
+            profit = group.cost_basis * net_pct_d / HUNDRED
+            denom = group.open_qty * (ONE - tp_policy.exit_fee_buffer_pct / HUNDRED)
+            th = ((group.cost_basis + profit + fee - fund_credit + cfg.extra_buffer_usdt) / denom) if denom > ZERO else None
+    else:
+        th = compute_tp_threshold(
+            open_qty=group.open_qty,
+            cost_basis=group.cost_basis,
+            entry_fee_open=group.entry_fee_open,
+            funding_open=group.funding_open,
+            cfg=cfg,
+        )
     group.tp_threshold = th
     group.tp_threshold_f = float(th) if th is not None else math.inf
 
@@ -258,6 +294,8 @@ def run_lgb154_backtest(
     cfg: Lgb154Config,
     *,
     signal_provider: SignalProvider | None = None,
+    spacing_provider: SpacingProvider | None = None,
+    tp_policy: DynamicTpPolicy | None = None,
     options: BacktestOptions | None = None,
     funding_rates_8h: Mapping[int, float] | None = None,
 ) -> BacktestResult:
@@ -268,12 +306,42 @@ def run_lgb154_backtest(
     opt = options or BacktestOptions()
     sig_prov: SignalProvider = signal_provider or HeikinAshiSignal(name="ha_1m")
     sig_prov.reset()
+    if spacing_provider is not None:
+        spacing_provider.reset()
 
-    levels = build_grid_levels(cfg.high, cfg.low, cfg.spacing_pct, cfg.tick_size)
-    levels_with_f = [(idx, p, float(p), cfg.rp_rule_for_grid(idx)) for idx, p in levels]
+    if spacing_provider is None:
+        anchor_spacing_d = cfg.spacing_pct
+    elif spacing_provider.is_dynamic:
+        anchor_f = max(0.05, min(0.10, spacing_provider.min_spacing_pct))
+        anchor_spacing_d = Decimal(f"{anchor_f:.4f}")
+    else:
+        anchor_spacing_d = Decimal(f"{spacing_provider.min_spacing_pct:.4f}")
+
+    levels = build_grid_levels(cfg.high, cfg.low, anchor_spacing_d, cfg.tick_size)
+    cfg_max_grid = max(r.to_grid for r in cfg.rp_ranges)
+    n_levels_m1 = max(1, len(levels) - 1)
+    levels_with_f = [
+        (
+            idx,
+            p,
+            float(p),
+            cfg.rp_rule_for_grid(
+                idx if spacing_provider is None else min(cfg_max_grid, int(round(idx * cfg_max_grid / n_levels_m1)))
+            ),
+        )
+        for idx, p in levels
+    ]
     neg_level_prices_f = [-p_f for _, _, p_f, _ in levels_with_f]
     zone_high_f = float(cfg.high)
     zone_low_f = float(cfg.low)
+    max_pos_f = max(float(cfg.max_position_quantity), 1e-9)
+    log_inv_ref020 = -math.log(1.0 - 0.002)
+    spacing_obs_min = math.inf
+    spacing_obs_max = -math.inf
+    spacing_obs_sum = 0.0
+    spacing_obs_cnt = 0
+    gross_win_net = 0.0
+    gross_loss_abs = 0.0
     tick_d = cfg.tick_size
     tick_f = float(tick_d)
     half_spread_d = tick_d * Decimal(opt.half_spread_ticks)
@@ -455,6 +523,9 @@ def run_lgb154_backtest(
             total_hold_min += hold_m
             if net > ZERO:
                 wins += 1
+                gross_win_net += float(net)
+            elif net < ZERO:
+                gross_loss_abs += abs(float(net))
             if opt.record_trades:
                 closed_trades.append(
                     ClosedTrade(
@@ -485,6 +556,7 @@ def run_lgb154_backtest(
 
     def _place_buy_batch(ask_d: Decimal, ts_ms: int) -> None:
         nonlocal next_group_num, next_order_id, max_pending_buy_f, max_util_usd_seen
+        nonlocal spacing_obs_min, spacing_obs_max, spacing_obs_sum, spacing_obs_cnt
         if pending_buys:
             return  # WAIT_OLD_PENDING
 
@@ -494,6 +566,20 @@ def run_lgb154_backtest(
             return
         if not recovery_groups and (open_qty_total + cfg.order_quantity > cfg.max_position_quantity):
             return
+
+        inv_ratio_now = min(1.0, float(open_qty_total) / max_pos_f)
+        if spacing_provider is None:
+            eff_spacing_d = cfg.spacing_pct
+            eff_spacing_f = float(cfg.spacing_pct)
+        else:
+            eff_spacing_f = float(spacing_provider.current_spacing_pct(inv_ratio_now))
+            eff_spacing_d = Decimal(f"{eff_spacing_f:.4f}")
+        if eff_spacing_f < spacing_obs_min:
+            spacing_obs_min = eff_spacing_f
+        if eff_spacing_f > spacing_obs_max:
+            spacing_obs_max = eff_spacing_f
+        spacing_obs_sum += eff_spacing_f
+        spacing_obs_cnt += 1
 
         committed = open_qty_total
         gross = ZERO
@@ -520,15 +606,15 @@ def run_lgb154_backtest(
             if not busy_keys:
                 return False
             pos = bisect_left(busy_keys, price_f)
-            if pos > 0 and within_spacing(price_d, busy_sorted[pos - 1][1], cfg.spacing_pct, tick_d):
+            if pos > 0 and within_spacing(price_d, busy_sorted[pos - 1][1], eff_spacing_d, tick_d):
                 return True
-            if pos < len(busy_sorted) and within_spacing(price_d, busy_sorted[pos][1], cfg.spacing_pct, tick_d):
+            if pos < len(busy_sorted) and within_spacing(price_d, busy_sorted[pos][1], eff_spacing_d, tick_d):
                 return True
             return False
 
         def _nearby_ignore(price_d: Decimal, ignore_gid: str) -> bool:
             return any(
-                gid != ignore_gid and within_spacing(price_d, bp, cfg.spacing_pct, tick_d)
+                gid != ignore_gid and within_spacing(price_d, bp, eff_spacing_d, tick_d)
                 for gid, bp in busy
             )
 
@@ -570,7 +656,8 @@ def run_lgb154_backtest(
                 q = missing_qty(g.target_qty, g.cumulative_buy_qty, ZERO, cfg.step_size)
                 if q < cfg.min_qty or cfg.quote_notional(q, g.price) < cfg.min_notional:
                     continue
-                rule = cfg.rp_rule_for_grid(g.grid)
+                mapped_rp = g.grid if spacing_provider is None else min(cfg_max_grid, int(round(g.grid * cfg_max_grid / n_levels_m1)))
+                rule = cfg.rp_rule_for_grid(mapped_rp)
                 _admit(g, q, "RECOVERY", rule)
 
         # 2. New geometric grid entries (O(log N) binary-search start + O(log K) exact neighbor spacing)
@@ -592,7 +679,15 @@ def run_lgb154_backtest(
                     continue
                 if _nearby_exact_neighbors(p_d, p_f):
                     continue
-                target_cap = min(Decimal(idx + 1) * q, cfg.max_position_quantity)
+                if spacing_provider is None:
+                    target_cap = min(Decimal(idx + 1) * q, cfg.max_position_quantity)
+                else:
+                    equiv_steps = (
+                        1
+                        if p_f >= zone_high_f
+                        else max(1, int(math.log(zone_high_f / max(p_f, 1e-9)) / log_inv_ref020) + 1)
+                    )
+                    target_cap = min(Decimal(equiv_steps) * q, cfg.max_position_quantity)
                 if committed + q > target_cap or cfg.quote_notional(q, p_d) < cfg.min_notional:
                     continue
                 gid = f"g{next_group_num:08d}"
@@ -603,6 +698,7 @@ def run_lgb154_backtest(
                     price=p_d,
                     price_f=p_f,
                     target_qty=q,
+                    entry_spacing_pct=eff_spacing_f,
                 )
                 if _admit(cand, q, "ENTRY", rule):
                     next_group_num += 1
@@ -651,8 +747,10 @@ def run_lgb154_backtest(
         else:
             bars_in_zone += 1
 
-        # Step 1: Closed-bar signal from B_{i-1} (zero lookahead!)
+        # Step 1: Closed-bar signal & spacing state from B_{i-1} (zero lookahead!)
         sig = sig_prov.on_closed_bar(prev_bar)
+        if spacing_provider is not None:
+            spacing_provider.on_closed_bar(prev_bar)
 
         if emergency_triggered is None:
             # Cycle state machine (1:1 bot.py L2663-2666)
@@ -702,16 +800,21 @@ def run_lgb154_backtest(
                                     continue
                                 if bid_f < g.tp_threshold_f - 1e-9:
                                     continue
-                                tp_price = compute_net_tp_price(
-                                    open_qty=g.open_qty,
-                                    cost_basis=g.cost_basis,
-                                    entry_fee_open=g.entry_fee_open,
-                                    funding_open=g.funding_open,
-                                    bid=bid_d,
-                                    cfg=cfg,
-                                )
-                                if tp_price is None:
-                                    continue
+                                if tp_policy is not None and tp_policy.use_net_protection:
+                                    if g.tp_threshold is None or bid_d < g.tp_threshold:
+                                        continue
+                                    tp_price = round_up(max(g.tp_threshold, bid_d + tick_d * Decimal("2")), tick_d)
+                                else:
+                                    tp_price = compute_net_tp_price(
+                                        open_qty=g.open_qty,
+                                        cost_basis=g.cost_basis,
+                                        entry_fee_open=g.entry_fee_open,
+                                        funding_open=g.funding_open,
+                                        bid=bid_d,
+                                        cfg=cfg,
+                                    )
+                                    if tp_price is None:
+                                        continue
                                 q_sell = round_down(g.open_qty, cfg.step_size)
                                 if q_sell < cfg.min_qty or cfg.quote_notional(q_sell, tp_price) < cfg.min_notional:
                                     continue
@@ -777,7 +880,6 @@ def run_lgb154_backtest(
                         g.open_qty += q
                         g.cost_basis += added_cost
                         g.entry_fee_open += fee
-                        _refresh_group_tp(g, cfg)
                         open_groups[g.group_id] = g
                         if g.cumulative_buy_qty >= g.target_qty:
                             recovery_groups.pop(g.group_id, None)
@@ -793,6 +895,16 @@ def run_lgb154_backtest(
                         turnover_usd_f += float(q) * contract_size_f if is_coinm else float(q * p)
                     open_qty_f = float(open_qty_total)
                     open_cost_f = float(open_cost_total)
+                    inv_r = min(1.0, open_qty_f / max_pos_f)
+                    if tp_policy is not None and tp_policy.use_net_protection and tp_policy.inv_relief_factor > 0.0:
+                        for go in open_groups.values():
+                            _refresh_group_tp(go, cfg, tp_policy, inv_r)
+                    else:
+                        for oid_f in filled_ids:
+                            pass
+                    for g_chk in open_groups.values():
+                        if g_chk.tp_threshold is None:
+                            _refresh_group_tp(g_chk, cfg, tp_policy, inv_r)
                     util_now = _utilized_capital_usd()
                     if util_now > max_util_usd_seen:
                         max_util_usd_seen = util_now
@@ -844,6 +956,9 @@ def run_lgb154_backtest(
                         total_hold_min += hold_m
                         if net > ZERO:
                             wins += 1
+                            gross_win_net += float(net)
+                        elif net < ZERO:
+                            gross_loss_abs += abs(float(net))
                         if opt.record_trades:
                             closed_trades.append(
                                 ClosedTrade(
@@ -872,9 +987,13 @@ def run_lgb154_backtest(
                             g.entry_fee_open = ZERO
                             g.funding_open = ZERO
                             open_groups.pop(g.group_id, None)
-                        _refresh_group_tp(g, cfg)
+                        _refresh_group_tp(g, cfg, tp_policy, min(1.0, float(open_qty_total) / max_pos_f))
                     open_qty_f = float(open_qty_total)
                     open_cost_f = float(open_cost_total)
+                    if tp_policy is not None and tp_policy.use_net_protection and tp_policy.inv_relief_factor > 0.0:
+                        inv_r_after = min(1.0, open_qty_f / max_pos_f)
+                        for go in open_groups.values():
+                            _refresh_group_tp(go, cfg, tp_policy, inv_r_after)
                     _recompute_order_bounds()
                     _recompute_tp_bound()
 
@@ -898,10 +1017,11 @@ def run_lgb154_backtest(
                             total_cashflow = -(open_qty_total * mark_d) * rate_d
                         total_funding += total_cashflow
                         open_funding_total += total_cashflow
+                        inv_r_fund = min(1.0, float(open_qty_total) / max_pos_f)
                         for g in open_groups.values():
                             share = g.open_qty / open_qty_total
                             g.funding_open += total_cashflow * share
-                            _refresh_group_tp(g, cfg)
+                            _refresh_group_tp(g, cfg, tp_policy, inv_r_fund)
                         _recompute_tp_bound()
                         funding_events += 1
                 last_funding_bucket = fund_bucket
@@ -1024,6 +1144,23 @@ def run_lgb154_backtest(
             week_cf_map[wk] += cf_amt
     weekly_cf_vals = [round(week_cf_map[w], 4) for w in all_weeks]
     avg_weekly_cf = (sum(weekly_cf_vals) / len(all_weeks)) if all_weeks else 0.0
+    pos_weeks = sum(1 for v in weekly_cf_vals if v > 0.0)
+    weekly_pos_pct = (pos_weeks / len(weekly_cf_vals) * 100.0) if weekly_cf_vals else 0.0
+    stab_metrics = compute_stability_metrics(daily_rets)
+    if gross_loss_abs > 1e-12:
+        pf_val = min(999.0, gross_win_net / gross_loss_abs)
+    elif gross_win_net > 0.0:
+        pf_val = 999.0
+    else:
+        pf_val = 0.0
+
+    base_sp_f = float(cfg.spacing_pct)
+    sp_spec_str = spacing_provider.name if spacing_provider is not None else f"fixed_{base_sp_f:g}"
+    sp_mode_str = spacing_provider.mode if spacing_provider is not None else "fixed_pct"
+    obs_min = spacing_obs_min if spacing_obs_cnt > 0 else (spacing_provider.min_spacing_pct if spacing_provider else base_sp_f)
+    obs_max = spacing_obs_max if spacing_obs_cnt > 0 else (spacing_provider.max_spacing_pct if spacing_provider else base_sp_f)
+    obs_avg = (spacing_obs_sum / spacing_obs_cnt) if spacing_obs_cnt > 0 else obs_min
+    tp_label_str = tp_policy.name if tp_policy is not None else cfg.tp_pricing_mode.lower()
 
     sharpe = 0.0
     sortino = 0.0
@@ -1080,7 +1217,7 @@ def run_lgb154_backtest(
         days_covered=round(days_covered, 2),
         zone_high=zone_high_f,
         zone_low=zone_low_f,
-        spacing_pct=float(cfg.spacing_pct),
+        spacing_pct=round(obs_avg, 4) if spacing_provider is not None else float(cfg.spacing_pct),
         grid_levels_count=len(levels),
         initial_capital=init_cap_f,
         ending_equity=round(eq_end, 6),
@@ -1123,6 +1260,17 @@ def run_lgb154_backtest(
         weekly_count=len(all_weeks),
         beta_to_eth=round(beta_to_eth, 4),
         corr_to_eth=round(corr_to_eth, 4),
+        spacing_spec=sp_spec_str,
+        spacing_mode=sp_mode_str,
+        effective_spacing_min_pct=round(obs_min, 4),
+        effective_spacing_avg_pct=round(obs_avg, 4),
+        effective_spacing_max_pct=round(obs_max, 4),
+        tp_mode_label=tp_label_str,
+        weekly_positive_cf_pct=round(weekly_pos_pct, 2),
+        profit_factor=round(pf_val, 3),
+        ann_vol_pct=float(stab_metrics["ann_vol_pct"]),
+        ulcer_index_pct=float(stab_metrics["ulcer_index_pct"]),
+        equity_r2=float(stab_metrics["equity_r2"]),
         trades=closed_trades,
         daily_series=daily_series_payload,
     )

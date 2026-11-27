@@ -46,6 +46,9 @@ from alpha_mining.strategy.lgb154 import (  # noqa: E402
     RpRange,
     build_grid_levels,
     create_signal_provider,
+    create_spacing_provider,
+    create_tp_policy,
+    parse_beta_model_spec,
 )
 
 DEFAULT_STORE_DIR = REPO_ROOT / "beta_mining"
@@ -315,14 +318,38 @@ def _cmd_run_daily(args: argparse.Namespace) -> int:
     for item in batch_specs:
         mid = str(item["model_id"])
         sig_spec = str(item["signal_spec"])
-        sp = create_signal_provider(sig_spec)
-        res = run_lgb154_backtest(bars, cfg, signal_provider=sp, options=opt, funding_rates_8h=funding_rates)
+        sig_only, sp_part, tp_part = parse_beta_model_spec(
+            sig_spec,
+            default_spacing=str(item.get("spacing_spec") or args.spacing_spec or f"fixed_{args.spacing_pct:g}"),
+            default_tp=str(item.get("tp_spec") or args.tp_spec or "legacy_ppc"),
+        )
+        use_custom_spacing = ("@" in sig_spec) or bool(item.get("spacing_spec")) or bool(args.spacing_spec)
+        use_custom_tp = ("@" in sig_spec) or bool(item.get("tp_spec")) or bool(args.tp_spec)
+        sp = create_signal_provider(sig_only)
+        spacing_prov = create_spacing_provider(sp_part) if use_custom_spacing else None
+        tp_pol = create_tp_policy(tp_part) if use_custom_tp else None
+        res = run_lgb154_backtest(
+            bars,
+            cfg,
+            signal_provider=sp,
+            spacing_provider=spacing_prov,
+            tp_policy=tp_pol,
+            options=opt,
+            funding_rates_8h=funding_rates,
+        )
 
         crash_res = None
         if crash_bars is not None and stress_cfg is not None:
-            sp_crash = create_signal_provider(sig_spec)
+            sp_crash = create_signal_provider(sig_only)
+            spacing_crash = create_spacing_provider(sp_part) if use_custom_spacing else None
             crash_res = run_lgb154_backtest(
-                crash_bars, stress_cfg, signal_provider=sp_crash, options=opt, funding_rates_8h=funding_rates
+                crash_bars,
+                stress_cfg,
+                signal_provider=sp_crash,
+                spacing_provider=spacing_crash,
+                tp_policy=tp_pol,
+                options=opt,
+                funding_rates_8h=funding_rates,
             )
 
         rec = store.record_model_run(
@@ -339,6 +366,8 @@ def _cmd_run_daily(args: argparse.Namespace) -> int:
                 "high": str(cfg.high),
                 "low": str(cfg.low),
                 "spacing_pct": str(cfg.spacing_pct),
+                "spacing_spec": sp_part,
+                "tp_spec": tp_part,
                 "order_quantity": str(cfg.order_quantity),
                 "max_position_quantity": str(cfg.max_position_quantity),
                 "max_notional_usdt": str(cfg.max_notional_usdt),
@@ -653,6 +682,8 @@ def _build_parser() -> argparse.ArgumentParser:
     rd.add_argument("--high", type=float, default=5000.0)
     rd.add_argument("--low", type=float, default=500.0)
     rd.add_argument("--spacing-pct", type=float, default=0.20)
+    rd.add_argument("--spacing-spec", default=None, help="Optional SpacingProvider spec (e.g. fixed_0.45, parkinson_60_4.0, logret_90_4.2).")
+    rd.add_argument("--tp-spec", default=None, help="Optional DynamicTpPolicy spec (e.g. net_dyn, net_fixed_0.25, legacy_ppc).")
     rd.add_argument("--order-qty", type=float, default=None)
     rd.add_argument("--max-position-qty", type=float, default=2.0)
     rd.add_argument("--max-notional", type=float, default=10000.0)
@@ -672,7 +703,11 @@ def _build_parser() -> argparse.ArgumentParser:
     rk = sub.add_parser("rank", help="Display cumulative Top-N Ranking Board.")
     rk.add_argument("--top", type=int, default=DEFAULT_TOP_N)
     rk.add_argument("--max-dd", type=float, default=DEFAULT_MAX_DD_GATE_PCT)
-    rk.add_argument("--rank-by", choices=["cashflow_dd", "efficiency", "mtm"], default="cashflow_dd")
+    rk.add_argument(
+        "--rank-by",
+        choices=["cashflow_dd", "efficiency", "mtm", "consistent_profit"],
+        default="cashflow_dd",
+    )
     rk.add_argument("--save", action="store_true", help="Persist updated ranking_top9.json.")
     rk.add_argument("--json", action="store_true")
 

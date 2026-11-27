@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0",
+  "model_id": "beta_068_rsi_trend_28_50_50_logret_90_4_8_0_38_1_50",
+  "trial_number": 68,
+  "category": "beta",
+  "signal_spec": "rsi_trend_28_50_50@logret_90_4.8_0.38_1.50",
+  "signal_name": "rsi_trend_28_50_50",
+  "symbol": "ETHUSDT",
+  "product_type": "USD_M",
+  "settlement_unit": "USDT",
+  "zone_high": 5000.0,
+  "zone_low": 500.0,
+  "spacing_pct": 0.4497,
+  "spacing_spec": "logret_90_4.8_0.38_1.50",
+  "spacing_mode": "log_return_vol",
+  "tp_mode_label": "net_dyn",
+  "grid_levels_count": 2302,
+  "initial_capital": 10000.0,
+  "fill_mode": "strict_cross",
+  "hypothesis": "Family 3 (90m Log-Return 4.8x sigma with 0.38% quiet-top floor): Enforces >=0.38% spacing in low-vol distribution phases to turn dynamic log-vol net-MTM-positive.",
+  "tags": [
+    "beta_mining",
+    "spacing_5types_quiet_floor_calibrated"
+  ],
+  "evidence_status": "reproducible",
+  "config_snapshot": {
+    "profile": "usdm",
+    "high": "5000.0",
+    "low": "500.0",
+    "spacing_pct": "0.2",
+    "spacing_spec": "logret_90_4.8_0.38_1.50",
+    "tp_spec": "net_dyn",
+    "order_quantity": "0.01",
+    "max_position_quantity": "2.0",
+    "max_notional_usdt": "10000.0",
+    "initial_capital": "10000.0",
+    "recovery_mode": "partial_only",
+    "fill_mode": "strict_cross"
+  },
+  "created_batch_date": "2026-11-26",
+  "updated_at_utc": "2026-11-26T15:50:19Z",
+  "spec_sha256": "sha256:10be6569c196608806cbc6d263556f66ce215e6a9b08ed6d8fdc8337aa3c1f46"
+}

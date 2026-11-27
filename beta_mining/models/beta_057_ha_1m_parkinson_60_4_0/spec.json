@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0",
+  "model_id": "beta_057_ha_1m_parkinson_60_4_0",
+  "trial_number": 57,
+  "category": "beta",
+  "signal_spec": "ha_1m@parkinson_60_4.0",
+  "signal_name": "ha_1m",
+  "symbol": "ETHUSDT",
+  "product_type": "USD_M",
+  "settlement_unit": "USDT",
+  "zone_high": 5000.0,
+  "zone_low": 500.0,
+  "spacing_pct": 0.3046,
+  "spacing_spec": "parkinson_60_4.0",
+  "spacing_mode": "atr_range",
+  "tp_mode_label": "net_dyn",
+  "grid_levels_count": 2302,
+  "initial_capital": 10000.0,
+  "fill_mode": "strict_cross",
+  "hypothesis": "Family 2 (ATR / Parkinson Range): 60m Parkinson high-low volatility spacing (4.0x sigma_Park) + NET Dynamic TP widens instantly on 1m wicks and tightens in calm ranges under 2.0 ETH cap.",
+  "tags": [
+    "beta_mining",
+    "spacing_5types_ha_baseline"
+  ],
+  "evidence_status": "reproducible",
+  "config_snapshot": {
+    "profile": "usdm",
+    "high": "5000.0",
+    "low": "500.0",
+    "spacing_pct": "0.2",
+    "spacing_spec": "parkinson_60_4.0",
+    "tp_spec": "net_dyn",
+    "order_quantity": "0.01",
+    "max_position_quantity": "2.0",
+    "max_notional_usdt": "10000.0",
+    "initial_capital": "10000.0",
+    "recovery_mode": "partial_only",
+    "fill_mode": "strict_cross"
+  },
+  "created_batch_date": "2026-11-26",
+  "updated_at_utc": "2026-11-26T15:35:11Z",
+  "spec_sha256": "sha256:5d9184ba87bd28c53e3f06f6b7aab27c13824243862f4edb1ae23cb69f265ac0"
+}

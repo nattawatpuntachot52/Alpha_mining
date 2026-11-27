@@ -56,23 +56,24 @@ def render_daily_summary_markdown(
         "",
         f"## 1. สรุปโมเดลที่ Mine วันนี้ ({batch_date} — {len(batch_metrics)} โมเดล)",
         "",
-        "| Model ID | Signal | Realized Cashflow | AVG Weekly | Max DD (%) | CF / DD | MTM Return | Beta / Corr | Crash -46% DD | Trades (Win%) |",
-        "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|",
+        "| Model ID | Signal | Spacing (Avg%) | Realized Cashflow | Wk+ % | Max DD (%) | CF / DD | MTM Return | Crash -46% DD | Trades (Win%) |",
+        "|---|---|---|---:|---:|---:|---:|---:|---:|---:|",
     ]
 
     for m in batch_metrics:
         crash = m.get("crash_stress") or {}
         crash_dd = f"{crash['max_drawdown_pct']:.2f}%" if "max_drawdown_pct" in crash else "N/A"
-        avg_wk = float(m.get("avg_weekly_cf_usd", 0.0))
-        beta_v = float(m.get("beta_to_eth", 0.0))
-        corr_v = float(m.get("corr_to_eth", 0.0))
+        sp_label = str(m.get("spacing_spec") or f"fixed_{float(m.get('spacing_pct', 0.2)):g}")
+        sp_avg = float(m.get("effective_spacing_avg_pct", m.get("spacing_pct", 0.2)))
+        wk_pos_raw = m.get("weekly_positive_cf_pct")
+        wk_pos_str = f"{float(wk_pos_raw):.1f}%" if wk_pos_raw is not None else "—"
         lines.append(
             f"| `{m['model_id']}` | `{m['signal_name']}` "
+            f"| `{sp_label}` ({sp_avg:.2f}%) "
             f"| {m['cashflow_net_usd']:+.2f} ({m['cashflow_pct']:+.2f}%) "
-            f"| {avg_wk:+.2f} "
+            f"| {wk_pos_str} "
             f"| {m['max_drawdown_pct']:.2f}% | {m['cashflow_to_dd_ratio']:.2f}x "
             f"| {m['mtm_return_pct']:+.2f}% "
-            f"| {beta_v:.2f} / {corr_v:.2f} "
             f"| {crash_dd} | {m['closed_trades_count']:,} ({m['win_rate_pct']:.1f}%) |"
         )
 

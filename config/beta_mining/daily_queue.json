@@ -87,6 +87,24 @@
     {"signal_spec": "supertrend_10_5", "theme": "day11_supertrend_wide", "hypothesis": "Supertrend supertrend_10_5 (long ATR / wide band) tests tail-risk minimisation versus realised cashflow."},
     {"signal_spec": "supertrend_20_2", "theme": "day11_supertrend_wide", "hypothesis": "Supertrend supertrend_20_2 (long ATR / wide band) tests tail-risk minimisation versus realised cashflow."},
 
+    {"signal_spec": "ha_1m@fixed_0.45", "theme": "spacing_5types_ha_baseline", "hypothesis": "Family 1 (Fixed %): Wider 0.45% static spacing + funding-protected NET Dynamic TP stretches the 2.0 ETH cap across deeper drawdowns while ensuring 100% net-positive closed cycles."},
+    {"signal_spec": "ha_1m@parkinson_60_4.0", "theme": "spacing_5types_ha_baseline", "hypothesis": "Family 2 (ATR / Parkinson Range): 60m Parkinson high-low volatility spacing (4.0x sigma_Park) + NET Dynamic TP widens instantly on 1m wicks and tightens in calm ranges under 2.0 ETH cap."},
+    {"signal_spec": "ha_1m@logret_90_4.2", "theme": "spacing_5types_ha_baseline", "hypothesis": "Family 3 (Log-Return Volatility): 90m rolling log-return standard deviation (4.2x sigma_log) + NET Dynamic TP normalises cycle closure probability across volatility regimes under 2.0 ETH cap."},
+    {"signal_spec": "ha_1m@ewma_logret_45_4.0_1.6", "theme": "spacing_5types_ha_baseline", "hypothesis": "Family 4 (EWMA Asymmetric Log-Return): 45m EWMA log-return vol with 1.6x downside shock boost + NET Dynamic TP brakes waterfall buying while rapidly resuming calm cashflow harvesting."},
+    {"signal_spec": "ha_1m@inv_step_0.20_3.0_2.2", "theme": "spacing_5types_ha_baseline", "hypothesis": "Family 5 (Inventory-Progressive Hybrid): 0.20% calm base + log-vol + 2.2x progressive inventory expansion + NET Dynamic TP harvests fast cashflow when light and protects the 2.0 ETH cap when heavy."},
+
+    {"signal_spec": "rsi_trend_28_50_50@fixed_0.40", "theme": "spacing_5types_rsi_trend_leader", "hypothesis": "Family 1 (Fixed 0.40%) paired with #1 MTM leader rsi_trend_28_50_50 + NET Dynamic TP under 2.0 ETH cap to maximise net MTM profit, 100% cycle win rate, and weekly consistency."},
+    {"signal_spec": "rsi_trend_28_50_50@parkinson_60_3.8", "theme": "spacing_5types_rsi_trend_leader", "hypothesis": "Family 2 (Parkinson 60m 3.8x) paired with rsi_trend_28_50_50 + NET Dynamic TP under 2.0 ETH cap."},
+    {"signal_spec": "rsi_trend_28_50_50@logret_90_4.0", "theme": "spacing_5types_rsi_trend_leader", "hypothesis": "Family 3 (90m Log-Return 4.0x sigma) paired with rsi_trend_28_50_50 + NET Dynamic TP under 2.0 ETH cap."},
+    {"signal_spec": "rsi_trend_28_50_50@ewma_logret_45_3.8_1.6", "theme": "spacing_5types_rsi_trend_leader", "hypothesis": "Family 4 (EWMA Asymmetric Log-Return) paired with rsi_trend_28_50_50 + NET Dynamic TP under 2.0 ETH cap."},
+    {"signal_spec": "rsi_trend_28_50_50@inv_step_0.20_2.8_2.0", "theme": "spacing_5types_rsi_trend_leader", "hypothesis": "Family 5 (Inventory-Progressive Hybrid) paired with rsi_trend_28_50_50 + NET Dynamic TP under 2.0 ETH cap."},
+
+    {"signal_spec": "rsi_trend_28_50_50@fixed_0.35", "theme": "spacing_5types_quiet_floor_calibrated", "hypothesis": "Family 1 (Fixed 0.35%): Balances cashflow cadence and net MTM profit between 0.20% and 0.40% under 2.0 ETH cap + NET Dynamic TP."},
+    {"signal_spec": "rsi_trend_28_50_50@atr_60_4.5_0.38_1.50", "theme": "spacing_5types_quiet_floor_calibrated", "hypothesis": "Family 2 (Wilder ATR 60m 4.5x with 0.38% quiet-top floor): Prevents dense inventory accumulation during low-vol market tops while expanding up to 1.50% in crashes."},
+    {"signal_spec": "rsi_trend_28_50_50@logret_90_4.8_0.38_1.50", "theme": "spacing_5types_quiet_floor_calibrated", "hypothesis": "Family 3 (90m Log-Return 4.8x sigma with 0.38% quiet-top floor): Enforces >=0.38% spacing in low-vol distribution phases to turn dynamic log-vol net-MTM-positive."},
+    {"signal_spec": "rsi_trend_28_50_50@ewma_logret_45_4.5_1.7_0.38_1.50", "theme": "spacing_5types_quiet_floor_calibrated", "hypothesis": "Family 4 (EWMA Asymmetric Log-Return with 0.38% quiet-top floor + 1.7x downside boost): Combines quiet-top protection with instant downside waterfall braking."},
+    {"signal_spec": "rsi_trend_28_50_50@inv_step_0.36_3.2_1.5_0.36_1.60", "theme": "spacing_5types_quiet_floor_calibrated", "hypothesis": "Family 5 (Inventory-Progressive Hybrid with 0.36% quiet-top floor): Avoids top-heavy early fills when inventory is 0% and widens progressively up to 1.60%."},
+
     {"signal_spec": "rsi_reversion_5_20_80", "theme": "day12_rsi_reversion_deep", "hypothesis": "RSI reversion rsi_reversion_5_20_80 buys only deeper oversold dips to reduce inventory lock-up."},
     {"signal_spec": "rsi_reversion_9_30_70", "theme": "day12_rsi_reversion_deep", "hypothesis": "RSI reversion rsi_reversion_9_30_70 buys only deeper oversold dips to reduce inventory lock-up."},
     {"signal_spec": "rsi_reversion_14_20_80", "theme": "day12_rsi_reversion_deep", "hypothesis": "RSI reversion rsi_reversion_14_20_80 buys only deeper oversold dips to reduce inventory lock-up."},
@@ -121,6 +139,18 @@
     {"signal_spec": "supertrend_8_3.5", "theme": "day17_mixed_supertrend", "hypothesis": "Supertrend supertrend_8_3.5 probes parameter robustness around prior Supertrend leaders."},
     {"signal_spec": "supertrend_16_2", "theme": "day17_mixed_supertrend", "hypothesis": "Supertrend supertrend_16_2 probes parameter robustness around prior Supertrend leaders."},
     {"signal_spec": "supertrend_16_3", "theme": "day17_mixed_supertrend", "hypothesis": "Supertrend supertrend_16_3 probes parameter robustness around prior Supertrend leaders."},
-    {"signal_spec": "supertrend_25_2.5", "theme": "day17_mixed_supertrend", "hypothesis": "Supertrend supertrend_25_2.5 probes parameter robustness around prior Supertrend leaders."}
+    {"signal_spec": "supertrend_25_2.5", "theme": "day17_mixed_supertrend", "hypothesis": "Supertrend supertrend_25_2.5 probes parameter robustness around prior Supertrend leaders."},
+
+    {"signal_spec": "supertrend_7_2@fixed_0.40", "theme": "spacing_5types_supertrend", "hypothesis": "Family 1 (Fixed 0.40%) paired with supertrend_7_2 + NET Dynamic TP under 2.0 ETH cap."},
+    {"signal_spec": "supertrend_7_2@atr_60_3.5", "theme": "spacing_5types_supertrend", "hypothesis": "Family 2 (Wilder 60m ATR 3.5x) paired with supertrend_7_2 + NET Dynamic TP under 2.0 ETH cap."},
+    {"signal_spec": "supertrend_7_2@logret_90_4.2", "theme": "spacing_5types_supertrend", "hypothesis": "Family 3 (90m Log-Return 4.2x sigma) paired with supertrend_7_2 + NET Dynamic TP under 2.0 ETH cap."},
+    {"signal_spec": "supertrend_7_2@ewma_logret_45_4.0_1.6", "theme": "spacing_5types_supertrend", "hypothesis": "Family 4 (EWMA Asymmetric Log-Return) paired with supertrend_7_2 + NET Dynamic TP under 2.0 ETH cap."},
+    {"signal_spec": "supertrend_7_2@inv_step_0.20_3.0_2.2", "theme": "spacing_5types_supertrend", "hypothesis": "Family 5 (Inventory-Progressive Hybrid) paired with supertrend_7_2 + NET Dynamic TP under 2.0 ETH cap."},
+
+    {"signal_spec": "rsi_reversion_14_40_60@fixed_0.45", "theme": "spacing_5types_rsi_rev", "hypothesis": "Family 1 (Fixed 0.45%) paired with rsi_reversion_14_40_60 + NET Dynamic TP under 2.0 ETH cap."},
+    {"signal_spec": "rsi_reversion_14_40_60@parkinson_60_4.0", "theme": "spacing_5types_rsi_rev", "hypothesis": "Family 2 (Parkinson 60m 4.0x) paired with rsi_reversion_14_40_60 + NET Dynamic TP under 2.0 ETH cap."},
+    {"signal_spec": "rsi_reversion_14_40_60@logret_90_4.2", "theme": "spacing_5types_rsi_rev", "hypothesis": "Family 3 (90m Log-Return 4.2x sigma) paired with rsi_reversion_14_40_60 + NET Dynamic TP under 2.0 ETH cap."},
+    {"signal_spec": "rsi_reversion_14_40_60@ewma_logret_45_4.0_1.6", "theme": "spacing_5types_rsi_rev", "hypothesis": "Family 4 (EWMA Asymmetric Log-Return) paired with rsi_reversion_14_40_60 + NET Dynamic TP under 2.0 ETH cap."},
+    {"signal_spec": "rsi_reversion_14_40_60@inv_step_0.20_3.0_2.2", "theme": "spacing_5types_rsi_rev", "hypothesis": "Family 5 (Inventory-Progressive Hybrid) paired with rsi_reversion_14_40_60 + NET Dynamic TP under 2.0 ETH cap."}
   ]
 }

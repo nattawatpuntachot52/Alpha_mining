@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "generated_at_utc": "2026-11-26T15:15:52Z",
+  "generated_at_utc": "2026-11-26T16:00:35Z",
   "latest_date": "2026-11-26",
   "total_days": 4,
   "dates": [
@@ -12,9 +12,9 @@
   "days": [
     {
       "batch_date": "2026-11-26",
-      "generated_at_utc": "2026-11-26T15:15:52Z",
-      "model_count": 20,
-      "qualified_count": 20,
+      "generated_at_utc": "2026-11-26T16:00:34Z",
+      "model_count": 35,
+      "qualified_count": 35,
       "model_ids": [
         "beta_036_ema_3_8",
         "beta_037_ema_5_13",
@@ -35,12 +35,27 @@
         "beta_052_supertrend_50_3",
         "beta_053_supertrend_50_4",
         "beta_054_supertrend_10_5",
-        "beta_055_supertrend_20_2"
+        "beta_055_supertrend_20_2",
+        "beta_056_ha_1m_fixed_0_45",
+        "beta_057_ha_1m_parkinson_60_4_0",
+        "beta_058_ha_1m_logret_90_4_2",
+        "beta_059_ha_1m_ewma_logret_45_4_0_1_6",
+        "beta_060_ha_1m_inv_step_0_20_3_0_2_2",
+        "beta_061_rsi_trend_28_50_50_fixed_0_40",
+        "beta_062_rsi_trend_28_50_50_parkinson_60_3_8",
+        "beta_063_rsi_trend_28_50_50_logret_90_4_0",
+        "beta_064_rsi_trend_28_50_50_ewma_logret_45_3_8_1_6",
+        "beta_065_rsi_trend_28_50_50_inv_step_0_20_2_8_2_0",
+        "beta_066_rsi_trend_28_50_50_fixed_0_35",
+        "beta_067_rsi_trend_28_50_50_atr_60_4_5_0_38_1_50",
+        "beta_068_rsi_trend_28_50_50_logret_90_4_8_0_38_1_50",
+        "beta_069_rsi_trend_28_50_50_ewma_logret_45_4_5_1_7_0_38_1_50",
+        "beta_070_rsi_trend_28_50_50_inv_step_0_36_3_2_1_5_0_36_1_60"
       ],
       "best_cashflow_model_id": "beta_046_supertrend_5_2",
       "best_cashflow_usd": 2960.66,
-      "lowest_dd_model_id": "beta_045_ema_100_300",
-      "lowest_dd_pct": 16.31,
+      "lowest_dd_model_id": "beta_061_rsi_trend_28_50_50_fixed_0_40",
+      "lowest_dd_pct": 9.09,
       "window_start_utc": "2024-03-01T00:00:00Z",
       "window_end_utc": "2026-11-24T23:59:00Z",
       "days_covered": 999.0,
@@ -51,7 +66,7 @@
     },
     {
       "batch_date": "2026-11-25",
-      "generated_at_utc": "2026-11-26T15:15:51Z",
+      "generated_at_utc": "2026-11-26T16:00:34Z",
       "model_count": 20,
       "qualified_count": 20,
       "model_ids": [
@@ -90,7 +105,7 @@
     },
     {
       "batch_date": "2026-11-24",
-      "generated_at_utc": "2026-11-26T15:15:51Z",
+      "generated_at_utc": "2026-11-26T16:00:34Z",
       "model_count": 10,
       "qualified_count": 10,
       "model_ids": [
@@ -119,7 +134,7 @@
     },
     {
       "batch_date": "2026-11-23",
-      "generated_at_utc": "2026-11-26T15:15:51Z",
+      "generated_at_utc": "2026-11-26T16:00:34Z",
       "model_count": 5,
       "qualified_count": 5,
       "model_ids": [
