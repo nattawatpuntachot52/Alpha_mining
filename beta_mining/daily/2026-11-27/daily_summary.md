@@ -1,6 +1,6 @@
 # Alpha_mining — Beta Mining Daily Summary (2026-11-27)
 
-- **Generated (UTC):** `2026-11-27T06:59:17Z`
+- **Generated (UTC):** `2026-11-27T07:05:57Z`
 - **Batch Models Tested Today:** `10` | **Cumulative Total Trials (`N_trials`):** `80`
 - **Top-9 Ranking Rule:** `Net Realized Cashflow DESC -> Max MTM DD % ASC` | **Hard Gate:** `No Liquidation` & `Max DD <= 40%`
 
