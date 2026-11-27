@@ -626,14 +626,15 @@ def render_dashboard_html(
       <div class="legend-bar">
         <span id="legend-scope-label" class="muted" style="font-weight:700;margin-right:4px;">Models ({safe_date}):</span>
         <div id="daily-legend-pills" style="display:flex;flex-wrap:wrap;gap:7px;flex:1;"></div>
-        <div style="display:flex;gap:6px;align-items:center;">
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
           <button id="btn-show-all" type="button" class="pill-mini">Show All</button>
           <button id="btn-top3" type="button" class="pill-mini">Top 3 CF</button>
+          <button id="btn-toggle-cards" type="button" class="pill-mini">แสดงการ์ดสรุป</button>
           <span class="muted" style="font-size:11px;">คลิกเปิด/ปิด · ดับเบิลคลิกดูเดี่ยว</span>
         </div>
       </div>
 
-      <div id="daily-cards" class="batch-grid"></div>
+      <div id="daily-cards" class="batch-grid hidden"></div>
 
       <div class="dash-grid">
         <div class="panel">
@@ -2811,6 +2812,17 @@ def render_dashboard_html(
       renderDailyPillsAndTables();
       drawAllDailyCharts();
     }});
+
+    const btnToggleCards = document.getElementById("btn-toggle-cards");
+    if (btnToggleCards) {{
+      btnToggleCards.addEventListener("click", () => {{
+        const box = document.getElementById("daily-cards");
+        if (!box) return;
+        const hiddenNow = box.classList.toggle("hidden");
+        btnToggleCards.classList.toggle("active", !hiddenNow);
+        btnToggleCards.textContent = hiddenNow ? "แสดงการ์ดสรุป" : "ซ่อนการ์ดสรุป";
+      }});
+    }}
 
     const btnOpenTop9Panels = document.getElementById("btn-open-top9-panels");
     if (btnOpenTop9Panels) {{
