@@ -1,18 +1,18 @@
 # Alpha_mining — Beta Mining Daily Summary (2026-11-23)
 
-- **Generated (UTC):** `2026-11-26T15:15:51Z`
-- **Batch Models Tested Today:** `5` | **Cumulative Total Trials (`N_trials`):** `55`
+- **Generated (UTC):** `2026-11-26T16:00:33Z`
+- **Batch Models Tested Today:** `5` | **Cumulative Total Trials (`N_trials`):** `70`
 - **Top-9 Ranking Rule:** `Net Realized Cashflow DESC -> Max MTM DD % ASC` | **Hard Gate:** `No Liquidation` & `Max DD <= 40%`
 
 ## 1. สรุปโมเดลที่ Mine วันนี้ (2026-11-23 — 5 โมเดล)
 
-| Model ID | Signal | Realized Cashflow | AVG Weekly | Max DD (%) | CF / DD | MTM Return | Beta / Corr | Crash -46% DD | Trades (Win%) |
-|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| `beta_001_ha_1m` | `ha_1m` | +3166.40 (+31.66%) | +22.14 | 30.70% | 1.03x | -10.02% | 0.32 / 0.94 | 9.48% | 16,067 (98.0%) |
-| `beta_002_ema_9_21` | `ema_9_21` | +2704.49 (+27.04%) | +18.91 | 20.23% | 1.34x | -0.61% | 0.23 / 0.92 | 5.20% | 11,232 (98.0%) |
-| `beta_003_ema_12_26` | `ema_12_26` | +2652.05 (+26.52%) | +18.55 | 19.82% | 1.34x | -0.31% | 0.22 / 0.93 | 4.54% | 10,535 (98.0%) |
-| `beta_004_supertrend_10_3` | `supertrend_10_3` | +2707.76 (+27.08%) | +18.94 | 22.20% | 1.22x | -2.99% | 0.24 / 0.92 | 6.26% | 11,250 (98.0%) |
-| `beta_005_rsi_reversion_14_40_60` | `rsi_reversion_14_40_60` | +3282.71 (+32.83%) | +22.96 | 32.67% | 1.00x | -11.90% | 0.34 / 0.93 | 10.13% | 19,712 (98.1%) |
+| Model ID | Signal | Spacing (Avg%) | Realized Cashflow | Wk+ % | Max DD (%) | CF / DD | MTM Return | Crash -46% DD | Trades (Win%) |
+|---|---|---|---:|---:|---:|---:|---:|---:|---:|
+| `beta_001_ha_1m` | `ha_1m` | `fixed_0.2` (0.20%) | +3166.40 (+31.66%) | — | 30.70% | 1.03x | -10.02% | 9.48% | 16,067 (98.0%) |
+| `beta_002_ema_9_21` | `ema_9_21` | `fixed_0.2` (0.20%) | +2704.49 (+27.04%) | — | 20.23% | 1.34x | -0.61% | 5.20% | 11,232 (98.0%) |
+| `beta_003_ema_12_26` | `ema_12_26` | `fixed_0.2` (0.20%) | +2652.05 (+26.52%) | — | 19.82% | 1.34x | -0.31% | 4.54% | 10,535 (98.0%) |
+| `beta_004_supertrend_10_3` | `supertrend_10_3` | `fixed_0.2` (0.20%) | +2707.76 (+27.08%) | — | 22.20% | 1.22x | -2.99% | 6.26% | 11,250 (98.0%) |
+| `beta_005_rsi_reversion_14_40_60` | `rsi_reversion_14_40_60` | `fixed_0.2` (0.20%) | +3282.71 (+32.83%) | — | 32.67% | 1.00x | -11.90% | 10.13% | 19,712 (98.1%) |
 
 ## 2. Cumulative Top-9 Ranking Board (Cashflow สูงสุด → DD ต่ำสุด)
 

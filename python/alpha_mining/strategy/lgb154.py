@@ -13,6 +13,7 @@ Maintains 1:1 Decimal parity with Binance LGB154 Python V3 (`STRATEGY_PARITY.md`
 
 from __future__ import annotations
 
+from collections import deque
 import math
 from dataclasses import dataclass, field
 from decimal import Decimal, ROUND_CEILING, ROUND_FLOOR
@@ -715,8 +716,33 @@ class CallableSignal:
         return val
 
 
+def parse_beta_model_spec(
+    spec: str,
+    *,
+    default_spacing: str = "fixed_0.20",
+    default_tp: str = "legacy_ppc",
+) -> tuple[str, str, str]:
+    """Split a Beta candidate spec `<signal>[@<spacing>[@<tp>]]` into `(signal_spec, spacing_spec, tp_spec)`.
+
+    - Plain `<signal>` (e.g. `ha_1m`) preserves 1:1 legacy defaults (`fixed_0.20`, `legacy_ppc`).
+    - Compound `<signal>@<spacing>` automatically enables cost+funding-protected `net_dyn` TP unless
+      an explicit third `@<tp>` segment is supplied.
+    """
+    raw = spec.strip()
+    if not raw:
+        raise ValueError("model spec must be non-empty")
+    parts = [p.strip() for p in raw.split("@")]
+    if any(not p for p in parts) or len(parts) > 3:
+        raise ValueError(f"invalid beta model spec {spec!r}; expected <signal>[@<spacing>[@<tp>]]")
+    if len(parts) == 1:
+        return parts[0], default_spacing, default_tp
+    if len(parts) == 2:
+        return parts[0], parts[1], "net_dyn"
+    return parts[0], parts[1], parts[2]
+
+
 def create_signal_provider(spec: str) -> SignalProvider:
-    """Factory creating built-in SignalProviders from compact CLI names.
+    """Factory creating built-in SignalProviders from compact CLI names (supports `<signal>@<spacing>`).
 
     Supported specs:
     - `ha_1m` (Baseline LGB154 V3 Heikin-Ashi)
@@ -725,7 +751,12 @@ def create_signal_provider(spec: str) -> SignalProvider:
     - `rsi_trend` or `rsi_trend_<period>_<low>_<high>`
     - `supertrend` or `supertrend_<atr>_<mult>`
     """
-    key = spec.strip().lower()
+    sig_only, spacing_part, tp_part = parse_beta_model_spec(spec)
+    if "@" in spec:
+        # Validate companion spacing/TP specs eagerly so invalid queue entries fail fast
+        create_spacing_provider(spacing_part)
+        create_tp_policy(tp_part)
+    key = sig_only.strip().lower()
     if key in {"ha", "ha_1m", "baseline"}:
         return HeikinAshiSignal(name="ha_1m")
     if key == "ema_cross":
@@ -771,3 +802,489 @@ def create_signal_provider(spec: str) -> SignalProvider:
         f"unknown signal spec {spec!r}; try one of: ha_1m, ema_9_21, ema_12_26, "
         "rsi_reversion, rsi_trend, supertrend, supertrend_10_3"
     )
+
+
+# =============================================================================
+# Pluggable Closed-Bar SpacingProvider (5 Families) & Cost-Protected Dynamic TP
+# =============================================================================
+
+
+def _clamp_float(val: float, lo: float, hi: float) -> float:
+    if val < lo:
+        return lo
+    if val > hi:
+        return hi
+    return val
+
+
+class SpacingProvider(Protocol):
+    """Strictly causal closed-bar grid spacing controller (`%` distance between orders)."""
+
+    @property
+    def name(self) -> str: ...
+
+    @property
+    def mode(self) -> str: ...
+
+    @property
+    def is_dynamic(self) -> bool: ...
+
+    @property
+    def min_spacing_pct(self) -> float: ...
+
+    @property
+    def max_spacing_pct(self) -> float: ...
+
+    def reset(self) -> None: ...
+
+    def on_closed_bar(self, bar: Bar) -> None: ...
+
+    def current_spacing_pct(self, inventory_ratio: float = 0.0) -> float: ...
+
+
+class FixedSpacing:
+    """Family 1 (`fixed_pct`): Unlocked static geometric spacing at any chosen percentage."""
+
+    def __init__(self, spacing_pct: float = 0.20, *, name: str | None = None) -> None:
+        if not math.isfinite(spacing_pct) or not (0.02 <= spacing_pct <= 25.0):
+            raise ValueError(f"fixed spacing_pct must be in [0.02, 25.0], got {spacing_pct!r}")
+        self._pct = float(spacing_pct)
+        self._name = name or f"fixed_{self._pct:g}"
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def mode(self) -> str:
+        return "fixed_pct"
+
+    @property
+    def is_dynamic(self) -> bool:
+        return False
+
+    @property
+    def min_spacing_pct(self) -> float:
+        return self._pct
+
+    @property
+    def max_spacing_pct(self) -> float:
+        return self._pct
+
+    def reset(self) -> None:
+        return None
+
+    def on_closed_bar(self, bar: Bar) -> None:
+        return None
+
+    def current_spacing_pct(self, inventory_ratio: float = 0.0) -> float:
+        return self._pct
+
+
+class AtrRangeSpacing:
+    """Family 2 (`atr_range`): Wilder True-Range ATR% or Parkinson High-Low Range Volatility spacing."""
+
+    def __init__(
+        self,
+        period: int = 60,
+        multiplier: float = 3.5,
+        *,
+        estimator: str = "parkinson",
+        min_pct: float = 0.16,
+        max_pct: float = 1.40,
+        name: str | None = None,
+    ) -> None:
+        if period < 2 or not math.isfinite(multiplier) or multiplier <= 0.0:
+            raise ValueError("AtrRangeSpacing requires period >= 2 and multiplier > 0")
+        if estimator not in {"atr", "parkinson"}:
+            raise ValueError(f"unsupported estimator {estimator!r}; expected 'atr' or 'parkinson'")
+        if not (0.02 <= min_pct <= max_pct <= 25.0):
+            raise ValueError(f"invalid spacing bounds [{min_pct}, {max_pct}]")
+        self.period = int(period)
+        self.multiplier = float(multiplier)
+        self.estimator = estimator
+        self._min_pct = float(min_pct)
+        self._max_pct = float(max_pct)
+        self._default_pct = _clamp_float(0.25, self._min_pct, self._max_pct)
+        self._name = name or f"{estimator}_{self.period}_{self.multiplier:g}"
+        self._prev_close: float | None = None
+        self._atr: float | None = None
+        self._tr_sum = 0.0
+        self._count = 0
+        self._hl_sq_buf: deque[float] = deque()
+        self._hl_sq_sum = 0.0
+        self._last_vol_pct: float | None = None
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def mode(self) -> str:
+        return "atr_range"
+
+    @property
+    def is_dynamic(self) -> bool:
+        return True
+
+    @property
+    def min_spacing_pct(self) -> float:
+        return self._min_pct
+
+    @property
+    def max_spacing_pct(self) -> float:
+        return self._max_pct
+
+    def reset(self) -> None:
+        self._prev_close = None
+        self._atr = None
+        self._tr_sum = 0.0
+        self._count = 0
+        self._hl_sq_buf.clear()
+        self._hl_sq_sum = 0.0
+        self._last_vol_pct = None
+
+    def on_closed_bar(self, bar: Bar) -> None:
+        c = max(bar.close, 1e-9)
+        h = max(bar.high, c)
+        l = max(min(bar.low, c), 1e-9)
+        self._count += 1
+        if self.estimator == "atr":
+            tr = (h - l) if self._prev_close is None else max(h - l, abs(h - self._prev_close), abs(l - self._prev_close))
+            self._prev_close = c
+            if self._count < self.period:
+                self._tr_sum += tr
+                return
+            if self._count == self.period:
+                self._tr_sum += tr
+                self._atr = self._tr_sum / self.period
+            else:
+                assert self._atr is not None
+                self._atr = (self._atr * (self.period - 1) + tr) / self.period
+            self._last_vol_pct = (self._atr / c) * 100.0
+        else:
+            lr = math.log(h / l)
+            sq = lr * lr
+            self._hl_sq_buf.append(sq)
+            self._hl_sq_sum += sq
+            if len(self._hl_sq_buf) > self.period:
+                self._hl_sq_sum -= self._hl_sq_buf.popleft()
+            if (self._count & 8191) == 0:
+                self._hl_sq_sum = sum(self._hl_sq_buf)
+            n = len(self._hl_sq_buf)
+            if n >= min(10, self.period):
+                denom = 4.0 * n * math.log(2.0)
+                self._last_vol_pct = 100.0 * math.sqrt(max(0.0, self._hl_sq_sum / denom))
+
+    def current_spacing_pct(self, inventory_ratio: float = 0.0) -> float:
+        if self._last_vol_pct is None:
+            return self._default_pct
+        return _clamp_float(self.multiplier * self._last_vol_pct, self._min_pct, self._max_pct)
+
+
+class LogReturnVolSpacing:
+    """Family 3 (`log_return_vol`): Rolling close-to-close log-return standard deviation (z * sigma)."""
+
+    def __init__(
+        self,
+        window: int = 90,
+        z_mult: float = 4.2,
+        *,
+        min_pct: float = 0.16,
+        max_pct: float = 1.40,
+        name: str | None = None,
+    ) -> None:
+        if window < 5 or not math.isfinite(z_mult) or z_mult <= 0.0:
+            raise ValueError("LogReturnVolSpacing requires window >= 5 and z_mult > 0")
+        if not (0.02 <= min_pct <= max_pct <= 25.0):
+            raise ValueError(f"invalid spacing bounds [{min_pct}, {max_pct}]")
+        self.window = int(window)
+        self.z_mult = float(z_mult)
+        self._min_pct = float(min_pct)
+        self._max_pct = float(max_pct)
+        self._default_pct = _clamp_float(0.25, self._min_pct, self._max_pct)
+        self._name = name or f"logret_{self.window}_{self.z_mult:g}"
+        self._prev_close: float | None = None
+        self._buf: deque[float] = deque()
+        self._sum = 0.0
+        self._sum2 = 0.0
+        self._steps = 0
+        self._sigma_pct: float | None = None
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def mode(self) -> str:
+        return "log_return_vol"
+
+    @property
+    def is_dynamic(self) -> bool:
+        return True
+
+    @property
+    def min_spacing_pct(self) -> float:
+        return self._min_pct
+
+    @property
+    def max_spacing_pct(self) -> float:
+        return self._max_pct
+
+    def reset(self) -> None:
+        self._prev_close = None
+        self._buf.clear()
+        self._sum = 0.0
+        self._sum2 = 0.0
+        self._steps = 0
+        self._sigma_pct = None
+
+    def on_closed_bar(self, bar: Bar) -> None:
+        c = max(bar.close, 1e-9)
+        if self._prev_close is None:
+            self._prev_close = c
+            return
+        r = math.log(c / self._prev_close)
+        self._prev_close = c
+        self._buf.append(r)
+        self._sum += r
+        self._sum2 += r * r
+        if len(self._buf) > self.window:
+            old = self._buf.popleft()
+            self._sum -= old
+            self._sum2 -= old * old
+        self._steps += 1
+        if (self._steps & 8191) == 0:
+            self._sum = sum(self._buf)
+            self._sum2 = sum(x * x for x in self._buf)
+        n = len(self._buf)
+        if n >= min(10, self.window):
+            var = max(0.0, (self._sum2 - (self._sum * self._sum) / n) / max(1, n - 1))
+            self._sigma_pct = 100.0 * math.sqrt(var)
+
+    def current_spacing_pct(self, inventory_ratio: float = 0.0) -> float:
+        if self._sigma_pct is None:
+            return self._default_pct
+        return _clamp_float(self.z_mult * self._sigma_pct, self._min_pct, self._max_pct)
+
+
+class EwmaAsymmetricSpacing:
+    """Family 4 (`ewma_asymmetric`): EWMA log-return volatility with downside-waterfall amplification."""
+
+    def __init__(
+        self,
+        halflife: int = 45,
+        mult: float = 4.0,
+        down_boost: float = 1.6,
+        *,
+        min_pct: float = 0.16,
+        max_pct: float = 1.50,
+        name: str | None = None,
+    ) -> None:
+        if halflife < 2 or not math.isfinite(mult) or mult <= 0.0 or down_boost < 1.0:
+            raise ValueError("EwmaAsymmetricSpacing requires halflife >= 2, mult > 0, down_boost >= 1.0")
+        if not (0.02 <= min_pct <= max_pct <= 25.0):
+            raise ValueError(f"invalid spacing bounds [{min_pct}, {max_pct}]")
+        self.halflife = int(halflife)
+        self.mult = float(mult)
+        self.down_boost = float(down_boost)
+        self._decay = math.pow(0.5, 1.0 / self.halflife)
+        self._min_pct = float(min_pct)
+        self._max_pct = float(max_pct)
+        self._default_pct = _clamp_float(0.25, self._min_pct, self._max_pct)
+        self._name = name or f"ewma_logret_{self.halflife}_{self.mult:g}_{self.down_boost:g}"
+        self._prev_close: float | None = None
+        self._var: float | None = None
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def mode(self) -> str:
+        return "ewma_asymmetric"
+
+    @property
+    def is_dynamic(self) -> bool:
+        return True
+
+    @property
+    def min_spacing_pct(self) -> float:
+        return self._min_pct
+
+    @property
+    def max_spacing_pct(self) -> float:
+        return self._max_pct
+
+    def reset(self) -> None:
+        self._prev_close = None
+        self._var = None
+
+    def on_closed_bar(self, bar: Bar) -> None:
+        c = max(bar.close, 1e-9)
+        if self._prev_close is None:
+            self._prev_close = c
+            return
+        r = math.log(c / self._prev_close)
+        self._prev_close = c
+        eff_r = r * self.down_boost if r < 0.0 else r
+        r2 = eff_r * eff_r
+        if self._var is None:
+            self._var = r2
+        else:
+            self._var = self._decay * self._var + (1.0 - self._decay) * r2
+
+    def current_spacing_pct(self, inventory_ratio: float = 0.0) -> float:
+        if self._var is None:
+            return self._default_pct
+        sigma_pct = 100.0 * math.sqrt(max(0.0, self._var))
+        return _clamp_float(self.mult * sigma_pct, self._min_pct, self._max_pct)
+
+
+class InventoryHybridSpacing:
+    """Family 5 (`inventory_hybrid`): Calm-market tight base spacing + progressive inventory & log-vol expansion."""
+
+    def __init__(
+        self,
+        base_pct: float = 0.20,
+        vol_mult: float = 3.0,
+        inv_gain: float = 2.2,
+        *,
+        window: int = 60,
+        min_pct: float = 0.16,
+        max_pct: float = 1.60,
+        name: str | None = None,
+    ) -> None:
+        if base_pct <= 0.0 or vol_mult < 0.0 or inv_gain < 0.0 or window < 5:
+            raise ValueError("invalid InventoryHybridSpacing parameters")
+        if not (0.02 <= min_pct <= max_pct <= 25.0):
+            raise ValueError(f"invalid spacing bounds [{min_pct}, {max_pct}]")
+        self.base_pct = float(base_pct)
+        self.vol_mult = float(vol_mult)
+        self.inv_gain = float(inv_gain)
+        self._vol = LogReturnVolSpacing(window=window, z_mult=max(vol_mult, 1e-6), min_pct=0.02, max_pct=25.0)
+        self._min_pct = float(min_pct)
+        self._max_pct = float(max_pct)
+        self._name = name or f"inv_step_{self.base_pct:g}_{self.vol_mult:g}_{self.inv_gain:g}"
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def mode(self) -> str:
+        return "inventory_hybrid"
+
+    @property
+    def is_dynamic(self) -> bool:
+        return True
+
+    @property
+    def min_spacing_pct(self) -> float:
+        return self._min_pct
+
+    @property
+    def max_spacing_pct(self) -> float:
+        return self._max_pct
+
+    def reset(self) -> None:
+        self._vol.reset()
+
+    def on_closed_bar(self, bar: Bar) -> None:
+        self._vol.on_closed_bar(bar)
+
+    def current_spacing_pct(self, inventory_ratio: float = 0.0) -> float:
+        rho = _clamp_float(float(inventory_ratio), 0.0, 1.0)
+        vol_component = self._vol.current_spacing_pct() if self.vol_mult > 0.0 else 0.0
+        core = max(self.base_pct, vol_component)
+        scaled = core * (1.0 + self.inv_gain * (rho ** 1.25))
+        return _clamp_float(scaled, self._min_pct, self._max_pct)
+
+
+def create_spacing_provider(spec: str) -> SpacingProvider:
+    """Factory creating built-in SpacingProviders across all 5 spacing families.
+
+    Supported formats:
+    1. `fixed_<pct>` (e.g. `fixed_0.20`, `fixed_0.35`, `fixed_0.45`)
+    2. `atr_<period>_<mult>[_<min>_<max>]` or `parkinson_<period>_<mult>[_<min>_<max>]`
+    3. `logret_<window>_<z_mult>[_<min>_<max>]`
+    4. `ewma_logret_<halflife>_<mult>_<down_boost>[_<min>_<max>]`
+    5. `inv_step_<base>_<vol_mult>_<inv_gain>[_<min>_<max>]`
+    """
+    key = spec.strip().lower()
+    parts = key.split("_")
+    if parts[0] == "fixed" and len(parts) == 2:
+        return FixedSpacing(float(parts[1]), name=key)
+    if parts[0] in {"atr", "parkinson"} and len(parts) in {3, 5}:
+        kw = {"min_pct": float(parts[3]), "max_pct": float(parts[4])} if len(parts) == 5 else {}
+        return AtrRangeSpacing(int(parts[1]), float(parts[2]), estimator=parts[0], name=key, **kw)
+    if parts[0] == "logret" and len(parts) in {3, 5}:
+        kw = {"min_pct": float(parts[3]), "max_pct": float(parts[4])} if len(parts) == 5 else {}
+        return LogReturnVolSpacing(int(parts[1]), float(parts[2]), name=key, **kw)
+    if len(parts) in {5, 7} and parts[0] == "ewma" and parts[1] == "logret":
+        kw = {"min_pct": float(parts[5]), "max_pct": float(parts[6])} if len(parts) == 7 else {}
+        return EwmaAsymmetricSpacing(int(parts[2]), float(parts[3]), float(parts[4]), name=key, **kw)
+    if len(parts) in {5, 7} and parts[0] == "inv" and parts[1] == "step":
+        kw = {"min_pct": float(parts[5]), "max_pct": float(parts[6])} if len(parts) == 7 else {}
+        return InventoryHybridSpacing(float(parts[2]), float(parts[3]), float(parts[4]), name=key, **kw)
+    raise ValueError(
+        f"unknown spacing spec {spec!r}; try fixed_0.35, parkinson_60_3.8, atr_60_3.5, "
+        "logret_90_4.2, ewma_logret_45_4.0_1.6, or inv_step_0.20_3.0_2.2"
+    )
+
+
+@dataclass(frozen=True)
+class DynamicTpPolicy:
+    """Take-Profit policy supporting legacy flat markup or cost+funding-protected NET Dynamic TP."""
+
+    name: str = "legacy_ppc"
+    use_net_protection: bool = False
+    beta_to_spacing: float = 0.85
+    min_net_pct: float = 0.20
+    max_net_pct: float = 1.20
+    inv_relief_factor: float = 0.35
+    exit_fee_buffer_pct: Decimal = Decimal("0.05")  # 5 bps safe exit fee buffer (>= 2 bps maker)
+
+    def target_net_pct(self, entry_spacing_pct: float, inventory_ratio: float = 0.0) -> float:
+        rho = _clamp_float(float(inventory_ratio), 0.0, 1.0)
+        relief = max(0.35, 1.0 - self.inv_relief_factor * rho)
+        raw = self.beta_to_spacing * float(entry_spacing_pct) * relief
+        return _clamp_float(raw, self.min_net_pct, self.max_net_pct)
+
+
+def create_tp_policy(spec: str) -> DynamicTpPolicy:
+    """Parse TP policy spec (`legacy_ppc`, `net_dyn`, `net_dyn_<beta>_<min>_<max>_<relief>`, `net_fixed_<pct>`)."""
+    key = spec.strip().lower()
+    if key in {"legacy", "legacy_ppc", "ppc"}:
+        return DynamicTpPolicy(name="legacy_ppc", use_net_protection=False)
+    if key == "net_dyn":
+        return DynamicTpPolicy(name="net_dyn", use_net_protection=True)
+    parts = key.split("_")
+    if len(parts) == 6 and parts[0] == "net" and parts[1] == "dyn":
+        beta = float(parts[2])
+        lo = float(parts[3])
+        hi = float(parts[4])
+        rel = float(parts[5])
+        if beta <= 0.0 or not (0.02 <= lo <= hi <= 10.0) or not (0.0 <= rel < 1.0):
+            raise ValueError(f"invalid net_dyn TP spec {spec!r}")
+        return DynamicTpPolicy(
+            name=key,
+            use_net_protection=True,
+            beta_to_spacing=beta,
+            min_net_pct=lo,
+            max_net_pct=hi,
+            inv_relief_factor=rel,
+        )
+    if len(parts) == 3 and parts[0] == "net" and parts[1] == "fixed":
+        pct = float(parts[2])
+        if not (0.02 <= pct <= 10.0):
+            raise ValueError(f"invalid net_fixed TP spec {spec!r}")
+        return DynamicTpPolicy(
+            name=key,
+            use_net_protection=True,
+            beta_to_spacing=1.0,
+            min_net_pct=pct,
+            max_net_pct=pct,
+            inv_relief_factor=0.0,
+        )
+    raise ValueError(f"unknown TP policy spec {spec!r}; try legacy_ppc, net_dyn, or net_fixed_0.25")
