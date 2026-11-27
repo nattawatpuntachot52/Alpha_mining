@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_117_ethusdt_5m_bollinger_reversion_30_2_8_0_0_ls_sl1tp1_2",
+  "trial_number": 117,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"bollinger_reversion\",\"params\":{\"exit_z\":0.0,\"k\":2.8,\"period\":30},\"sl_pct\":1.0,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"5m\",\"tp_pct\":1.2}",
+  "symbol": "ETHUSDT",
+  "timeframe": "5m",
+  "family": "bollinger_reversion",
+  "params": {
+    "period": 30,
+    "k": 2.8,
+    "exit_z": 0.0
+  },
+  "direction": "long_short",
+  "sl_pct": 1.0,
+  "tp_pct": 1.2,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day06_r2_m5",
+  "hypothesis": "M5 2.8σ extreme wick reversion fades flash stops.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-27",
+  "updated_at_utc": "2026-11-27T04:15:26Z",
+  "spec_sha256": "sha256:f458b2edb1378fb8b26e5149e63490307241d7c8305e7d7bb6e3357cfc11ca75"
+}

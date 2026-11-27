@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_112_xauusd_5m_donchian_breakout_60_20_lo",
+  "trial_number": 112,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"donchian_breakout\",\"params\":{\"entry\":60,\"exit\":20},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"5m\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "5m",
+  "family": "donchian_breakout",
+  "params": {
+    "entry": 60,
+    "exit": 20
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day06_r2_m5_tactical",
+  "hypothesis": "M5 5-hour Donchian breakout captures sharp intraday gold trend bursts.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-27",
+  "updated_at_utc": "2026-11-27T04:15:20Z",
+  "spec_sha256": "sha256:13504be7487ece2a0563e4daa2fe064c4f9100e473fb3da7b1d7e7739cd63f0f"
+}

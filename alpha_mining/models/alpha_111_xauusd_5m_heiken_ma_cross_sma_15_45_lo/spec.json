@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_111_xauusd_5m_heiken_ma_cross_sma_15_45_lo",
+  "trial_number": 111,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"heiken_ma_cross\",\"params\":{\"fast\":15,\"ma\":\"sma\",\"slow\":45},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"5m\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "5m",
+  "family": "heiken_ma_cross",
+  "params": {
+    "ma": "sma",
+    "fast": 15,
+    "slow": 45
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day06_r2_m5_tactical",
+  "hypothesis": "M5 Heiken Ashi SMA 15/45 tests whether faster smoothed crossover survives 2 bps costs.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-27",
+  "updated_at_utc": "2026-11-27T04:15:20Z",
+  "spec_sha256": "sha256:a4799bc740318fc420b9cc70945d0cc425370ba5da5b3e8521524ea241f9f2d8"
+}

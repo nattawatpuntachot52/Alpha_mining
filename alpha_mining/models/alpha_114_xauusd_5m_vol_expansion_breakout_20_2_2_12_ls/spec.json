@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_114_xauusd_5m_vol_expansion_breakout_20_2_2_12_ls",
+  "trial_number": 114,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"vol_expansion_breakout\",\"params\":{\"atr_period\":20,\"hold_bars\":12,\"k_atr\":2.2},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"5m\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "5m",
+  "family": "vol_expansion_breakout",
+  "params": {
+    "atr_period": 20,
+    "k_atr": 2.2,
+    "hold_bars": 12
+  },
+  "direction": "long_short",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day06_r2_m5_tactical",
+  "hypothesis": "M5 2.2x ATR breakout tests 1-hour momentum continuation after macro releases.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-27",
+  "updated_at_utc": "2026-11-27T04:15:21Z",
+  "spec_sha256": "sha256:fd06fca3d2a5f2989d35619c71701a5afdc482218e1b58e45cb57ae1439428ea"
+}
