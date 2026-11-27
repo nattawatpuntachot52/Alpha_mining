@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0",
+  "model_id": "beta_082_rsi_trend_9_50_50",
+  "trial_number": 82,
+  "category": "beta",
+  "signal_spec": "rsi_trend_9_50_50",
+  "signal_name": "rsi_trend_9_50_50",
+  "symbol": "ETHUSDT",
+  "product_type": "USD_M",
+  "settlement_unit": "USDT",
+  "zone_high": 5000.0,
+  "zone_low": 500.0,
+  "spacing_pct": 0.2,
+  "spacing_spec": "fixed_0.2",
+  "spacing_mode": "fixed_pct",
+  "tp_mode_label": "profit_plus_commission",
+  "grid_levels_count": 1151,
+  "initial_capital": 10000.0,
+  "fill_mode": "strict_cross",
+  "hypothesis": "Fast RSI trend gate rsi_trend_9_50_50 reacts quickly to momentum regime flips.",
+  "tags": [
+    "beta_mining",
+    "day14_rsi_trend_fast"
+  ],
+  "evidence_status": "reproducible",
+  "config_snapshot": {
+    "profile": "usdm",
+    "high": "5000.0",
+    "low": "500.0",
+    "spacing_pct": "0.2",
+    "spacing_spec": "fixed_0.2",
+    "tp_spec": "legacy_ppc",
+    "order_quantity": "0.01",
+    "max_position_quantity": "2.0",
+    "max_notional_usdt": "10000.0",
+    "initial_capital": "10000.0",
+    "recovery_mode": "partial_only",
+    "fill_mode": "strict_cross"
+  },
+  "created_batch_date": "2026-11-27",
+  "updated_at_utc": "2026-11-27T08:16:22Z",
+  "spec_sha256": "sha256:df774495c1413f9d528f821e5f877ce23fb1ac6bdce2ddd03bf566e75149a3c2"
+}

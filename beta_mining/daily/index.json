@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "generated_at_utc": "2026-11-27T07:05:58Z",
+  "generated_at_utc": "2026-11-27T08:55:42Z",
   "latest_date": "2026-11-27",
   "total_days": 5,
   "dates": [
@@ -13,9 +13,9 @@
   "days": [
     {
       "batch_date": "2026-11-27",
-      "generated_at_utc": "2026-11-27T07:05:58Z",
-      "model_count": 10,
-      "qualified_count": 10,
+      "generated_at_utc": "2026-11-27T08:55:42Z",
+      "model_count": 20,
+      "qualified_count": 20,
       "model_ids": [
         "beta_071_rsi_reversion_5_20_80",
         "beta_072_rsi_reversion_9_30_70",
@@ -26,7 +26,17 @@
         "beta_077_rsi_reversion_9_40_60",
         "beta_078_rsi_reversion_5_30_70",
         "beta_079_rsi_reversion_14_45_55",
-        "beta_080_rsi_reversion_21_30_70"
+        "beta_080_rsi_reversion_21_30_70",
+        "beta_081_rsi_trend_5_50_50",
+        "beta_082_rsi_trend_9_50_50",
+        "beta_083_rsi_trend_9_45_55",
+        "beta_084_rsi_trend_5_45_55",
+        "beta_085_rsi_trend_14_35_65",
+        "beta_086_rsi_trend_28_45_55",
+        "beta_087_rsi_trend_35_50_50",
+        "beta_088_rsi_trend_35_45_55",
+        "beta_089_rsi_trend_50_50_50",
+        "beta_090_rsi_trend_21_40_60"
       ],
       "best_cashflow_model_id": "beta_078_rsi_reversion_5_30_70",
       "best_cashflow_usd": 3331.04,
