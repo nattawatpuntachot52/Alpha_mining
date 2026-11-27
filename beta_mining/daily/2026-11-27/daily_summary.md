@@ -1,10 +1,10 @@
 # Alpha_mining — Beta Mining Daily Summary (2026-11-27)
 
-- **Generated (UTC):** `2026-11-27T08:17:22Z`
-- **Batch Models Tested Today:** `15` | **Cumulative Total Trials (`N_trials`):** `85`
+- **Generated (UTC):** `2026-11-27T08:55:42Z`
+- **Batch Models Tested Today:** `20` | **Cumulative Total Trials (`N_trials`):** `90`
 - **Top-9 Ranking Rule:** `Net Realized Cashflow DESC -> Max MTM DD % ASC` | **Hard Gate:** `No Liquidation` & `Max DD <= 40%`
 
-## 1. สรุปโมเดลที่ Mine วันนี้ (2026-11-27 — 15 โมเดล)
+## 1. สรุปโมเดลที่ Mine วันนี้ (2026-11-27 — 20 โมเดล)
 
 | Model ID | Signal | Spacing (Avg%) | Realized Cashflow | Wk+ % | Max DD (%) | CF / DD | MTM Return | Crash -46% DD | Trades (Win%) |
 |---|---|---|---:|---:|---:|---:|---:|---:|---:|
@@ -23,6 +23,11 @@
 | `beta_083_rsi_trend_9_45_55` | `rsi_trend_9_45_55` | `fixed_0.2` (0.20%) | +2877.54 (+28.78%) | 93.8% | 21.61% | 1.33x | -1.06% | 4.88% | 11,559 (98.2%) |
 | `beta_084_rsi_trend_5_45_55` | `rsi_trend_5_45_55` | `fixed_0.2` (0.20%) | +2928.13 (+29.28%) | 85.4% | 25.79% | 1.14x | -5.92% | 6.27% | 13,278 (98.0%) |
 | `beta_085_rsi_trend_14_35_65` | `rsi_trend_14_35_65` | `fixed_0.2` (0.20%) | +2521.89 (+25.22%) | 99.3% | 18.11% | 1.39x | +1.07% | 3.58% | 6,755 (98.0%) |
+| `beta_086_rsi_trend_28_45_55` | `rsi_trend_28_45_55` | `fixed_0.2` (0.20%) | +2413.19 (+24.13%) | 99.3% | 19.99% | 1.21x | -2.54% | 3.97% | 6,985 (97.9%) |
+| `beta_087_rsi_trend_35_50_50` | `rsi_trend_35_50_50` | `fixed_0.2` (0.20%) | +2278.53 (+22.79%) | 99.3% | 15.20% | 1.50x | +2.97% | 3.39% | 7,803 (98.0%) |
+| `beta_088_rsi_trend_35_45_55` | `rsi_trend_35_45_55` | `fixed_0.2` (0.20%) | +2450.93 (+24.51%) | 99.3% | 20.06% | 1.22x | -2.53% | 4.17% | 6,271 (97.9%) |
+| `beta_089_rsi_trend_50_50_50` | `rsi_trend_50_50_50` | `fixed_0.2` (0.20%) | +2072.45 (+20.72%) | 100.0% | 15.54% | 1.33x | +1.04% | 3.35% | 6,548 (98.0%) |
+| `beta_090_rsi_trend_21_40_60` | `rsi_trend_21_40_60` | `fixed_0.2` (0.20%) | +2527.29 (+25.27%) | 99.3% | 19.63% | 1.29x | -0.40% | 3.38% | 6,674 (98.0%) |
 
 ## 2. Cumulative Top-9 Ranking Board (Cashflow สูงสุด → DD ต่ำสุด)
 
