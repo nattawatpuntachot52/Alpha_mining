@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "model_id": "beta_058_rsi_reversion_14_20_80",
+  "trial_number": 58,
+  "category": "beta",
+  "signal_spec": "rsi_reversion_14_20_80",
+  "signal_name": "rsi_reversion_14_20_80",
+  "symbol": "ETHUSDT",
+  "product_type": "USD_M",
+  "settlement_unit": "USDT",
+  "zone_high": 5000.0,
+  "zone_low": 500.0,
+  "spacing_pct": 0.2,
+  "grid_levels_count": 1151,
+  "initial_capital": 10000.0,
+  "fill_mode": "strict_cross",
+  "hypothesis": "RSI reversion rsi_reversion_14_20_80 buys only deeper oversold dips to reduce inventory lock-up.",
+  "tags": [
+    "beta_mining",
+    "day12_rsi_reversion_deep"
+  ],
+  "evidence_status": "reproducible",
+  "config_snapshot": {
+    "profile": "usdm",
+    "high": "5000.0",
+    "low": "500.0",
+    "spacing_pct": "0.2",
+    "order_quantity": "0.01",
+    "max_position_quantity": "2.0",
+    "max_notional_usdt": "10000.0",
+    "initial_capital": "10000.0",
+    "recovery_mode": "partial_only",
+    "fill_mode": "strict_cross"
+  },
+  "created_batch_date": "2026-11-27",
+  "updated_at_utc": "2026-11-27T00:15:46Z",
+  "spec_sha256": "sha256:2cf8d6ee4f4797ce4fc0a2c9cad016028842a85e7e671f64e7919e82508be353"
+}
