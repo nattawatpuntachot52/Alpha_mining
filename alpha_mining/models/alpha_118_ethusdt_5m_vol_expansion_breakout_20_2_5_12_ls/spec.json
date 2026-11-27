@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_118_ethusdt_5m_vol_expansion_breakout_20_2_5_12_ls",
+  "trial_number": 118,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"vol_expansion_breakout\",\"params\":{\"atr_period\":20,\"hold_bars\":12,\"k_atr\":2.5},\"sl_pct\":0.0,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"5m\",\"tp_pct\":0.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "5m",
+  "family": "vol_expansion_breakout",
+  "params": {
+    "atr_period": 20,
+    "k_atr": 2.5,
+    "hold_bars": 12
+  },
+  "direction": "long_short",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day06_r2_m5",
+  "hypothesis": "M5 2.5x ATR surge continuation rides 1-hour momentum after sudden spikes.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-27",
+  "updated_at_utc": "2026-11-27T04:15:26Z",
+  "spec_sha256": "sha256:916875bd09f2b6228ed689528b88e435d4d493e003da16039890ec95793e3f18"
+}

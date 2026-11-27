@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_105_xauusd_1h_session_time_21_5_long_inside_x_lo",
+  "trial_number": 105,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"session_time\",\"params\":{\"end_hour_utc\":5,\"mode\":\"long_inside\",\"start_hour_utc\":21,\"weekdays\":[0,1,2,3]},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"1h\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "1h",
+  "family": "session_time",
+  "params": {
+    "start_hour_utc": 21,
+    "end_hour_utc": 5,
+    "mode": "long_inside",
+    "weekdays": [
+      0,
+      1,
+      2,
+      3
+    ]
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day06_r1_calendar",
+  "hypothesis": "Mon-Thu overnight session (21-05 UTC) excludes Friday rollover gap risk.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-27",
+  "updated_at_utc": "2026-11-27T00:15:23Z",
+  "spec_sha256": "sha256:6549a22a89cded0c2eb0a004b6b36d94fca02dbf265478f585aab5dacdfec662"
+}

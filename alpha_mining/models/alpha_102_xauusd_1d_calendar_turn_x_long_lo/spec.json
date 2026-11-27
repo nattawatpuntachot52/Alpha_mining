@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_102_xauusd_1d_calendar_turn_x_long_lo",
+  "trial_number": 102,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_only\",\"family\":\"calendar_turn\",\"params\":{\"days_of_month\":[[1,5]],\"side\":\"long\"},\"sl_pct\":0.0,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"1d\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "1d",
+  "family": "calendar_turn",
+  "params": {
+    "days_of_month": [
+      [
+        1,
+        5
+      ]
+    ],
+    "side": "long"
+  },
+  "direction": "long_only",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day06_r1_calendar",
+  "hypothesis": "First-week-of-month (days 1-5) new-money inflow hypothesis on gold.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-27",
+  "updated_at_utc": "2026-11-27T00:15:23Z",
+  "spec_sha256": "sha256:5b441f6469eced2854e05c56f16d4de245b3dcf5262672a43b502a180a36d106"
+}

@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_113_xauusd_5m_rsi_reversion_14_25_75_50_50_ls_sl0_4tp0",
+  "trial_number": 113,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"rsi_reversion\",\"params\":{\"buy_below\":25,\"exit_long\":50,\"exit_short\":50,\"period\":14,\"sell_above\":75},\"sl_pct\":0.4,\"symbol\":\"XAUUSD\",\"time_stop_bars\":0,\"timeframe\":\"5m\",\"tp_pct\":0.0}",
+  "symbol": "XAUUSD",
+  "timeframe": "5m",
+  "family": "rsi_reversion",
+  "params": {
+    "period": 14,
+    "buy_below": 25,
+    "sell_above": 75,
+    "exit_long": 50,
+    "exit_short": 50
+  },
+  "direction": "long_short",
+  "sl_pct": 0.4,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day06_r2_m5_tactical",
+  "hypothesis": "M5 extreme RSI(14) 25/75 scalping reversion with tight 0.4% SL.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-27",
+  "updated_at_utc": "2026-11-27T04:15:21Z",
+  "spec_sha256": "sha256:698cd3a2266e149f1b27c419046da6e03bc79fc403477fb509314a94a5e8c8f4"
+}

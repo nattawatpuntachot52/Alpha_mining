@@ -1,14 +1,57 @@
 {
   "schema_version": "1.0",
-  "generated_at_utc": "2026-11-26T15:15:50Z",
-  "latest_date": "2026-11-26",
-  "total_days": 3,
+  "generated_at_utc": "2026-11-27T04:15:27Z",
+  "latest_date": "2026-11-27",
+  "total_days": 4,
   "dates": [
+    "2026-11-27",
     "2026-11-26",
     "2026-11-25",
     "2026-11-24"
   ],
   "days": [
+    {
+      "batch_date": "2026-11-27",
+      "generated_at_utc": "2026-11-27T04:15:27Z",
+      "model_count": 20,
+      "rounds": [
+        1,
+        2
+      ],
+      "by_symbol": {
+        "XAUUSD": 10,
+        "ETHUSDT": 10
+      },
+      "model_ids": [
+        "alpha_101_xauusd_1d_calendar_turn_x_long_lo",
+        "alpha_102_xauusd_1d_calendar_turn_x_long_lo",
+        "alpha_103_xauusd_1d_calendar_turn_x_long_lo",
+        "alpha_104_xauusd_1d_calendar_turn_x_long_lo",
+        "alpha_105_xauusd_1h_session_time_21_5_long_inside_x_lo",
+        "alpha_106_ethusdt_1d_calendar_turn_x_long_lo",
+        "alpha_107_ethusdt_1d_calendar_turn_x_long_lo",
+        "alpha_108_ethusdt_1d_calendar_turn_x_long_lo",
+        "alpha_109_ethusdt_1d_calendar_turn_x_short_so",
+        "alpha_110_ethusdt_1h_session_time_13_21_long_inside_short_outsid",
+        "alpha_111_xauusd_5m_heiken_ma_cross_sma_15_45_lo",
+        "alpha_112_xauusd_5m_donchian_breakout_60_20_lo",
+        "alpha_113_xauusd_5m_rsi_reversion_14_25_75_50_50_ls_sl0_4tp0",
+        "alpha_114_xauusd_5m_vol_expansion_breakout_20_2_2_12_ls",
+        "alpha_115_xauusd_5m_asia_range_breakout_0_7_18_0_7_ls",
+        "alpha_116_ethusdt_5m_donchian_breakout_72_24_ls",
+        "alpha_117_ethusdt_5m_bollinger_reversion_30_2_8_0_0_ls_sl1tp1_2",
+        "alpha_118_ethusdt_5m_vol_expansion_breakout_20_2_5_12_ls",
+        "alpha_119_ethusdt_5m_heiken_ma_cross_ema_18_54_lo",
+        "alpha_120_ethusdt_5m_rsi_reversion_14_20_80_50_50_ls_sl1_2tp0"
+      ],
+      "best_oos_sharpe_model_id": "alpha_105_xauusd_1h_session_time_21_5_long_inside_x_lo",
+      "best_oos_sharpe": 0.919,
+      "profitable_oos_count": 3,
+      "has_dashboard": true,
+      "has_summary": true,
+      "dashboard_rel_path": "daily/2026-11-27/dashboard.html",
+      "summary_rel_path": "daily/2026-11-27/daily_summary.md"
+    },
     {
       "batch_date": "2026-11-26",
       "generated_at_utc": "2026-11-26T15:15:50Z",

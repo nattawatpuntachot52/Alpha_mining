@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "model_id": "alpha_110_ethusdt_1h_session_time_13_21_long_inside_short_outsid",
+  "trial_number": 110,
+  "category": "alpha",
+  "spec_key": "{\"direction\":\"long_short\",\"family\":\"session_time\",\"params\":{\"end_hour_utc\":21,\"mode\":\"long_inside_short_outside\",\"start_hour_utc\":13},\"sl_pct\":0.0,\"symbol\":\"ETHUSDT\",\"time_stop_bars\":0,\"timeframe\":\"1h\",\"tp_pct\":0.0}",
+  "symbol": "ETHUSDT",
+  "timeframe": "1h",
+  "family": "session_time",
+  "params": {
+    "start_hour_utc": 13,
+    "end_hour_utc": 21,
+    "mode": "long_inside_short_outside"
+  },
+  "direction": "long_short",
+  "sl_pct": 0.0,
+  "tp_pct": 0.0,
+  "time_stop_bars": 0,
+  "days": 0,
+  "theme": "day06_r1_calendar",
+  "hypothesis": "Long US hours (13-21 UTC) / short off-hours tests pure intraday crypto seasonality.",
+  "evidence_status": "exploratory",
+  "created_batch_date": "2026-11-27",
+  "updated_at_utc": "2026-11-27T00:15:24Z",
+  "spec_sha256": "sha256:f984c9f21f7952327dc105b8380b560b79dfdb26d6579d9c89ba0ba0dfa89328"
+}
