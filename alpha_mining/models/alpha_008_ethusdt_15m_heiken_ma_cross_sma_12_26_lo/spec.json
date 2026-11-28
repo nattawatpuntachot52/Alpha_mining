@@ -21,6 +21,6 @@
   "hypothesis": "Heiken M15 SMA 12/26 ported to 24/7 ETHUSDT (no Thursday block) for smoothed intraday trend.",
   "evidence_status": "exploratory",
   "created_batch_date": "2026-11-24",
-  "updated_at_utc": "2026-11-28T07:39:36Z",
-  "spec_sha256": "sha256:0850a2696b82bd3a17ab70358728d8eb0af6f4878004b32eab2b742a955876b4"
+  "updated_at_utc": "2026-11-28T12:15:18Z",
+  "spec_sha256": "sha256:89f4e20e4e271d5696f423d044ef69e21b430e96ee15e0630e08f02def7cb827"
 }

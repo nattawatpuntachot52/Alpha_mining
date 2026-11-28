@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "generated_at_utc": "2026-11-28T07:39:36Z",
+  "generated_at_utc": "2026-11-28T12:15:19Z",
   "latest_date": "2026-11-28",
   "total_days": 5,
   "dates": [
@@ -13,15 +13,16 @@
   "days": [
     {
       "batch_date": "2026-11-28",
-      "generated_at_utc": "2026-11-28T07:39:36Z",
-      "model_count": 13,
+      "generated_at_utc": "2026-11-28T12:15:19Z",
+      "model_count": 14,
       "rounds": [
         1,
         2,
-        3
+        3,
+        4
       ],
       "by_symbol": {
-        "XAUUSD": 7,
+        "XAUUSD": 8,
         "ETHUSDT": 6
       },
       "model_ids": [
@@ -37,11 +38,12 @@
         "alpha_007_ethusdt_1h_momentum_roc_90_lo",
         "alpha_124_xauusd_4h_ma_cross_ema_8_26_ls",
         "alpha_008_ethusdt_15m_heiken_ma_cross_sma_12_26_lo",
-        "alpha_011_xauusd_4h_ma_cross_ema_5_20_ls"
+        "alpha_011_xauusd_4h_ma_cross_ema_5_20_ls",
+        "alpha_022_xauusd_4h_momentum_roc_24_lo"
       ],
       "best_oos_sharpe_model_id": "alpha_052_xauusd_15m_asia_range_breakout_0_7_17_0_8_ls_sl0_5tp1",
       "best_oos_sharpe": 2.065,
-      "profitable_oos_count": 9,
+      "profitable_oos_count": 10,
       "has_dashboard": true,
       "has_summary": true,
       "dashboard_rel_path": "daily/2026-11-28/dashboard.html",

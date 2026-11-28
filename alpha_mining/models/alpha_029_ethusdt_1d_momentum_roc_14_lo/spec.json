@@ -19,6 +19,6 @@
   "hypothesis": "14-day D1 time-series momentum captures multi-week ETH trend cycles.",
   "evidence_status": "exploratory",
   "created_batch_date": "2026-11-25",
-  "updated_at_utc": "2026-11-28T07:39:33Z",
-  "spec_sha256": "sha256:a803511e5c2e934ed0b78d5049b773d8e6a9aed44f0a72ad21e5a4fe6410b801"
+  "updated_at_utc": "2026-11-28T12:15:17Z",
+  "spec_sha256": "sha256:43cff2c6d0919e7a80c950165c7b6ec925699d62aa957555941d67855e3a2fa1"
 }
