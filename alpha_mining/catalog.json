@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "updated_at_utc": "2026-11-28T04:15:20Z",
+  "updated_at_utc": "2026-11-28T07:39:36Z",
   "total_trials": 140,
   "models": {
     "alpha_001_xauusd_1h_momentum_roc_14_lo": {
@@ -94,10 +94,10 @@
       "direction": "long_only",
       "created_batch_date": "2026-11-24",
       "latest_batch_date": "2026-11-28",
-      "latest_run_id": "2026-11-28_run03",
+      "latest_run_id": "2026-11-28_run04",
       "evidence_status": "exploratory",
-      "spec_sha256": "sha256:5f655e0f1c9cb02d3787cd7c59a8652f2ec31d035f0ed31b7397082ce02230e6",
-      "updated_at_utc": "2026-11-28T04:15:19Z"
+      "spec_sha256": "sha256:ae3524b05a7fffa5490232ab32be55ca961c29226925069eaff5f01347c293df",
+      "updated_at_utc": "2026-11-28T07:39:35Z"
     },
     "alpha_007_ethusdt_1h_momentum_roc_90_lo": {
       "model_id": "alpha_007_ethusdt_1h_momentum_roc_90_lo",
@@ -110,10 +110,10 @@
       "direction": "long_only",
       "created_batch_date": "2026-11-24",
       "latest_batch_date": "2026-11-28",
-      "latest_run_id": "2026-11-28_run03",
+      "latest_run_id": "2026-11-28_run04",
       "evidence_status": "exploratory",
-      "spec_sha256": "sha256:173a884f5facc7c14cbd82ef096d15de81d0534dabbc04d6e7a9d3617deda099",
-      "updated_at_utc": "2026-11-28T04:15:19Z"
+      "spec_sha256": "sha256:6631bb0cfc979ae651f7a4eec589ffca83d20ffefe24882668aaa6b8b74a9bcf",
+      "updated_at_utc": "2026-11-28T07:39:35Z"
     },
     "alpha_008_ethusdt_15m_heiken_ma_cross_sma_12_26_lo": {
       "model_id": "alpha_008_ethusdt_15m_heiken_ma_cross_sma_12_26_lo",
@@ -126,10 +126,10 @@
       "direction": "long_only",
       "created_batch_date": "2026-11-24",
       "latest_batch_date": "2026-11-28",
-      "latest_run_id": "2026-11-28_run02",
+      "latest_run_id": "2026-11-28_run03",
       "evidence_status": "exploratory",
-      "spec_sha256": "sha256:ab26128256898783e1f94e5b911d48ac9ee7019389642af14f05b41d72b2f881",
-      "updated_at_utc": "2026-11-28T04:15:20Z"
+      "spec_sha256": "sha256:0850a2696b82bd3a17ab70358728d8eb0af6f4878004b32eab2b742a955876b4",
+      "updated_at_utc": "2026-11-28T07:39:36Z"
     },
     "alpha_009_ethusdt_30m_donchian_breakout_40_10_lo": {
       "model_id": "alpha_009_ethusdt_30m_donchian_breakout_40_10_lo",
@@ -173,11 +173,11 @@
       "family": "ma_cross",
       "direction": "long_short",
       "created_batch_date": "2026-11-24",
-      "latest_batch_date": "2026-11-24",
-      "latest_run_id": "2026-11-24_run01",
+      "latest_batch_date": "2026-11-28",
+      "latest_run_id": "2026-11-28_run02",
       "evidence_status": "exploratory",
-      "spec_sha256": "sha256:5e855981f54a8a6aad93abcec90292dbf2ca428059b724dc4e575352e30ac655",
-      "updated_at_utc": "2026-11-24T09:58:36Z"
+      "spec_sha256": "sha256:bfcfa089d43b373d38078ccbb0685c7f4561a544d6c6d64381cb3cf1085b2260",
+      "updated_at_utc": "2026-11-28T07:39:33Z"
     },
     "alpha_012_xauusd_1h_session_time_20_4_long_inside_lo": {
       "model_id": "alpha_012_xauusd_1h_session_time_20_4_long_inside_lo",
@@ -382,10 +382,10 @@
       "direction": "long_only",
       "created_batch_date": "2026-11-25",
       "latest_batch_date": "2026-11-28",
-      "latest_run_id": "2026-11-28_run03",
+      "latest_run_id": "2026-11-28_run04",
       "evidence_status": "exploratory",
-      "spec_sha256": "sha256:8970aaaeb69b069701bd2b58154cad2d6e7e2b7c057e88396bc22d3f44bb60dc",
-      "updated_at_utc": "2026-11-28T04:15:18Z"
+      "spec_sha256": "sha256:cb74e4ec471702c187587cae72d113c7b1829abfa0bcb8417abc4f5a7c3cf199",
+      "updated_at_utc": "2026-11-28T07:39:33Z"
     },
     "alpha_025_xauusd_30m_momentum_roc_28_0_25_lo": {
       "model_id": "alpha_025_xauusd_30m_momentum_roc_28_0_25_lo",
@@ -462,10 +462,10 @@
       "direction": "long_only",
       "created_batch_date": "2026-11-25",
       "latest_batch_date": "2026-11-28",
-      "latest_run_id": "2026-11-28_run03",
+      "latest_run_id": "2026-11-28_run04",
       "evidence_status": "exploratory",
-      "spec_sha256": "sha256:4bd4a0caa48d7f91f2bed0adde50843383f307de803f5a371cf556fcd684c832",
-      "updated_at_utc": "2026-11-28T04:15:18Z"
+      "spec_sha256": "sha256:a803511e5c2e934ed0b78d5049b773d8e6a9aed44f0a72ad21e5a4fe6410b801",
+      "updated_at_utc": "2026-11-28T07:39:33Z"
     },
     "alpha_030_ethusdt_1d_momentum_roc_30_ls": {
       "model_id": "alpha_030_ethusdt_1d_momentum_roc_30_ls",
@@ -830,10 +830,10 @@
       "direction": "long_short",
       "created_batch_date": "2026-11-25",
       "latest_batch_date": "2026-11-28",
-      "latest_run_id": "2026-11-28_run03",
+      "latest_run_id": "2026-11-28_run04",
       "evidence_status": "exploratory",
-      "spec_sha256": "sha256:0b28e9a0c4383a454ebeb2dd72f29c1004f76a5f5bf8dbee50dc12211591727a",
-      "updated_at_utc": "2026-11-28T04:15:17Z"
+      "spec_sha256": "sha256:fbd170c1785970fb3b6b8af68ef2ee392625c3d62a0fd3dc57264aa1ef6da2fe",
+      "updated_at_utc": "2026-11-28T07:39:33Z"
     },
     "alpha_053_xauusd_30m_asia_range_breakout_0_7_20_lo": {
       "model_id": "alpha_053_xauusd_30m_asia_range_breakout_0_7_20_lo",
@@ -1038,10 +1038,10 @@
       "direction": "long_short",
       "created_batch_date": "2026-11-26",
       "latest_batch_date": "2026-11-28",
-      "latest_run_id": "2026-11-28_run03",
+      "latest_run_id": "2026-11-28_run04",
       "evidence_status": "exploratory",
-      "spec_sha256": "sha256:acd0d60d01737a575decfde15675bb90bba5c5b00c22ae6238b9e4e5481b5d7f",
-      "updated_at_utc": "2026-11-28T04:15:18Z"
+      "spec_sha256": "sha256:67e90f5a164782c001999210b2b87ba56042d5244a25041a7f733ee090474ab0",
+      "updated_at_utc": "2026-11-28T07:39:33Z"
     },
     "alpha_066_ethusdt_1h_impulse_efficiency_3_20_2_2_0_78_12_reversa": {
       "model_id": "alpha_066_ethusdt_1h_impulse_efficiency_3_20_2_2_0_78_12_reversa",
@@ -1198,10 +1198,10 @@
       "direction": "long_short",
       "created_batch_date": "2026-11-26",
       "latest_batch_date": "2026-11-28",
-      "latest_run_id": "2026-11-28_run03",
+      "latest_run_id": "2026-11-28_run04",
       "evidence_status": "exploratory",
-      "spec_sha256": "sha256:d7e4112f88bebf2f8a71b49a731779db521cb4a4583d18a4d501b56b00d98b3e",
-      "updated_at_utc": "2026-11-28T04:15:18Z"
+      "spec_sha256": "sha256:0fd332a8df6961bf95153376c13e50625781e2b78ca31c1bf470495949672266",
+      "updated_at_utc": "2026-11-28T07:39:33Z"
     },
     "alpha_076_ethusdt_1d_rsi_reversion_2_10_90_65_35_lo": {
       "model_id": "alpha_076_ethusdt_1d_rsi_reversion_2_10_90_65_35_lo",
@@ -1598,10 +1598,10 @@
       "direction": "long_short",
       "created_batch_date": "2026-11-26",
       "latest_batch_date": "2026-11-28",
-      "latest_run_id": "2026-11-28_run03",
+      "latest_run_id": "2026-11-28_run04",
       "evidence_status": "exploratory",
-      "spec_sha256": "sha256:e6fd459cffb5b522a54c885835eaa792b4bfdc5566ba76649c46d2831a66ccc3",
-      "updated_at_utc": "2026-11-28T04:15:19Z"
+      "spec_sha256": "sha256:2eba95000ee1d79862eabc9299e72a9667d3996a43a5a7889037883e5f55888d",
+      "updated_at_utc": "2026-11-28T07:39:34Z"
     },
     "alpha_101_xauusd_1d_calendar_turn_x_long_lo": {
       "model_id": "alpha_101_xauusd_1d_calendar_turn_x_long_lo",
