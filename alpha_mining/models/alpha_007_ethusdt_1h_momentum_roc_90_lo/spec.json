@@ -19,6 +19,6 @@
   "hypothesis": "Alpha010 ported to ETHUSDT H1: 90-hour (~3.75d) trend-following avoids bear-market drawdowns.",
   "evidence_status": "exploratory",
   "created_batch_date": "2026-11-24",
-  "updated_at_utc": "2026-11-24T09:56:14Z",
-  "spec_sha256": "sha256:51355621052944358a91d68dae2932427a458d4f05df7cc0997780caed8bc05a"
+  "updated_at_utc": "2026-11-28T00:15:24Z",
+  "spec_sha256": "sha256:5ce57390fb073faa601d010f45887baaafc3913a6d231b99adb5a14fe71e96af"
 }

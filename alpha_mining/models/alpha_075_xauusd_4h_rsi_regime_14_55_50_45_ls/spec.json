@@ -22,6 +22,6 @@
   "hypothesis": "H4 RSI(14) 55/45 hysteresis trend regime switches cleanly between macro gold regimes.",
   "evidence_status": "exploratory",
   "created_batch_date": "2026-11-26",
-  "updated_at_utc": "2026-11-26T04:15:30Z",
-  "spec_sha256": "sha256:ad7a87d6199b9043714c39e34f1f0344fe429aee772ac0ee364d93644a739d2f"
+  "updated_at_utc": "2026-11-28T00:15:23Z",
+  "spec_sha256": "sha256:cc84da292bba2efbf7319e83dc9b045c6bdca537cfd551417ed9a1057a79c75c"
 }

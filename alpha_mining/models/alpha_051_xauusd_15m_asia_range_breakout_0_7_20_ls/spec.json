@@ -21,6 +21,6 @@
   "hypothesis": "Classic Gold Asia-box (00-07 UTC) breakout during London/NY sessions, flat at 20:00 UTC.",
   "evidence_status": "exploratory",
   "created_batch_date": "2026-11-25",
-  "updated_at_utc": "2026-11-25T08:23:20Z",
-  "spec_sha256": "sha256:0d2008ff2e20af2520baf2699f966ffc58b19ed76c799cead15ad2fc4a8381e0"
+  "updated_at_utc": "2026-11-28T00:15:23Z",
+  "spec_sha256": "sha256:54a9fe7eb487cb8dd522bd04592d7468ab85335e6db7bac823cb7aab85d76cad"
 }
