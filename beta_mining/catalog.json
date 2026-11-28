@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
-  "updated_at_utc": "2026-11-28T08:16:11Z",
-  "total_trials": 105,
+  "updated_at_utc": "2026-11-28T12:17:07Z",
+  "total_trials": 110,
   "models": {
     "beta_001_ha_1m": {
       "model_id": "beta_001_ha_1m",
@@ -1577,6 +1577,81 @@
       "evidence_status": "reproducible",
       "spec_sha256": "sha256:c0ef2018fb3f16269e23242f27947fdeafe58d7fc20b3766e6222d2b31bf510b",
       "updated_at_utc": "2026-11-28T08:16:11Z"
+    },
+    "beta_106_rsi_reversion_14_40_60_fixed_0_45": {
+      "model_id": "beta_106_rsi_reversion_14_40_60_fixed_0_45",
+      "trial_number": 106,
+      "folder": "models/beta_106_rsi_reversion_14_40_60_fixed_0_45",
+      "signal_spec": "rsi_reversion_14_40_60@fixed_0.45",
+      "signal_name": "rsi_reversion_14_40_60",
+      "symbol": "ETHUSDT",
+      "product_type": "USD_M",
+      "created_batch_date": "2026-11-28",
+      "latest_batch_date": "2026-11-28",
+      "latest_run_id": "2026-11-28_run01",
+      "evidence_status": "reproducible",
+      "spec_sha256": "sha256:f8eb36d1d5a739e8eeafd77b7587d0575a2a1f8fc8e677350be4527a1f6d7be0",
+      "updated_at_utc": "2026-11-28T12:15:43Z"
+    },
+    "beta_107_rsi_reversion_14_40_60_parkinson_60_4_0": {
+      "model_id": "beta_107_rsi_reversion_14_40_60_parkinson_60_4_0",
+      "trial_number": 107,
+      "folder": "models/beta_107_rsi_reversion_14_40_60_parkinson_60_4_0",
+      "signal_spec": "rsi_reversion_14_40_60@parkinson_60_4.0",
+      "signal_name": "rsi_reversion_14_40_60",
+      "symbol": "ETHUSDT",
+      "product_type": "USD_M",
+      "created_batch_date": "2026-11-28",
+      "latest_batch_date": "2026-11-28",
+      "latest_run_id": "2026-11-28_run01",
+      "evidence_status": "reproducible",
+      "spec_sha256": "sha256:bd1deb40b025f6ad1df92ffa58614f26f2fa2264319a5617ba5c43879f775103",
+      "updated_at_utc": "2026-11-28T12:16:05Z"
+    },
+    "beta_108_rsi_reversion_14_40_60_logret_90_4_2": {
+      "model_id": "beta_108_rsi_reversion_14_40_60_logret_90_4_2",
+      "trial_number": 108,
+      "folder": "models/beta_108_rsi_reversion_14_40_60_logret_90_4_2",
+      "signal_spec": "rsi_reversion_14_40_60@logret_90_4.2",
+      "signal_name": "rsi_reversion_14_40_60",
+      "symbol": "ETHUSDT",
+      "product_type": "USD_M",
+      "created_batch_date": "2026-11-28",
+      "latest_batch_date": "2026-11-28",
+      "latest_run_id": "2026-11-28_run01",
+      "evidence_status": "reproducible",
+      "spec_sha256": "sha256:c44164d171e8d096e55e4ba8377a0ee35b52324cae67027b38e2b34230108218",
+      "updated_at_utc": "2026-11-28T12:16:27Z"
+    },
+    "beta_109_rsi_reversion_14_40_60_ewma_logret_45_4_0_1_6": {
+      "model_id": "beta_109_rsi_reversion_14_40_60_ewma_logret_45_4_0_1_6",
+      "trial_number": 109,
+      "folder": "models/beta_109_rsi_reversion_14_40_60_ewma_logret_45_4_0_1_6",
+      "signal_spec": "rsi_reversion_14_40_60@ewma_logret_45_4.0_1.6",
+      "signal_name": "rsi_reversion_14_40_60",
+      "symbol": "ETHUSDT",
+      "product_type": "USD_M",
+      "created_batch_date": "2026-11-28",
+      "latest_batch_date": "2026-11-28",
+      "latest_run_id": "2026-11-28_run01",
+      "evidence_status": "reproducible",
+      "spec_sha256": "sha256:41a629676b11333c53199f99f590258d5296a4d4bcd41f0c17206dcc7163778c",
+      "updated_at_utc": "2026-11-28T12:16:47Z"
+    },
+    "beta_110_rsi_reversion_14_40_60_inv_step_0_20_3_0_2_2": {
+      "model_id": "beta_110_rsi_reversion_14_40_60_inv_step_0_20_3_0_2_2",
+      "trial_number": 110,
+      "folder": "models/beta_110_rsi_reversion_14_40_60_inv_step_0_20_3_0_2_2",
+      "signal_spec": "rsi_reversion_14_40_60@inv_step_0.20_3.0_2.2",
+      "signal_name": "rsi_reversion_14_40_60",
+      "symbol": "ETHUSDT",
+      "product_type": "USD_M",
+      "created_batch_date": "2026-11-28",
+      "latest_batch_date": "2026-11-28",
+      "latest_run_id": "2026-11-28_run01",
+      "evidence_status": "reproducible",
+      "spec_sha256": "sha256:07b2299b90980f52d51b4274a7e958aeaf3fa54a958e47aff59a4222078635b7",
+      "updated_at_utc": "2026-11-28T12:17:07Z"
     }
   }
 }
