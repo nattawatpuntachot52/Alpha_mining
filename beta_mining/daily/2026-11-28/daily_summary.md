@@ -1,10 +1,10 @@
 # Alpha_mining — Beta Mining Daily Summary (2026-11-28)
 
-- **Generated (UTC):** `2026-11-28T04:16:04Z`
-- **Batch Models Tested Today:** `10` | **Cumulative Total Trials (`N_trials`):** `100`
+- **Generated (UTC):** `2026-11-28T08:16:11Z`
+- **Batch Models Tested Today:** `15` | **Cumulative Total Trials (`N_trials`):** `105`
 - **Top-9 Ranking Rule:** `Net Realized Cashflow DESC -> Max MTM DD % ASC` | **Hard Gate:** `No Liquidation` & `Max DD <= 40%`
 
-## 1. สรุปโมเดลที่ Mine วันนี้ (2026-11-28 — 10 โมเดล)
+## 1. สรุปโมเดลที่ Mine วันนี้ (2026-11-28 — 15 โมเดล)
 
 | Model ID | Signal | Spacing (Avg%) | Realized Cashflow | Wk+ % | Max DD (%) | CF / DD | MTM Return | Crash -46% DD | Trades (Win%) |
 |---|---|---|---:|---:|---:|---:|---:|---:|---:|
@@ -18,6 +18,11 @@
 | `beta_098_supertrend_16_2` | `supertrend_16_2` | `fixed_0.2` (0.20%) | +2965.04 (+29.65%) | 87.5% | 25.15% | 1.18x | -4.74% | 7.36% | 13,641 (98.0%) |
 | `beta_099_supertrend_16_3` | `supertrend_16_3` | `fixed_0.2` (0.20%) | +2622.44 (+26.22%) | 88.2% | 23.89% | 1.10x | -4.56% | 6.94% | 11,238 (97.9%) |
 | `beta_100_supertrend_25_2_5` | `supertrend_25_2.5` | `fixed_0.2` (0.20%) | +2828.85 (+28.29%) | 88.2% | 24.34% | 1.16x | -4.90% | 6.59% | 12,579 (97.8%) |
+| `beta_101_supertrend_7_2_fixed_0_40` | `supertrend_7_2` | `fixed_0.40` (0.40%) | +1647.71 (+16.48%) | 100.0% | 13.29% | 1.24x | +0.19% | 2.91% | 7,914 (100.0%) |
+| `beta_102_supertrend_7_2_atr_60_3_5` | `supertrend_7_2` | `atr_60_3.5` (0.35%) | +1674.31 (+16.74%) | 100.0% | 16.61% | 1.01x | -3.21% | 4.49% | 8,406 (100.0%) |
+| `beta_103_supertrend_7_2_logret_90_4_2` | `supertrend_7_2` | `logret_90_4.2` (0.32%) | +1799.89 (+18.00%) | 100.0% | 18.16% | 0.99x | -3.53% | 4.21% | 9,547 (100.0%) |
+| `beta_104_supertrend_7_2_ewma_logret_45_4_0_1_6` | `supertrend_7_2` | `ewma_logret_45_4.0_1.6` (0.40%) | +1562.38 (+15.62%) | 100.0% | 15.12% | 1.03x | -2.55% | 3.47% | 7,231 (100.0%) |
+| `beta_105_supertrend_7_2_inv_step_0_20_3_0_2_2` | `supertrend_7_2` | `inv_step_0.20_3.0_2.2` (0.41%) | +1649.18 (+16.49%) | 100.0% | 16.14% | 1.02x | -3.23% | 3.81% | 7,776 (100.0%) |
 
 ## 2. Cumulative Top-9 Ranking Board (Cashflow สูงสุด → DD ต่ำสุด)
 
