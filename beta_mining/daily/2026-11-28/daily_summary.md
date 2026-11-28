@@ -1,10 +1,10 @@
 # Alpha_mining — Beta Mining Daily Summary (2026-11-28)
 
-- **Generated (UTC):** `2026-11-28T00:15:44Z`
-- **Batch Models Tested Today:** `5` | **Cumulative Total Trials (`N_trials`):** `95`
+- **Generated (UTC):** `2026-11-28T04:16:04Z`
+- **Batch Models Tested Today:** `10` | **Cumulative Total Trials (`N_trials`):** `100`
 - **Top-9 Ranking Rule:** `Net Realized Cashflow DESC -> Max MTM DD % ASC` | **Hard Gate:** `No Liquidation` & `Max DD <= 40%`
 
-## 1. สรุปโมเดลที่ Mine วันนี้ (2026-11-28 — 5 โมเดล)
+## 1. สรุปโมเดลที่ Mine วันนี้ (2026-11-28 — 10 โมเดล)
 
 | Model ID | Signal | Spacing (Avg%) | Realized Cashflow | Wk+ % | Max DD (%) | CF / DD | MTM Return | Crash -46% DD | Trades (Win%) |
 |---|---|---|---:|---:|---:|---:|---:|---:|---:|
@@ -13,6 +13,11 @@
 | `beta_093_ema_12_50` | `ema_12_50` | `fixed_0.2` (0.20%) | +2455.01 (+24.55%) | 99.3% | 18.02% | 1.36x | +1.08% | 4.08% | 9,134 (98.1%) |
 | `beta_094_ema_18_40` | `ema_18_40` | `fixed_0.2` (0.20%) | +2534.93 (+25.35%) | 99.3% | 18.58% | 1.36x | +0.82% | 4.26% | 9,568 (98.3%) |
 | `beta_095_ema_35_70` | `ema_35_70` | `fixed_0.2` (0.20%) | +2351.60 (+23.52%) | 100.0% | 18.02% | 1.30x | -0.34% | 2.91% | 7,973 (98.2%) |
+| `beta_096_supertrend_8_2_5` | `supertrend_8_2.5` | `fixed_0.2` (0.20%) | +2776.03 (+27.76%) | 90.3% | 23.37% | 1.19x | -3.73% | 5.97% | 12,079 (98.1%) |
+| `beta_097_supertrend_8_3_5` | `supertrend_8_3.5` | `fixed_0.2` (0.20%) | +2683.63 (+26.84%) | 97.9% | 19.54% | 1.37x | +0.83% | 5.47% | 10,492 (98.1%) |
+| `beta_098_supertrend_16_2` | `supertrend_16_2` | `fixed_0.2` (0.20%) | +2965.04 (+29.65%) | 87.5% | 25.15% | 1.18x | -4.74% | 7.36% | 13,641 (98.0%) |
+| `beta_099_supertrend_16_3` | `supertrend_16_3` | `fixed_0.2` (0.20%) | +2622.44 (+26.22%) | 88.2% | 23.89% | 1.10x | -4.56% | 6.94% | 11,238 (97.9%) |
+| `beta_100_supertrend_25_2_5` | `supertrend_25_2.5` | `fixed_0.2` (0.20%) | +2828.85 (+28.29%) | 88.2% | 24.34% | 1.16x | -4.90% | 6.59% | 12,579 (97.8%) |
 
 ## 2. Cumulative Top-9 Ranking Board (Cashflow สูงสุด → DD ต่ำสุด)
 
