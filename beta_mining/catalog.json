@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
-  "updated_at_utc": "2026-11-28T04:16:04Z",
-  "total_trials": 100,
+  "updated_at_utc": "2026-11-28T08:16:11Z",
+  "total_trials": 105,
   "models": {
     "beta_001_ha_1m": {
       "model_id": "beta_001_ha_1m",
@@ -1502,6 +1502,81 @@
       "evidence_status": "reproducible",
       "spec_sha256": "sha256:2845d0fef33f21e674dc5172703e5d4b8c4dc12552422c1a1306108ed322ea19",
       "updated_at_utc": "2026-11-28T04:16:04Z"
+    },
+    "beta_101_supertrend_7_2_fixed_0_40": {
+      "model_id": "beta_101_supertrend_7_2_fixed_0_40",
+      "trial_number": 101,
+      "folder": "models/beta_101_supertrend_7_2_fixed_0_40",
+      "signal_spec": "supertrend_7_2@fixed_0.40",
+      "signal_name": "supertrend_7_2",
+      "symbol": "ETHUSDT",
+      "product_type": "USD_M",
+      "created_batch_date": "2026-11-28",
+      "latest_batch_date": "2026-11-28",
+      "latest_run_id": "2026-11-28_run01",
+      "evidence_status": "reproducible",
+      "spec_sha256": "sha256:b4a62432441c7e7aa5732f7121325d97f00208aae8c4eabc192b4d14627a9dfe",
+      "updated_at_utc": "2026-11-28T08:15:02Z"
+    },
+    "beta_102_supertrend_7_2_atr_60_3_5": {
+      "model_id": "beta_102_supertrend_7_2_atr_60_3_5",
+      "trial_number": 102,
+      "folder": "models/beta_102_supertrend_7_2_atr_60_3_5",
+      "signal_spec": "supertrend_7_2@atr_60_3.5",
+      "signal_name": "supertrend_7_2",
+      "symbol": "ETHUSDT",
+      "product_type": "USD_M",
+      "created_batch_date": "2026-11-28",
+      "latest_batch_date": "2026-11-28",
+      "latest_run_id": "2026-11-28_run01",
+      "evidence_status": "reproducible",
+      "spec_sha256": "sha256:cff27efd9c62cab17f5763cdd90f451453e9237a075024a244f60d0232764669",
+      "updated_at_utc": "2026-11-28T08:15:19Z"
+    },
+    "beta_103_supertrend_7_2_logret_90_4_2": {
+      "model_id": "beta_103_supertrend_7_2_logret_90_4_2",
+      "trial_number": 103,
+      "folder": "models/beta_103_supertrend_7_2_logret_90_4_2",
+      "signal_spec": "supertrend_7_2@logret_90_4.2",
+      "signal_name": "supertrend_7_2",
+      "symbol": "ETHUSDT",
+      "product_type": "USD_M",
+      "created_batch_date": "2026-11-28",
+      "latest_batch_date": "2026-11-28",
+      "latest_run_id": "2026-11-28_run01",
+      "evidence_status": "reproducible",
+      "spec_sha256": "sha256:b42ae3375c26f3aa199029992da855b83aa8eeda1ae9a28b49d64bab8b64cf6c",
+      "updated_at_utc": "2026-11-28T08:15:38Z"
+    },
+    "beta_104_supertrend_7_2_ewma_logret_45_4_0_1_6": {
+      "model_id": "beta_104_supertrend_7_2_ewma_logret_45_4_0_1_6",
+      "trial_number": 104,
+      "folder": "models/beta_104_supertrend_7_2_ewma_logret_45_4_0_1_6",
+      "signal_spec": "supertrend_7_2@ewma_logret_45_4.0_1.6",
+      "signal_name": "supertrend_7_2",
+      "symbol": "ETHUSDT",
+      "product_type": "USD_M",
+      "created_batch_date": "2026-11-28",
+      "latest_batch_date": "2026-11-28",
+      "latest_run_id": "2026-11-28_run01",
+      "evidence_status": "reproducible",
+      "spec_sha256": "sha256:823d169c9bf8f8d9cf665e45076c367ba127aa5c74427b6f76e6a5cb6ebfef2e",
+      "updated_at_utc": "2026-11-28T08:15:53Z"
+    },
+    "beta_105_supertrend_7_2_inv_step_0_20_3_0_2_2": {
+      "model_id": "beta_105_supertrend_7_2_inv_step_0_20_3_0_2_2",
+      "trial_number": 105,
+      "folder": "models/beta_105_supertrend_7_2_inv_step_0_20_3_0_2_2",
+      "signal_spec": "supertrend_7_2@inv_step_0.20_3.0_2.2",
+      "signal_name": "supertrend_7_2",
+      "symbol": "ETHUSDT",
+      "product_type": "USD_M",
+      "created_batch_date": "2026-11-28",
+      "latest_batch_date": "2026-11-28",
+      "latest_run_id": "2026-11-28_run01",
+      "evidence_status": "reproducible",
+      "spec_sha256": "sha256:c0ef2018fb3f16269e23242f27947fdeafe58d7fc20b3766e6222d2b31bf510b",
+      "updated_at_utc": "2026-11-28T08:16:11Z"
     }
   }
 }
