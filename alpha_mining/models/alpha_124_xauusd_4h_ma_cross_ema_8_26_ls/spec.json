@@ -21,6 +21,6 @@
   "hypothesis": "H4 EMA 8/26 slower neighbour of MT5 EMA4H 5/20 to verify parameter stability.",
   "evidence_status": "exploratory",
   "created_batch_date": "2026-11-27",
-  "updated_at_utc": "2026-11-27T08:15:21Z",
-  "spec_sha256": "sha256:7fb7bf023d561bad9b5394ca002d87bc7e73c148841d6340fc55ae2162fddaa1"
+  "updated_at_utc": "2026-11-28T04:15:18Z",
+  "spec_sha256": "sha256:741bfc03602f80687b6fd800720f3f2e77df2e649bb8e169b6bb385ba6e2089b"
 }
