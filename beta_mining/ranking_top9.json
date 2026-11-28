@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "generated_at_utc": "2026-11-28T00:15:44Z",
+  "generated_at_utc": "2026-11-28T04:16:04Z",
   "ranking_rule": {
     "primary": "cashflow_net_usd DESC",
     "secondary": "max_drawdown_pct ASC",
@@ -11,9 +11,9 @@
       "max_drawdown_pct_limit": 40.0
     }
   },
-  "total_trials": 95,
-  "total_models": 95,
-  "qualified_count": 95,
+  "total_trials": 100,
+  "total_models": 100,
+  "qualified_count": 100,
   "disqualified_count": 0,
   "top_ranked": [
     {
