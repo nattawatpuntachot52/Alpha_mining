@@ -19,6 +19,6 @@
   "hypothesis": "1-month D1 time-series momentum (Moskowitz-Ooi-Pedersen) applied to gold.",
   "evidence_status": "exploratory",
   "created_batch_date": "2026-11-25",
-  "updated_at_utc": "2026-11-28T00:15:23Z",
-  "spec_sha256": "sha256:827fda0fedb3c1148dcba3026a048dfcbb398d39c86811ba3d4b3b796d120457"
+  "updated_at_utc": "2026-11-28T04:15:18Z",
+  "spec_sha256": "sha256:8970aaaeb69b069701bd2b58154cad2d6e7e2b7c057e88396bc22d3f44bb60dc"
 }

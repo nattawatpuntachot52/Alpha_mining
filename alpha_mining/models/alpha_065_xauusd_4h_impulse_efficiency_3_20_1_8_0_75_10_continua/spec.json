@@ -24,6 +24,6 @@
   "hypothesis": "H4 macro impulse continuation with wider 1.5% SL / 2.5% TP for multi-day follow-through.",
   "evidence_status": "exploratory",
   "created_batch_date": "2026-11-26",
-  "updated_at_utc": "2026-11-28T00:15:23Z",
-  "spec_sha256": "sha256:9d0ad1c520bc217818ae1d18a88923c19a85680ee21ec08cf46f793888ec11fa"
+  "updated_at_utc": "2026-11-28T04:15:18Z",
+  "spec_sha256": "sha256:acd0d60d01737a575decfde15675bb90bba5c5b00c22ae6238b9e4e5481b5d7f"
 }
