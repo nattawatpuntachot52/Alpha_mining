@@ -1,15 +1,47 @@
 {
   "schema_version": "1.0",
-  "generated_at_utc": "2026-11-27T08:18:33Z",
-  "latest_date": "2026-11-27",
-  "total_days": 4,
+  "generated_at_utc": "2026-11-28T00:15:25Z",
+  "latest_date": "2026-11-28",
+  "total_days": 5,
   "dates": [
+    "2026-11-28",
     "2026-11-27",
     "2026-11-26",
     "2026-11-25",
     "2026-11-24"
   ],
   "days": [
+    {
+      "batch_date": "2026-11-28",
+      "generated_at_utc": "2026-11-28T00:15:24Z",
+      "model_count": 10,
+      "rounds": [
+        1
+      ],
+      "by_symbol": {
+        "XAUUSD": 5,
+        "ETHUSDT": 5
+      },
+      "model_ids": [
+        "alpha_052_xauusd_15m_asia_range_breakout_0_7_17_0_8_ls_sl0_5tp1",
+        "alpha_065_xauusd_4h_impulse_efficiency_3_20_1_8_0_75_10_continua",
+        "alpha_051_xauusd_15m_asia_range_breakout_0_7_20_ls",
+        "alpha_024_xauusd_1d_momentum_roc_20_lo",
+        "alpha_075_xauusd_4h_rsi_regime_14_55_50_45_ls",
+        "alpha_029_ethusdt_1d_momentum_roc_14_lo",
+        "alpha_100_ethusdt_4h_vol_expansion_breakout_14_1_6_8_ls",
+        "alpha_059_ethusdt_15m_asia_range_breakout_0_7_21_ls",
+        "alpha_006_ethusdt_1h_momentum_roc_14_lo",
+        "alpha_007_ethusdt_1h_momentum_roc_90_lo"
+      ],
+      "best_oos_sharpe_model_id": "alpha_052_xauusd_15m_asia_range_breakout_0_7_17_0_8_ls_sl0_5tp1",
+      "best_oos_sharpe": 2.069,
+      "profitable_oos_count": 7,
+      "has_dashboard": true,
+      "has_summary": true,
+      "dashboard_rel_path": "daily/2026-11-28/dashboard.html",
+      "summary_rel_path": "daily/2026-11-28/daily_summary.md"
+    },
     {
       "batch_date": "2026-11-27",
       "generated_at_utc": "2026-11-27T08:18:33Z",
