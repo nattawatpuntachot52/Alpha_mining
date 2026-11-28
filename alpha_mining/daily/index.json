@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "generated_at_utc": "2026-11-28T00:15:25Z",
+  "generated_at_utc": "2026-11-28T04:15:21Z",
   "latest_date": "2026-11-28",
   "total_days": 5,
   "dates": [
@@ -13,14 +13,15 @@
   "days": [
     {
       "batch_date": "2026-11-28",
-      "generated_at_utc": "2026-11-28T00:15:24Z",
-      "model_count": 10,
+      "generated_at_utc": "2026-11-28T04:15:21Z",
+      "model_count": 12,
       "rounds": [
-        1
+        1,
+        2
       ],
       "by_symbol": {
-        "XAUUSD": 5,
-        "ETHUSDT": 5
+        "XAUUSD": 6,
+        "ETHUSDT": 6
       },
       "model_ids": [
         "alpha_052_xauusd_15m_asia_range_breakout_0_7_17_0_8_ls_sl0_5tp1",
@@ -32,11 +33,13 @@
         "alpha_100_ethusdt_4h_vol_expansion_breakout_14_1_6_8_ls",
         "alpha_059_ethusdt_15m_asia_range_breakout_0_7_21_ls",
         "alpha_006_ethusdt_1h_momentum_roc_14_lo",
-        "alpha_007_ethusdt_1h_momentum_roc_90_lo"
+        "alpha_007_ethusdt_1h_momentum_roc_90_lo",
+        "alpha_124_xauusd_4h_ma_cross_ema_8_26_ls",
+        "alpha_008_ethusdt_15m_heiken_ma_cross_sma_12_26_lo"
       ],
       "best_oos_sharpe_model_id": "alpha_052_xauusd_15m_asia_range_breakout_0_7_17_0_8_ls_sl0_5tp1",
-      "best_oos_sharpe": 2.069,
-      "profitable_oos_count": 7,
+      "best_oos_sharpe": 2.065,
+      "profitable_oos_count": 8,
       "has_dashboard": true,
       "has_summary": true,
       "dashboard_rel_path": "daily/2026-11-28/dashboard.html",
